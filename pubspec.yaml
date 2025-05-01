@@ -1,0 +1,70 @@
+name: modern_finance
+description: A cutting-edge finance and stock market application with advanced features.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.19.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.5
+  provider: ^6.0.5
+  shared_preferences: ^2.1.1
+  fl_chart: ^0.63.0
+  dio: ^5.1.2
+  flutter_secure_storage: ^8.0.0
+  path_provider: ^2.0.15
+  flutter_svg: ^2.0.5
+  url_launcher: ^6.1.11
+  cached_network_image: ^3.2.3
+  connectivity_plus: ^4.0.1
+  package_info_plus: ^4.0.2
+  http: ^1.1.0 # Use the latest version
+  google_sign_in: ^6.1.4
+  animations: ^2.0.7
+  syncfusion_flutter_charts: ^29.1.38
+  intl: ^0.18.1 # Or latest version
+  flutter_typeahead: ^5.2.0 # <--- ADD THIS LINE (Check pub.dev for the latest version)
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.1
+  build_runner: ^2.4.4
+  mockito: ^5.4.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/fonts/
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#121212"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
+
+flutter_native_splash:
+  color: "#121212"
+  image: assets/images/splash_logo.png
+  android: true
+  ios: true
