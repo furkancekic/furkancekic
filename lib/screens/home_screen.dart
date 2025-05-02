@@ -304,6 +304,24 @@ class _HomeContentState extends State<HomeContent> {
     super.dispose();
   }
 
+  Future<void> fetchData() async {
+    try {
+      // Make network request using stock_api_service.dart
+      final result =
+          await api_service.StockApiService.getWatchlistStocks(); // Replace with your actual method
+
+      // Check if the widget is still mounted before calling setState
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        print('Error fetching data: $e');
+      }
+    }
+    super.dispose();
+  }
+
   /* -------------------- Arama -------------------- */
   void _onSearchChanged() {
     if (_searchController.text.isNotEmpty) {

@@ -157,23 +157,41 @@ class BacktestResult {
   });
 
   factory BacktestResult.fromJson(Map<String, dynamic> json) {
-    // Handle performance metrics
-    final Map<String, dynamic> metrics = json['performance_metrics'] is Map
-        ? Map<String, dynamic>.from(json['performance_metrics'])
-        : {};
-
-    // Handle equity curve - ensure it's a List of Maps
-    List<Map<String, dynamic>> equityCurve = [];
-    if (json.containsKey('equity_curve') && json['equity_curve'] is List) {
-      equityCurve = List<Map<String, dynamic>>.from(
-          json['equity_curve'].map((e) => Map<String, dynamic>.from(e)));
+    // Handle various possible field names for metrics
+    Map<String, dynamic> metrics = {};
+    if (json.containsKey('metrics') && json['metrics'] is Map) {
+      metrics =
+          _processSpecialValues(Map<String, dynamic>.from(json['metrics']));
+    } else if (json.containsKey('performance_metrics') &&
+        json['performance_metrics'] is Map) {
+      metrics = _processSpecialValues(
+          Map<String, dynamic>.from(json['performance_metrics']));
     }
 
-    // Handle trade history - ensure it's a List of Maps
+    // Handle equity curve with both camelCase and snake_case keys
+    List<Map<String, dynamic>> equityCurve = [];
+    if (json.containsKey('equityCurve') && json['equityCurve'] is List) {
+      equityCurve = List<Map<String, dynamic>>.from(json['equityCurve'].map(
+          (e) =>
+              e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{}));
+    } else if (json.containsKey('equity_curve') &&
+        json['equity_curve'] is List) {
+      equityCurve = List<Map<String, dynamic>>.from(json['equity_curve'].map(
+          (e) =>
+              e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{}));
+    }
+
+    // Handle trade history with both camelCase and snake_case keys
     List<Map<String, dynamic>> tradeHistory = [];
-    if (json.containsKey('trade_history') && json['trade_history'] is List) {
-      tradeHistory = List<Map<String, dynamic>>.from(
-          json['trade_history'].map((e) => Map<String, dynamic>.from(e)));
+    if (json.containsKey('tradeHistory') && json['tradeHistory'] is List) {
+      tradeHistory = List<Map<String, dynamic>>.from(json['tradeHistory'].map(
+          (e) =>
+              e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{}));
+    } else if (json.containsKey('trade_history') &&
+        json['trade_history'] is List) {
+      tradeHistory = List<Map<String, dynamic>>.from(json['trade_history'].map(
+          (e) =>
+              e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{}));
     }
 
     return BacktestResult(
@@ -183,13 +201,85 @@ class BacktestResult {
     );
   }
 
+  // Helper to process special values like "Infinity" in metrics
+  static Map<String, dynamic> _processSpecialValues(
+      Map<String, dynamic> metrics) {
+    final result = Map<String, dynamic>.from(metrics);
+    // Convert string representations of special values back to their numeric form
+    metrics.forEach((key, value) {
+      if (value == "Infinity") {
+        result[key] = double.infinity;
+      } else if (value == "-Infinity") {
+        result[key] = double.negativeInfinity;
+      } else if (value == "NaN" || value == null) {
+        result[key] = 0.0; // Replace NaN with 0 or another sensible default
+      }
+    });
+    return result;
+  }
+
+  // Helper to safely get numeric values from metrics
+  static double safeGetDouble(
+      Map<String, dynamic> metrics, String key, double defaultValue) {
+    final value = metrics[key];
+    if (value == null) return defaultValue;
+
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      if (value == "Infinity") return double.infinity;
+      if (value == "-Infinity") return double.negativeInfinity;
+      if (value == "NaN") return 0.0; // or another default
+
+      try {
+        return double.parse(value);
+      } catch (_) {
+        return defaultValue;
+      }
+    }
+
+    return defaultValue;
+  }
+
+  // Format value for display, handling special cases like Infinity
+  static String formatMetricValue(dynamic value, [int decimals = 2]) {
+    if (value == null) return '0.0';
+
+    if (value == double.infinity || value == "Infinity") {
+      return "∞"; // Infinity symbol
+    } else if (value == double.negativeInfinity || value == "-Infinity") {
+      return "-∞"; // Negative infinity symbol
+    } else if (value == "NaN") {
+      return "0.0";
+    }
+
+    try {
+      if (value is num) {
+        return value.toStringAsFixed(decimals);
+      } else if (value is String) {
+        return double.parse(value).toStringAsFixed(decimals);
+      }
+    } catch (_) {}
+
+    return value.toString();
+  }
+
+  // Convert to JSON - useful for debugging
+  Map<String, dynamic> toJson() {
+    return {
+      'performanceMetrics': performanceMetrics,
+      'equityCurve': equityCurve,
+      'tradeHistory': tradeHistory,
+    };
+  }
+
   // Results summary
   String get summary {
-    final totalReturn = performanceMetrics['total_return_pct'] ?? 0.0;
-    final winRate = performanceMetrics['win_rate_pct'] ?? 0.0;
+    final totalReturn =
+        safeGetDouble(performanceMetrics, 'total_return_pct', 0.0);
+    final winRate = safeGetDouble(performanceMetrics, 'win_rate_pct', 0.0);
     final totalTrades = performanceMetrics['total_trades'] ?? 0;
 
-    return 'Total Return: ${totalReturn.toStringAsFixed(2)}%, Win Rate: ${winRate.toStringAsFixed(2)}%, Trades: $totalTrades';
+    return 'Total Return: ${formatMetricValue(totalReturn)}%, Win Rate: ${formatMetricValue(winRate)}%, Trades: $totalTrades';
   }
 }
 

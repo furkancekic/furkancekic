@@ -524,7 +524,7 @@ class BacktestService {
     ];
   }
 
-  /// Run a backtest
+  /// Run a backtest with improved handling for Infinity values in JSON
   static Future<BacktestResult> runBacktest({
     required String ticker,
     required String timeframe,
@@ -559,7 +559,7 @@ class BacktestService {
             'Request Body (first 1000 chars): ${requestBodyString.substring(0, 1000)}...');
       }
 
-      // Send the request (longer timeout for backtest - 2 minutes)
+      // Send the request
       final response = await http
           .post(
             url,
@@ -572,73 +572,100 @@ class BacktestService {
 
       if (response.statusCode == 200) {
         final decodedBody = utf8.decode(response.bodyBytes);
-        final jsonResponse = json.decode(decodedBody);
+
+        // Pre-process the response to handle Infinity, -Infinity, and NaN values
+        // which are valid in JavaScript but not in standard JSON
+        final String processedBody = decodedBody
+            .replaceAll(': Infinity,', ': "Infinity",')
+            .replaceAll(':-Infinity,', ':"-Infinity",')
+            .replaceAll(':NaN,', ':"NaN",')
+            .replaceAll(': Infinity}', ': "Infinity"}')
+            .replaceAll(':-Infinity}', ':"-Infinity"}')
+            .replaceAll(':NaN}', ':"NaN"}');
+
+        // Log processed body for debugging (if not too large)
+        if (processedBody.length < 1000) {
+          _logger.fine('Processed response body: $processedBody');
+        }
+
+        Map<String, dynamic> jsonResponse;
+        try {
+          jsonResponse = json.decode(processedBody);
+          _logger.fine('Raw API response structure: ${jsonResponse.keys}');
+        } catch (e) {
+          _logger.severe("JSON parsing error after processing: $e");
+          _logger.fine(
+              "First 500 chars of processed body: ${processedBody.substring(0, min(500, processedBody.length))}");
+          // Re-throw with more context
+          throw FormatException(
+              "Could not parse API response even after handling special values: $e");
+        }
 
         if (jsonResponse is Map &&
             jsonResponse.containsKey('status') &&
             jsonResponse['status'] == 'success') {
-          if (jsonResponse.containsKey('results') &&
-              jsonResponse['results'] is Map) {
-            try {
-              final result = BacktestResult.fromJson(
-                  jsonResponse['results'] as Map<String, dynamic>);
-              _logger.info(
-                  'Backtest completed successfully. Number of trades: ${result.tradeHistory.length}');
-              return result;
-            } catch (e, stackTrace) {
-              _logger.severe(
-                  "Error parsing backtest result JSON: ${jsonResponse['results']}",
-                  e,
-                  stackTrace);
-              throw Exception(
-                  "Backtest result could not be read (invalid format).");
-            }
+          // Extract the results node which contains our data
+          Map<String, dynamic> resultData;
+          if (jsonResponse.containsKey('results')) {
+            resultData = Map<String, dynamic>.from(jsonResponse['results']);
+            _logger.info('Successfully extracted results data');
           } else {
             _logger.warning(
-                "API response successful ('status':'success') but 'results' object missing or format wrong.");
-            throw Exception(
-                "API response format not as expected (results object missing).");
+                'No results field found in API response, using entire response');
+            resultData = Map<String, dynamic>.from(jsonResponse);
+          }
+
+          try {
+            final result = BacktestResult.fromJson(resultData);
+            _logger.info(
+                'Backtest completed successfully. Trades: ${result.tradeHistory.length}, Equity points: ${result.equityCurve.length}');
+
+            // Log a small sample of data to verify parsing
+            if (result.tradeHistory.isNotEmpty) {
+              _logger.fine('First trade: ${result.tradeHistory.first}');
+            }
+            if (result.equityCurve.isNotEmpty) {
+              _logger.fine(
+                  'First and last equity points: ${result.equityCurve.first} -> ${result.equityCurve.last}');
+            }
+
+            return result;
+          } catch (e, stackTrace) {
+            _logger.severe(
+                "Error parsing backtest result JSON: $e", e, stackTrace);
+            throw Exception("Backtest result could not be parsed: $e");
           }
         } else {
-          // Failed status or status field missing
           final errorMsg =
               (jsonResponse is Map && jsonResponse.containsKey('message'))
                   ? jsonResponse['message']
-                  : 'API returned unsuccessful or unexpected backtest response';
+                  : 'API returned unsuccessful response';
           _logger.warning('API error (status != success): $errorMsg');
-
-          // Throw the API's error message directly
           throw Exception(errorMsg);
         }
       } else {
-        // HTTP status code other than 200
         _logger.warning(
             'API returned code ${response.statusCode}. Response: ${response.body}');
 
-        // Try to parse error message
         String errorMessage =
             'Backtest could not be run (${response.statusCode}).';
         try {
           final errorJson = json.decode(utf8.decode(response.bodyBytes));
           if (errorJson is Map && errorJson.containsKey('message')) {
             errorMessage = errorJson['message'];
-          } else if (errorJson is Map && errorJson.containsKey('error')) {
-            // Sometimes 'error' key is used
-            errorMessage = errorJson['error'];
           }
         } catch (_) {} // Ignore parsing errors
 
         throw Exception(errorMessage);
       }
     } catch (e, stackTrace) {
-      _logger.severe('Error running backtest.', e, stackTrace);
-      if (e is FormatException) {
-        throw Exception('API response could not be read (invalid format).');
-      }
-
-      // More user-friendly message
-      throw Exception(
-          'An error occurred while running the backtest: ${e.toString()}');
+      _logger.severe('Error running backtest: $e', e, stackTrace);
+      throw Exception('An error occurred while running the backtest: $e');
     }
+  }
+
+  // Helper function for min value (used in logging)
+  static int min(int a, int b) {
+    return a < b ? a : b;
   }
 }

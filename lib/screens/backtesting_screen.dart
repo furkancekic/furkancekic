@@ -1,4 +1,4 @@
-// backtesting_screen.dart
+// backtesting_screen.dart with improved ticker and timeframe selection
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/backtest_models.dart';
@@ -20,6 +20,17 @@ class _BacktestingScreenState extends State<BacktestingScreen>
   final TextEditingController _periodController = TextEditingController();
   String _selectedTimeframe = '1D';
   final List<String> _timeframes = ['1D', '1H', '30m', '15m', '5m', '1m'];
+
+  // Commonly used stock tickers for quick selection
+  final List<String> _commonTickers = [
+    'AAPL',
+    'MSFT',
+    'GOOGL',
+    'AMZN',
+    'TSLA',
+    'META',
+    'NVDA'
+  ];
 
   List<BacktestStrategy> _strategies = [];
   int _selectedStrategyIndex = -1; // Initially no strategy selected
@@ -75,13 +86,13 @@ class _BacktestingScreenState extends State<BacktestingScreen>
 
     try {
       final strategies = await BacktestService.getStrategies();
-      
+
       // Add logging to check what strategies came back
       _logger.info("Received ${strategies.length} strategies from API");
       for (var strategy in strategies) {
         _logger.fine("Strategy: ${strategy.name}, ID: ${strategy.id}");
       }
-      
+
       setState(() {
         _strategies = strategies;
         // Select the first strategy if available
@@ -110,11 +121,10 @@ class _BacktestingScreenState extends State<BacktestingScreen>
   }
 
   Future<void> _runBacktest() async {
-    // IMPORTANT: Check if a strategy is selected
     if (_selectedStrategyIndex < 0 ||
         _selectedStrategyIndex >= _strategies.length) {
-      _logger.warning(
-          "Attempted to run backtest but no valid strategy selected. Selected index: $_selectedStrategyIndex, Strategy count: ${_strategies.length}");
+      _logger
+          .warning("Attempted to run backtest but no valid strategy selected");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please select a valid strategy.'),
@@ -124,26 +134,23 @@ class _BacktestingScreenState extends State<BacktestingScreen>
       return;
     }
 
-    // IMPORTANT: Get the strategy at the selected index.
-    // This variable will keep the same value throughout this function block, even if setState is called.
     final int strategyIndexToRun = _selectedStrategyIndex;
     final BacktestStrategy selectedStrategy = _strategies[strategyIndexToRun];
 
-    _logger.info(
-        "Starting backtest. Selected Strategy Index: $strategyIndexToRun, Strategy Name: ${selectedStrategy.name}, Strategy ID: ${selectedStrategy.id ?? 'No ID'}");
-
-    // Log strategy details (what will be sent to API)
-    _logger.fine("Strategy details to send: ${selectedStrategy.toJson()}");
+    _logger.info("Starting backtest for strategy: ${selectedStrategy.name}");
 
     setState(() {
-      _isLoading = true; // Start loading animation
-      _lastResult = null; // Clear old result
+      _isLoading = true;
+      _lastResult = null;
     });
 
-    // Optional: Show confirmation dialog
-    // _confirmStrategy(selectedStrategy); // Uncomment if confirmation wanted
+    // Show confirmation dialog
+    if (mounted) {
+      await _confirmStrategy(selectedStrategy);
+    }
 
     try {
+      // Get the user-selected ticker and timeframe values
       final ticker = _tickerController.text.trim().toUpperCase();
       final period = _periodController.text.trim();
       final timeframe = _selectedTimeframe;
@@ -155,20 +162,30 @@ class _BacktestingScreenState extends State<BacktestingScreen>
         throw Exception("Backtest period cannot be empty.");
       }
 
-      // Log parameters for API call
       _logger.info(
-          "Calling BacktestService.runBacktest. Ticker: $ticker, Timeframe: $timeframe, Period: $period, Strategy Name: ${selectedStrategy.name}");
+          "Calling BacktestService.runBacktest for $ticker, $timeframe, $period");
 
-      // IMPORTANT: Use the selected strategy object directly for the API call
       final result = await BacktestService.runBacktest(
         ticker: ticker,
         timeframe: timeframe,
         periodStr: period,
-        strategy: selectedStrategy, // Use local variable with selected strategy
+        strategy: selectedStrategy,
       );
 
+      // Detailed logging to verify data
       _logger.info(
-          "Backtest completed successfully. Total Return: ${result.performanceMetrics['total_return_pct']}%");
+          "Backtest completed. Total trades: ${result.tradeHistory.length}");
+      if (result.tradeHistory.isNotEmpty) {
+        _logger.info("First trade: ${result.tradeHistory.first}");
+      }
+
+      _logger.info("Equity curve points: ${result.equityCurve.length}");
+      if (result.equityCurve.length >= 2) {
+        _logger.info(
+            "First point: ${result.equityCurve.first}, Last point: ${result.equityCurve.last}");
+      }
+
+      _logger.info("Performance metrics: ${result.performanceMetrics}");
 
       setState(() {
         _lastResult = result;
@@ -181,7 +198,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${selectedStrategy.name} backtest completed.'),
+            content: Text(
+                '${selectedStrategy.name} backtest for $ticker ($timeframe) completed successfully.'),
             backgroundColor: AppTheme.positiveColor.withOpacity(0.8),
           ),
         );
@@ -189,7 +207,7 @@ class _BacktestingScreenState extends State<BacktestingScreen>
     } catch (e, stackTrace) {
       _logger.severe("Error running backtest", e, stackTrace);
       setState(() {
-        _isLoading = false; // Stop loading on error
+        _isLoading = false;
       });
 
       if (mounted) {
@@ -201,6 +219,70 @@ class _BacktestingScreenState extends State<BacktestingScreen>
         );
       }
     }
+  }
+
+  // Quick ticker selection widget - NEW
+  Widget _buildQuickTickerSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4.0, bottom: 8.0),
+          child: Text(
+            'Popular Tickers:',
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+          ),
+        ),
+        SizedBox(
+          height: 40, // Button height
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _commonTickers.length,
+            itemBuilder: (context, index) {
+              final ticker = _commonTickers[index];
+              final isSelected = ticker == _tickerController.text;
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: OutlinedButton(
+                  onPressed: () {
+                    _logger.fine("Quick ticker selected: $ticker");
+                    setState(() {
+                      _tickerController.text = ticker;
+                    });
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isSelected
+                        ? AppTheme.accentColor
+                        : AppTheme.textSecondary,
+                    backgroundColor: isSelected
+                        ? AppTheme.accentColor.withOpacity(0.1)
+                        : AppTheme.backgroundColor.withOpacity(0.3),
+                    side: BorderSide(
+                      color: isSelected
+                          ? AppTheme.accentColor
+                          : AppTheme.textSecondary.withOpacity(0.3),
+                      width: isSelected ? 1.5 : 1,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  child: Text(
+                    ticker,
+                    style: TextStyle(
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   // Strategy selection card widget
@@ -225,7 +307,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
         ),
         child: InkWell(
           onTap: () {
-            _logger.info("Strategy selected. Index: $index, Name: ${strategy.name}");
+            _logger.info(
+                "Strategy selected. Index: $index, Name: ${strategy.name}");
             setState(() {
               _selectedStrategyIndex = index;
             });
@@ -266,11 +349,11 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                           tooltip: "Edit Strategy",
                           onPressed: () {
                             // TODO: Navigate to strategy edit screen
-                            _logger.info("Edit button clicked: ${strategy.name}");
+                            _logger
+                                .info("Edit button clicked: ${strategy.name}");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content: Text(
-                                      'Edit feature coming soon.')),
+                                  content: Text('Edit feature coming soon.')),
                             );
                             // Example: _navigateToEditStrategy(strategy);
                             // For now just go to the second tab
@@ -289,7 +372,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                           tooltip: "Delete Strategy",
                           onPressed: () {
                             // Delete operation
-                            _logger.warning("Delete button clicked: ${strategy.name}");
+                            _logger.warning(
+                                "Delete button clicked: ${strategy.name}");
                             _confirmDeleteStrategy(
                                 strategy.id ?? '', strategy.name);
                           },
@@ -327,7 +411,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
   }
 
   // Strategy deletion confirmation dialog
-  Future<void> _confirmDeleteStrategy(String strategyId, String strategyName) async {
+  Future<void> _confirmDeleteStrategy(
+      String strategyId, String strategyName) async {
     if (strategyId.isEmpty) {
       _logger.severe("Strategy ID for deletion is empty.");
       ScaffoldMessenger.of(context).showSnackBar(
@@ -405,8 +490,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
         });
       }
     } catch (e, stackTrace) {
-      _logger.severe("Critical error deleting strategy: ID $strategyId", e,
-          stackTrace);
+      _logger.severe(
+          "Critical error deleting strategy: ID $strategyId", e, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -423,12 +508,12 @@ class _BacktestingScreenState extends State<BacktestingScreen>
   // Condition chips in a row for strategy card
   Widget _buildConditionChipsForRow(BacktestStrategy strategy) {
     final buyConditions = strategy.buyConditions
-        .map((c) => _buildConditionChip('BUY', _formatCondition(c),
-            AppTheme.positiveColor))
+        .map((c) => _buildConditionChip(
+            'BUY', _formatCondition(c), AppTheme.positiveColor))
         .toList();
     final sellConditions = strategy.sellConditions
-        .map((c) => _buildConditionChip('SELL', _formatCondition(c),
-            AppTheme.negativeColor))
+        .map((c) => _buildConditionChip(
+            'SELL', _formatCondition(c), AppTheme.negativeColor))
         .toList();
 
     // Combine all chips
@@ -461,8 +546,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
         ? (performance['trades'] as num?)?.toString() ?? 'N/A'
         : 'N/A';
 
-    final bool isPositiveReturn =
-        performance.containsKey('return') && (performance['return'] as num? ?? 0) >= 0;
+    final bool isPositiveReturn = performance.containsKey('return') &&
+        (performance['return'] as num? ?? 0) >= 0;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -498,9 +583,9 @@ class _BacktestingScreenState extends State<BacktestingScreen>
     );
   }
 
-  // EXTRA: Strategy confirmation dialog (optional)
-  void _confirmStrategy(BacktestStrategy strategy) {
-    showDialog(
+  // Strategy confirmation dialog (optional)
+  Future<void> _confirmStrategy(BacktestStrategy strategy) async {
+    await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.cardColor,
@@ -628,6 +713,14 @@ class _BacktestingScreenState extends State<BacktestingScreen>
               // Tab Bar
               _buildTabBar(),
 
+              // Backtest Configuration Card - IMPORTANT NEW ADDITION
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: (_tabController.index == 0 && !_isLoading)
+                    ? _buildBacktestConfigCard()
+                    : const SizedBox.shrink(), // Only show on Strategies tab
+              ),
+
               // Main Content Area
               Expanded(
                 child: _isLoading
@@ -656,7 +749,152 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                         _selectedStrategyIndex != -1 &&
                         !_isLoading)
                     ? _buildRunSelectedStrategyButton()
-                    : const SizedBox.shrink(), // Hide on other tabs or when no selection
+                    : const SizedBox
+                        .shrink(), // Hide on other tabs or when no selection
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // NEW WIDGET: Backtest configuration card that appears above strategy list
+  Widget _buildBacktestConfigCard() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Card(
+        color: AppTheme.cardColor.withOpacity(0.9),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: AppTheme.accentColor.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title with configuration icon
+              Row(
+                children: const [
+                  Icon(
+                    Icons.tune,
+                    color: AppTheme.accentColor,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Backtest Configuration',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Two-column layout for ticker and timeframe
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left column - Ticker input
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Ticker input field
+                        TextField(
+                          controller: _tickerController,
+                          style: const TextStyle(color: AppTheme.textPrimary),
+                          decoration: InputDecoration(
+                            labelText: 'Stock Symbol',
+                            labelStyle: const TextStyle(
+                                color: AppTheme.textSecondary, fontSize: 14),
+                            prefixIcon: const Icon(Icons.show_chart,
+                                color: AppTheme.accentColor, size: 18),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 12),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide:
+                                  const BorderSide(color: AppTheme.accentColor),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            filled: true,
+                            fillColor:
+                                AppTheme.backgroundColor.withOpacity(0.3),
+                          ),
+                          onChanged: (value) {
+                            // Auto uppercase ticker
+                            final upperValue = value.toUpperCase();
+                            if (value != upperValue) {
+                              _tickerController.value = TextEditingValue(
+                                text: upperValue,
+                                selection: TextSelection.collapsed(
+                                    offset: upperValue.length),
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Quick ticker selection
+                        _buildQuickTickerSelection(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Right column - Timeframe and period
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Timeframe selection
+                        _buildTimeframeSelector(),
+                        const SizedBox(height: 8),
+
+                        // Period input field
+                        TextField(
+                          controller: _periodController,
+                          style: const TextStyle(color: AppTheme.textPrimary),
+                          decoration: InputDecoration(
+                            labelText: 'Period',
+                            labelStyle: const TextStyle(
+                                color: AppTheme.textSecondary, fontSize: 14),
+                            prefixIcon: const Icon(Icons.date_range,
+                                color: AppTheme.accentColor, size: 18),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 10, horizontal: 12),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide:
+                                  const BorderSide(color: AppTheme.accentColor),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            hintText: 'e.g., 1 Year, 6 Months',
+                            hintStyle: TextStyle(
+                              color: AppTheme.textSecondary.withOpacity(0.5),
+                              fontSize: 12,
+                            ),
+                            filled: true,
+                            fillColor:
+                                AppTheme.backgroundColor.withOpacity(0.3),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -690,7 +928,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
           IconButton(
             tooltip: "Refresh Strategies",
             icon: const Icon(Icons.refresh, color: AppTheme.accentColor),
-            onPressed: _isLoading ? null : _loadStrategies, // Disable while loading
+            onPressed:
+                _isLoading ? null : _loadStrategies, // Disable while loading
           ),
           // Other icons (save, share, etc.) can be added here
         ],
@@ -740,7 +979,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.search_off, size: 60, color: AppTheme.textSecondary),
+            const Icon(Icons.search_off,
+                size: 60, color: AppTheme.textSecondary),
             const SizedBox(height: 16),
             const Text(
               'No saved strategies found.',
@@ -758,7 +998,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
             ),
             const SizedBox(height: 10),
             TextButton.icon(
-              icon: const Icon(Icons.refresh,
+              icon: const Icon(
+                Icons.refresh,
                 size: 18,
                 color: AppTheme.accentColor,
               ),
@@ -825,11 +1066,14 @@ class _BacktestingScreenState extends State<BacktestingScreen>
   // Run Selected Strategy Button (bottom of screen)
   Widget _buildRunSelectedStrategyButton() {
     // Ensure _selectedStrategyIndex is valid
-    if (_selectedStrategyIndex < 0 || _selectedStrategyIndex >= _strategies.length) {
+    if (_selectedStrategyIndex < 0 ||
+        _selectedStrategyIndex >= _strategies.length) {
       return const SizedBox.shrink(); // Don't show button if invalid
     }
-    
+
     final selectedStrategyName = _strategies[_selectedStrategyIndex].name;
+    final ticker = _tickerController.text.toUpperCase();
+    final timeframe = _selectedTimeframe;
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -847,23 +1091,83 @@ class _BacktestingScreenState extends State<BacktestingScreen>
           topRight: Radius.circular(20),
         ),
       ),
-      child: ElevatedButton.icon(
-        icon: const Icon(Icons.play_circle_fill, color: Colors.black),
-        label: Text(
-          'RUN BACKTEST FOR "$selectedStrategyName"',
-          style: const TextStyle(
-              fontWeight: FontWeight.bold, color: Colors.black, fontSize: 14),
-          overflow: TextOverflow.ellipsis,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Selected configuration summary
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundColor.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildConfigIndicator(Icons.show_chart, ticker, 'Symbol'),
+                _buildConfigIndicator(
+                    Icons.access_time, timeframe, 'Timeframe'),
+                _buildConfigIndicator(
+                    Icons.analytics, selectedStrategyName, 'Strategy'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Run button
+          ElevatedButton.icon(
+            icon: const Icon(Icons.play_circle_fill, color: Colors.black),
+            label: const Text(
+              'RUN BACKTEST',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  fontSize: 16),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentColor,
+              minimumSize: const Size(double.infinity, 50), // Button height
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed:
+                _isLoading ? null : _runBacktest, // Disable while loading
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Configuration indicator widget - NEW
+  Widget _buildConfigIndicator(IconData icon, String value, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: AppTheme.accentColor),
+            const SizedBox(width: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.accentColor,
-          minimumSize: const Size(double.infinity, 50), // Button height
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppTheme.textSecondary,
+            fontSize: 10,
           ),
         ),
-        onPressed: _isLoading ? null : _runBacktest, // Disable while loading
-      ),
+      ],
     );
   }
 
@@ -904,17 +1208,22 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                     style: const TextStyle(color: AppTheme.textPrimary),
                     decoration: InputDecoration(
                       labelText: 'Stock/Symbol',
-                      labelStyle: const TextStyle(color: AppTheme.textSecondary),
-                      prefixIcon: const Icon(Icons.search, color: AppTheme.accentColor),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      labelStyle:
+                          const TextStyle(color: AppTheme.textSecondary),
+                      prefixIcon:
+                          const Icon(Icons.search, color: AppTheme.accentColor),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: AppTheme.accentColor),
+                        borderSide:
+                            const BorderSide(color: AppTheme.accentColor),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       filled: true,
                       fillColor: AppTheme.backgroundColor.withOpacity(0.5),
                     ),
-                    onChanged: (value) => _tickerController.text = value.toUpperCase(), // Auto-uppercase
+                    onChanged: (value) => _tickerController.text =
+                        value.toUpperCase(), // Auto-uppercase
                   ),
                   const SizedBox(height: 16),
 
@@ -928,15 +1237,20 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                     style: const TextStyle(color: AppTheme.textPrimary),
                     decoration: InputDecoration(
                       labelText: 'Backtest Period',
-                      labelStyle: const TextStyle(color: AppTheme.textSecondary),
-                      prefixIcon: const Icon(Icons.date_range, color: AppTheme.accentColor),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      labelStyle:
+                          const TextStyle(color: AppTheme.textSecondary),
+                      prefixIcon: const Icon(Icons.date_range,
+                          color: AppTheme.accentColor),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: const BorderSide(color: AppTheme.accentColor),
+                        borderSide:
+                            const BorderSide(color: AppTheme.accentColor),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       hintText: 'Example: 1 Year, 6 Months, 90 Days',
-                      hintStyle: TextStyle(color: AppTheme.textSecondary.withOpacity(0.5)),
+                      hintStyle: TextStyle(
+                          color: AppTheme.textSecondary.withOpacity(0.5)),
                       filled: true,
                       fillColor: AppTheme.backgroundColor.withOpacity(0.5),
                     ),
@@ -965,14 +1279,16 @@ class _BacktestingScreenState extends State<BacktestingScreen>
             decoration: BoxDecoration(
               color: AppTheme.cardColor,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.textSecondary.withOpacity(0.3)),
+              border:
+                  Border.all(color: AppTheme.textSecondary.withOpacity(0.3)),
             ),
             child: const Center(
               child: Text(
                 'Here you will be able to drag and drop indicators\n'
                 'and define conditions to create new strategies.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.textSecondary, fontStyle: FontStyle.italic),
+                style: TextStyle(
+                    color: AppTheme.textSecondary, fontStyle: FontStyle.italic),
               ),
             ),
           ),
@@ -988,16 +1304,20 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                   label: const Text('CREATE NEW STRATEGY'),
                   onPressed: () {
                     // TODO: Add new strategy creation logic
-                    _logger.info("Create New Strategy button clicked (Builder tab).");
+                    _logger.info(
+                        "Create New Strategy button clicked (Builder tab).");
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Strategy creation feature coming soon.')),
+                      const SnackBar(
+                          content:
+                              Text('Strategy creation feature coming soon.')),
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.positiveColor.withOpacity(0.8),
                     foregroundColor: Colors.black,
                     minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
@@ -1009,7 +1329,7 @@ class _BacktestingScreenState extends State<BacktestingScreen>
     );
   }
 
-  // Timeframe Selector Widget
+  // Timeframe Selector Widget (improved version)
   Widget _buildTimeframeSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1040,10 +1360,16 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                     });
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: isSelected ? AppTheme.accentColor : AppTheme.textSecondary,
-                    backgroundColor: isSelected ? AppTheme.accentColor.withOpacity(0.1) : AppTheme.backgroundColor.withOpacity(0.3),
+                    foregroundColor: isSelected
+                        ? AppTheme.accentColor
+                        : AppTheme.textSecondary,
+                    backgroundColor: isSelected
+                        ? AppTheme.accentColor.withOpacity(0.1)
+                        : AppTheme.backgroundColor.withOpacity(0.3),
                     side: BorderSide(
-                      color: isSelected ? AppTheme.accentColor : AppTheme.textSecondary.withOpacity(0.3),
+                      color: isSelected
+                          ? AppTheme.accentColor
+                          : AppTheme.textSecondary.withOpacity(0.3),
                       width: isSelected ? 1.5 : 1,
                     ),
                     shape: RoundedRectangleBorder(
@@ -1054,7 +1380,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                   child: Text(
                     timeframe,
                     style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -1070,7 +1397,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
   Widget _buildResultsTab() {
     if (_isLoading && _lastResult == null) {
       // If loading and no previous results
-      return const Center(child: CircularProgressIndicator(color: AppTheme.accentColor));
+      return const Center(
+          child: CircularProgressIndicator(color: AppTheme.accentColor));
     }
 
     if (_lastResult == null) {
@@ -1078,7 +1406,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.hourglass_empty, size: 60, color: AppTheme.textSecondary.withOpacity(0.5)),
+            Icon(Icons.hourglass_empty,
+                size: 60, color: AppTheme.textSecondary.withOpacity(0.5)),
             const SizedBox(height: 16),
             const Text(
               'No backtest results yet.',
@@ -1109,10 +1438,11 @@ class _BacktestingScreenState extends State<BacktestingScreen>
     // Show results
     final result = _lastResult!;
     final metrics = result.performanceMetrics;
-    
+
     // Try to find strategy name
     String strategyName = "Unknown Strategy";
-    if (_selectedStrategyIndex >= 0 && _selectedStrategyIndex < _strategies.length) {
+    if (_selectedStrategyIndex >= 0 &&
+        _selectedStrategyIndex < _strategies.length) {
       strategyName = _strategies[_selectedStrategyIndex].name;
     } else if (metrics.containsKey('strategy_name')) {
       strategyName = metrics['strategy_name']; // If coming from API
@@ -1133,7 +1463,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                 size: 28,
               ),
               const SizedBox(width: 12),
-              Expanded( // Prevent title overflow
+              Expanded(
+                // Prevent title overflow
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1178,7 +1509,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
           const SizedBox(height: 12),
           Container(
             height: 250, // Chart height
-            padding: const EdgeInsets.only(top: 16, right: 16, bottom: 8, left: 4), // Padding
+            padding: const EdgeInsets.only(
+                top: 16, right: 16, bottom: 8, left: 4), // Padding
             decoration: BoxDecoration(
               color: AppTheme.cardColor.withOpacity(0.8),
               borderRadius: BorderRadius.circular(16),
@@ -1194,12 +1526,16 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                 ? CustomPaint(
                     painter: EquityCurvePainter(
                       equityCurve: result.equityCurve,
-                      initialValue: metrics['initial_capital'] ?? 10000.0, // Initial capital
-                      benchmarkValue: metrics['buy_and_hold_return_pct'] ?? 0.0, // Buy & Hold return (if available)
+                      initialValue: metrics['initial_capital'] ??
+                          10000.0, // Initial capital
+                      benchmarkValue: metrics['buy_and_hold_return_pct'] ??
+                          0.0, // Buy & Hold return (if available)
                     ),
                     size: const Size(double.infinity, double.infinity),
                   )
-                : const Center(child: Text("Not enough data for chart.", style: TextStyle(color: AppTheme.textSecondary))),
+                : const Center(
+                    child: Text("Not enough data for chart.",
+                        style: TextStyle(color: AppTheme.textSecondary))),
           ),
           const SizedBox(height: 24),
 
@@ -1248,18 +1584,45 @@ class _BacktestingScreenState extends State<BacktestingScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0), // Top and bottom padding
+        padding:
+            const EdgeInsets.symmetric(vertical: 8.0), // Top and bottom padding
         child: Column(
           children: [
             // Header row
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: const [
-                  SizedBox(width: 25, child: Text('#', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold))),
-                  Expanded(flex: 3, child: Text('Entry / Exit Date', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold))),
-                  Expanded(flex: 2, child: Text('Entry / Exit Price', style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold))),
-                  Expanded(flex: 2, child: Text('Return %', textAlign: TextAlign.center, style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, fontWeight: FontWeight.bold))),
+                  SizedBox(
+                      width: 25,
+                      child: Text('#',
+                          style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold))),
+                  Expanded(
+                      flex: 3,
+                      child: Text('Entry / Exit Date',
+                          style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold))),
+                  Expanded(
+                      flex: 2,
+                      child: Text('Entry / Exit Price',
+                          style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold))),
+                  Expanded(
+                      flex: 2,
+                      child: Text('Return %',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold))),
                 ],
               ),
             ),
@@ -1280,7 +1643,9 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                     // TODO: Show screen or dialog with all trades
                     _logger.info("View All Trades clicked.");
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Full trade history view coming soon (${trades.length} trades)')),
+                      SnackBar(
+                          content: Text(
+                              'Full trade history view coming soon (${trades.length} trades)')),
                     );
                   },
                   child: Text(
@@ -1300,15 +1665,18 @@ class _BacktestingScreenState extends State<BacktestingScreen>
     // Null checks for values
     final num? returnPct = trade['return_pct'] as num?;
     final bool isPositive = returnPct != null && returnPct >= 0;
-    final Color returnColor = isPositive ? AppTheme.positiveColor : AppTheme.negativeColor;
+    final Color returnColor =
+        isPositive ? AppTheme.positiveColor : AppTheme.negativeColor;
     final String returnText = returnPct != null
         ? '${isPositive ? '+' : ''}${returnPct.toStringAsFixed(2)}%'
         : 'N/A';
 
     final String entryDate = _formatTradeDate(trade['entry_date'] as String?);
     final String exitDate = _formatTradeDate(trade['exit_date'] as String?);
-    final String entryPrice = (trade['entry_price'] as num?)?.toStringAsFixed(2) ?? 'N/A';
-    final String exitPrice = (trade['exit_price'] as num?)?.toStringAsFixed(2) ?? 'N/A';
+    final String entryPrice =
+        (trade['entry_price'] as num?)?.toStringAsFixed(2) ?? 'N/A';
+    final String exitPrice =
+        (trade['exit_price'] as num?)?.toStringAsFixed(2) ?? 'N/A';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
@@ -1370,7 +1738,7 @@ class _BacktestingScreenState extends State<BacktestingScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '\$entryPrice', // Entry Price
+                  '\$$entryPrice', // Entry Price
                   style: const TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 12,
@@ -1378,7 +1746,7 @@ class _BacktestingScreenState extends State<BacktestingScreen>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '\$exitPrice', // Exit Price
+                  '\$$exitPrice', // Exit Price
                   style: const TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 11,
@@ -1391,7 +1759,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
           // Return (centered pill)
           Expanded(
             flex: 2,
-            child: Center( // Center the pill
+            child: Center(
+              // Center the pill
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -1415,20 +1784,96 @@ class _BacktestingScreenState extends State<BacktestingScreen>
     );
   }
 
-  // Performance Summary Cards Widget
   Widget _buildPerformanceSummaryCards(Map<String, dynamic> metrics) {
-    // Null-safe retrieval of metrics with defaults
-    final double totalReturn = (metrics['total_return_pct'] as num?)?.toDouble() ?? 0.0;
-    final double annualizedReturn = (metrics['annualized_return_pct'] as num?)?.toDouble() ?? 0.0;
-    final double maxDrawdown = (metrics['max_drawdown_pct'] as num?)?.toDouble() ?? 0.0;
-    final double winRate = (metrics['win_rate_pct'] as num?)?.toDouble() ?? 0.0;
-    final double sharpeRatio = (metrics['sharpe_ratio'] as num?)?.toDouble() ?? 0.0;
-    final double sortinoRatio = (metrics['sortino_ratio'] as num?)?.toDouble() ?? 0.0; // Extra metric
+    // Use BacktestResult's helper methods for safe value retrieval
+    final double totalReturn =
+        BacktestResult.safeGetDouble(metrics, 'total_return_pct', 0.0);
+    final double annualizedReturn =
+        BacktestResult.safeGetDouble(metrics, 'annualized_return_pct', 0.0);
+    final double maxDrawdown =
+        BacktestResult.safeGetDouble(metrics, 'max_drawdown_pct', 0.0);
+    final double winRate =
+        BacktestResult.safeGetDouble(metrics, 'win_rate_pct', 0.0);
+    final double sharpeRatio =
+        BacktestResult.safeGetDouble(metrics, 'sharpe_ratio', 0.0);
+    final double sortinoRatio =
+        BacktestResult.safeGetDouble(metrics, 'sortino_ratio', 0.0);
     final int totalTrades = (metrics['total_trades'] as num?)?.toInt() ?? 0;
-    final String avgTradeReturn = (metrics['average_trade_return_pct'] as num?)?.toStringAsFixed(2) ?? 'N/A'; // Extra metric
+
+    // Special handling for average trade return
+    String avgTradeReturn = "N/A";
+    final avgTradeReturnVal =
+        metrics['avg_trade_return_pct'] ?? metrics['average_trade_return_pct'];
+    if (avgTradeReturnVal == "Infinity" ||
+        avgTradeReturnVal == double.infinity) {
+      avgTradeReturn = "∞";
+    } else if (avgTradeReturnVal == "-Infinity" ||
+        avgTradeReturnVal == double.negativeInfinity) {
+      avgTradeReturn = "-∞";
+    } else if (avgTradeReturnVal == null || avgTradeReturnVal == "NaN") {
+      avgTradeReturn = "N/A";
+    } else {
+      try {
+        if (avgTradeReturnVal is num) {
+          avgTradeReturn = avgTradeReturnVal.toStringAsFixed(2);
+        }
+      } catch (_) {
+        avgTradeReturn = "N/A";
+      }
+    }
+
+    // Special handling for profit factor (often Infinity)
+    String profitFactorStr;
+    final profitFactor = metrics['profit_factor'];
+    if (profitFactor == "Infinity" || profitFactor == double.infinity) {
+      profitFactorStr = "∞"; // Infinity symbol
+    } else {
+      profitFactorStr =
+          BacktestResult.safeGetDouble(metrics, 'profit_factor', 0.0)
+              .toStringAsFixed(2);
+    }
 
     final bool isTotalReturnPositive = totalReturn >= 0;
     final bool isAnnualizedReturnPositive = annualizedReturn >= 0;
+
+    // Format other values safely using the helper
+    final String totalReturnStr =
+        '${isTotalReturnPositive ? '+' : ''}${BacktestResult.formatMetricValue(totalReturn)}%';
+    final String annualReturnStr =
+        '${isAnnualizedReturnPositive ? '+' : ''}${BacktestResult.formatMetricValue(annualizedReturn)}%';
+    final String maxDrawdownStr =
+        '${BacktestResult.formatMetricValue(maxDrawdown)}%';
+    final String winRateStr =
+        '${BacktestResult.formatMetricValue(winRate, 1)}%';
+    final String sharpeRatioStr = BacktestResult.formatMetricValue(sharpeRatio);
+    final String sortinoRatioStr =
+        BacktestResult.formatMetricValue(sortinoRatio);
+
+    // Determine colors for avg trade return
+    Color avgTradeReturnColor;
+    if (avgTradeReturn == "N/A") {
+      avgTradeReturnColor = AppTheme.textSecondary;
+    } else if (avgTradeReturn == "∞") {
+      avgTradeReturnColor = AppTheme.positiveColor;
+    } else if (avgTradeReturn == "-∞") {
+      avgTradeReturnColor = AppTheme.negativeColor;
+    } else {
+      double? avgValue = double.tryParse(avgTradeReturn);
+      avgTradeReturnColor = (avgValue != null && avgValue >= 0)
+          ? AppTheme.positiveColor
+          : AppTheme.negativeColor;
+    }
+
+    // Determine color for profit factor
+    Color profitFactorColor;
+    if (profitFactorStr == "∞") {
+      profitFactorColor = AppTheme.positiveColor;
+    } else {
+      double? pfValue = double.tryParse(profitFactorStr);
+      profitFactorColor = (pfValue != null && pfValue > 1)
+          ? AppTheme.positiveColor
+          : AppTheme.negativeColor;
+    }
 
     // Cards in a 2xN grid layout
     return Column(
@@ -1438,9 +1883,11 @@ class _BacktestingScreenState extends State<BacktestingScreen>
             Expanded(
               child: _buildMetricCard(
                 'Total Return',
-                '${isTotalReturnPositive ? '+' : ''}${totalReturn.toStringAsFixed(2)}%',
+                totalReturnStr,
                 isTotalReturnPositive ? Icons.trending_up : Icons.trending_down,
-                isTotalReturnPositive ? AppTheme.positiveColor : AppTheme.negativeColor,
+                isTotalReturnPositive
+                    ? AppTheme.positiveColor
+                    : AppTheme.negativeColor,
                 tooltip: "Total return percentage over the backtest period.",
               ),
             ),
@@ -1448,9 +1895,11 @@ class _BacktestingScreenState extends State<BacktestingScreen>
             Expanded(
               child: _buildMetricCard(
                 'Annual Return',
-                '${isAnnualizedReturnPositive ? '+' : ''}${annualizedReturn.toStringAsFixed(2)}%',
+                annualReturnStr,
                 Icons.calendar_today,
-                isAnnualizedReturnPositive ? AppTheme.positiveColor : AppTheme.negativeColor,
+                isAnnualizedReturnPositive
+                    ? AppTheme.positiveColor
+                    : AppTheme.negativeColor,
                 tooltip: "Return percentage annualized.",
               ),
             ),
@@ -1462,7 +1911,7 @@ class _BacktestingScreenState extends State<BacktestingScreen>
             Expanded(
               child: _buildMetricCard(
                 'Max Drawdown',
-                '${maxDrawdown.toStringAsFixed(2)}%', // Usually negative but shown without sign
+                maxDrawdownStr,
                 Icons.arrow_downward,
                 AppTheme.negativeColor,
                 tooltip: "Largest percentage drop from peak to trough.",
@@ -1472,7 +1921,7 @@ class _BacktestingScreenState extends State<BacktestingScreen>
             Expanded(
               child: _buildMetricCard(
                 'Win Rate',
-                '${winRate.toStringAsFixed(1)}%',
+                winRateStr,
                 Icons.emoji_events_outlined, // Trophy icon
                 AppTheme.accentColor,
                 tooltip: "Percentage of trades that were profitable.",
@@ -1486,7 +1935,7 @@ class _BacktestingScreenState extends State<BacktestingScreen>
             Expanded(
               child: _buildMetricCard(
                 'Sharpe Ratio',
-                sharpeRatio.toStringAsFixed(2),
+                sharpeRatioStr,
                 Icons.speed, // Speedometer icon
                 Colors.amber.shade600,
                 tooltip: "Measures risk-adjusted return (higher is better).",
@@ -1495,11 +1944,12 @@ class _BacktestingScreenState extends State<BacktestingScreen>
             const SizedBox(width: 12),
             Expanded(
               child: _buildMetricCard(
-                'Sortino Ratio', // Extra Metric
-                sortinoRatio.toStringAsFixed(2),
+                'Sortino Ratio',
+                sortinoRatioStr,
                 Icons.filter_tilt_shift, // Different icon
                 Colors.purple.shade300,
-                tooltip: "Measures return against downside risk (higher is better).",
+                tooltip:
+                    "Measures return against downside risk (higher is better).",
               ),
             ),
           ],
@@ -1519,14 +1969,32 @@ class _BacktestingScreenState extends State<BacktestingScreen>
             const SizedBox(width: 12),
             Expanded(
               child: _buildMetricCard(
-                'Avg Trade Return', // Extra Metric
+                'Avg Trade Return',
                 '$avgTradeReturn%',
                 Icons.calculate_outlined,
-                double.tryParse(avgTradeReturn) == null ? AppTheme.textSecondary : 
-                  (double.parse(avgTradeReturn) >= 0 ? AppTheme.positiveColor : AppTheme.negativeColor),
+                avgTradeReturnColor,
                 tooltip: "Average return percentage per trade.",
               ),
             ),
+          ],
+        ),
+        // Optional - add Profit Factor card if space is available
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricCard(
+                'Profit Factor',
+                profitFactorStr,
+                Icons.balance, // Scale icon
+                profitFactorColor,
+                tooltip:
+                    "Ratio of gross profits to gross losses. Values above 1 indicate a profitable strategy.",
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Empty space or another metric
+            Expanded(child: Container()),
           ],
         ),
       ],
@@ -1534,7 +2002,9 @@ class _BacktestingScreenState extends State<BacktestingScreen>
   }
 
   // Single metric card widget
-  Widget _buildMetricCard(String title, String value, IconData icon, Color color, {String? tooltip}) {
+  Widget _buildMetricCard(
+      String title, String value, IconData icon, Color color,
+      {String? tooltip}) {
     Widget cardContent = Card(
       elevation: 2,
       shadowColor: Colors.black.withOpacity(0.3),
@@ -1546,13 +2016,16 @@ class _BacktestingScreenState extends State<BacktestingScreen>
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center, // Vertically center content
+          mainAxisAlignment:
+              MainAxisAlignment.center, // Vertically center content
           mainAxisSize: MainAxisSize.min, // Size card to content
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween, // Icon on right
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceBetween, // Icon on right
               children: [
-                Flexible( // Prevent title overflow
+                Flexible(
+                  // Prevent title overflow
                   child: Text(
                     title,
                     style: const TextStyle(
@@ -1602,7 +2075,8 @@ class _BacktestingScreenState extends State<BacktestingScreen>
   // Condition chip widget
   Widget _buildConditionChip(String type, String condition, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Smaller padding
+      padding: const EdgeInsets.symmetric(
+          horizontal: 8, vertical: 4), // Smaller padding
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12), // Rounder corners
@@ -1620,10 +2094,12 @@ class _BacktestingScreenState extends State<BacktestingScreen>
             ),
           ),
           const SizedBox(width: 4), // Less spacing
-          Flexible( // Prevent overflow
+          Flexible(
+            // Prevent overflow
             child: Text(
               condition,
-              style: const TextStyle(color: AppTheme.textPrimary, fontSize: 10), // Smaller font
+              style: const TextStyle(
+                  color: AppTheme.textPrimary, fontSize: 10), // Smaller font
               overflow: TextOverflow.ellipsis, // Truncate if needed
             ),
           ),
@@ -1641,11 +2117,13 @@ class _BacktestingScreenState extends State<BacktestingScreen>
     if (condition.containsKey('value') && condition['value'] != null) {
       // Format numeric value (if it's a number)
       if (condition['value'] is num) {
-        value = (condition['value'] as num).toStringAsFixed(1); // 1 decimal place
+        value =
+            (condition['value'] as num).toStringAsFixed(1); // 1 decimal place
       } else {
         value = condition['value'].toString();
       }
-    } else if (condition.containsKey('indicator2') && condition['indicator2'] != null) {
+    } else if (condition.containsKey('indicator2') &&
+        condition['indicator2'] != null) {
       value = condition['indicator2'].toString(); // Other indicator name
     }
 
@@ -1660,16 +2138,27 @@ class _BacktestingScreenState extends State<BacktestingScreen>
   // Format operator for display
   String _formatOperator(String op) {
     switch (op.toLowerCase()) {
-      case '>': return '>';
-      case '<': return '<';
-      case '=': case '==': return '='; // Equality
-      case '>=': return '≥'; // Greater than or equal
-      case '<=': return '≤'; // Less than or equal
-      case 'crosses': return 'crosses'; // General crossing
-      case 'crosses_above': return 'crosses above';
-      case 'crosses_below': return 'crosses below';
-      case '!=': return '≠'; // Not equal
-      default: return op; // Return unknown operator as-is
+      case '>':
+        return '>';
+      case '<':
+        return '<';
+      case '=':
+      case '==':
+        return '='; // Equality
+      case '>=':
+        return '≥'; // Greater than or equal
+      case '<=':
+        return '≤'; // Less than or equal
+      case 'crosses':
+        return 'crosses'; // General crossing
+      case 'crosses_above':
+        return 'crosses above';
+      case 'crosses_below':
+        return 'crosses below';
+      case '!=':
+        return '≠'; // Not equal
+      default:
+        return op; // Return unknown operator as-is
     }
   }
 
@@ -1762,7 +2251,10 @@ class EquityCurvePainter extends CustomPainter {
     final effectiveRange = (range <= 1e-6)
         ? actualInitialCapital * 0.2
         : range; // 20% of initial capital as default
-    minValue = max(0, minValue - effectiveRange * 0.1); // 10% padding below, but not below zero
+    minValue = max(
+        0,
+        minValue -
+            effectiveRange * 0.1); // 10% padding below, but not below zero
     maxValue = maxValue + effectiveRange * 0.1; // 10% padding above
     final finalRange = maxValue - minValue; // Final range after padding
 
