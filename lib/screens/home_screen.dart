@@ -8,8 +8,8 @@ import '../services/stock_api_service.dart' as api_service;
 import '../widgets/app_drawer.dart';
 import 'screener_screen.dart';
 import 'chart_screen.dart';
-import 'backtesting_screen.dart';
 import 'stock_reels_screen.dart';
+import 'backtesting_screen.dart'; // Bu satırı ekleyin
 
 /// ====================================================================
 ///  FeatureCard

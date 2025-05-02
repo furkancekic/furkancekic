@@ -9,6 +9,8 @@ class BacktestStrategy {
   final List<Map<String, dynamic>> buyConditions;
   final List<Map<String, dynamic>> sellConditions;
   final Map<String, dynamic>? performance; // Null for new strategies
+  final String?
+      notes; // Optional notes field added for specific strategy information
 
   BacktestStrategy({
     this.id,
@@ -18,6 +20,7 @@ class BacktestStrategy {
     required this.buyConditions,
     required this.sellConditions,
     this.performance,
+    this.notes,
   });
 
   // MongoDB integration: Handle ObjectId correctly
@@ -33,7 +36,7 @@ class BacktestStrategy {
       }
     }
 
-    // Handle indicators format - ensure it's a List of Maps
+    // Handle indicators format - ensure it's a List of Maps or strings
     List<dynamic> indicators = [];
     if (json.containsKey('indicators')) {
       if (json['indicators'] is List) {
@@ -49,12 +52,13 @@ class BacktestStrategy {
 
     return BacktestStrategy(
       id: id,
-      name: json['name'] ?? '',
+      name: json['name'] ?? 'Unnamed Strategy',
       description: json['description'] ?? '',
       indicators: indicators,
       buyConditions: buyConditions,
       sellConditions: sellConditions,
       performance: json['performance'],
+      notes: json['notes'],
     );
   }
 
@@ -84,19 +88,29 @@ class BacktestStrategy {
       'indicators': indicators,
       'buy_conditions': buyConditions,
       'sell_conditions': sellConditions,
-      // performance kısmını göndermeyin, bu sunucu tarafında hesaplanır
+      // Don't send performance, this is calculated server-side
     };
 
-    // Debug için JSON'ı konsola yazdır
+    // Add ID if present (for updates)
+    if (id != null) {
+      result['id'] = id;
+    }
+
+    // Add notes if present
+    if (notes != null) {
+      result['notes'] = notes;
+    }
+
+    // Debug: test the JSON is valid
     try {
-      // Objenin geçerli bir JSON olup olmadığını test et
+      // Test if the object can be properly serialized
       final jsonString = json.encode(result);
       final decodedBack = json.decode(jsonString);
 
-      // İki taraflı dönüşüm çalışıyorsa, veri uyumlu demektir
-      print('Strateji JSON dönüşümü başarılı: ${name}');
+      // If two-way conversion works, the data is compatible
+      print('Strategy JSON conversion successful: ${name}');
     } catch (e) {
-      print('UYARI: Strateji JSON dönüşümünde hata: $e');
+      print('WARNING: Strategy JSON conversion error: $e');
     }
 
     return result;
@@ -111,6 +125,7 @@ class BacktestStrategy {
     List<Map<String, dynamic>>? buyConditions,
     List<Map<String, dynamic>>? sellConditions,
     Map<String, dynamic>? performance,
+    String? notes,
   }) {
     return BacktestStrategy(
       id: id ?? this.id,
@@ -120,6 +135,7 @@ class BacktestStrategy {
       buyConditions: buyConditions ?? List.from(this.buyConditions),
       sellConditions: sellConditions ?? List.from(this.sellConditions),
       performance: performance ?? this.performance,
+      notes: notes ?? this.notes,
     );
   }
 
@@ -142,18 +158,22 @@ class BacktestResult {
 
   factory BacktestResult.fromJson(Map<String, dynamic> json) {
     // Handle performance metrics
-    final Map<String, dynamic> metrics = json['performance_metrics'] ?? {};
+    final Map<String, dynamic> metrics = json['performance_metrics'] is Map
+        ? Map<String, dynamic>.from(json['performance_metrics'])
+        : {};
 
     // Handle equity curve - ensure it's a List of Maps
     List<Map<String, dynamic>> equityCurve = [];
     if (json.containsKey('equity_curve') && json['equity_curve'] is List) {
-      equityCurve = List<Map<String, dynamic>>.from(json['equity_curve']);
+      equityCurve = List<Map<String, dynamic>>.from(
+          json['equity_curve'].map((e) => Map<String, dynamic>.from(e)));
     }
 
     // Handle trade history - ensure it's a List of Maps
     List<Map<String, dynamic>> tradeHistory = [];
     if (json.containsKey('trade_history') && json['trade_history'] is List) {
-      tradeHistory = List<Map<String, dynamic>>.from(json['trade_history']);
+      tradeHistory = List<Map<String, dynamic>>.from(
+          json['trade_history'].map((e) => Map<String, dynamic>.from(e)));
     }
 
     return BacktestResult(
@@ -163,13 +183,13 @@ class BacktestResult {
     );
   }
 
-  // Sonuçların özeti
+  // Results summary
   String get summary {
     final totalReturn = performanceMetrics['total_return_pct'] ?? 0.0;
     final winRate = performanceMetrics['win_rate_pct'] ?? 0.0;
     final totalTrades = performanceMetrics['total_trades'] ?? 0;
 
-    return 'Toplam Getiri: ${totalReturn.toStringAsFixed(2)}%, Kazanç Oranı: ${winRate.toStringAsFixed(2)}%, İşlemler: $totalTrades';
+    return 'Total Return: ${totalReturn.toStringAsFixed(2)}%, Win Rate: ${winRate.toStringAsFixed(2)}%, Trades: $totalTrades';
   }
 }
 

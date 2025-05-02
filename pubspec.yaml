@@ -26,6 +26,7 @@ dependencies:
   animations: ^2.0.7
   syncfusion_flutter_charts: ^29.1.38
   intl: ^0.18.1 # Or latest version
+  logging: ^1.1.0
   flutter_typeahead: ^5.2.0 # <--- ADD THIS LINE (Check pub.dev for the latest version)
 
 dev_dependencies:
