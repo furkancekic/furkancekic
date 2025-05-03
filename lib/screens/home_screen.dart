@@ -228,7 +228,8 @@ class CurvedNavigationBar extends StatelessWidget {
                   _buildNavItem(
                       context, 3, Icons.analytics_rounded, 'Backtest'),
                   _buildNavItem(context, 4, Icons.slideshow_rounded, 'Reels'),
-                  _buildNavItem(context, 5, Icons.account_balance_wallet, 'Portfolio'),
+                  _buildNavItem(
+                      context, 5, Icons.account_balance_wallet, 'Portfolio'),
                 ],
               ),
             ),
@@ -512,7 +513,13 @@ class _HomeContentState extends State<HomeContent> {
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppThemeExtension>();
 
-    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    // Temaya göre gradient renkleri al (bu satırı ekleyin)
+    final bgGradientColors = ext?.gradientBackgroundColors ??
+        [
+          Theme.of(context).scaffoldBackgroundColor,
+          Theme.of(context).scaffoldBackgroundColor,
+        ];
+
     final textPrim = ext?.textPrimary ?? AppTheme.textPrimary;
     final textSec = ext?.textSecondary ?? AppTheme.textSecondary;
     final accent = ext?.accentColor ?? AppTheme.accentColor;
@@ -523,7 +530,7 @@ class _HomeContentState extends State<HomeContent> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [bgColor, const Color(0xFF192138)],
+          colors: bgGradientColors, // Burayı değiştirin
         ),
       ),
       child: SafeArea(

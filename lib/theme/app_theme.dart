@@ -13,7 +13,7 @@ class AppTheme {
       negativeColor: Color(0xFFFF1744),
       warningColor: Color(0xFFFFD600),
     ),
-    
+
     // Mor paleti
     ColorPalette.purple: ThemeColors(
       primaryColor: Color(0xFF6200EA),
@@ -22,7 +22,7 @@ class AppTheme {
       negativeColor: Color(0xFFFF1744),
       warningColor: Color(0xFFFFD600),
     ),
-    
+
     // Yeşil paleti
     ColorPalette.green: ThemeColors(
       primaryColor: Color(0xFF2E7D32),
@@ -31,7 +31,7 @@ class AppTheme {
       negativeColor: Color(0xFFFF1744),
       warningColor: Color(0xFFFFD600),
     ),
-    
+
     // Turuncu paleti
     ColorPalette.orange: ThemeColors(
       primaryColor: Color(0xFFE65100),
@@ -40,7 +40,7 @@ class AppTheme {
       negativeColor: Color(0xFFFF1744),
       warningColor: Color(0xFFFFD600),
     ),
-    
+
     // Kırmızı paleti
     ColorPalette.red: ThemeColors(
       primaryColor: Color(0xFFB71C1C),
@@ -50,23 +50,23 @@ class AppTheme {
       warningColor: Color(0xFFFFD600),
     ),
   };
-  
+
   // Tema modları için arka plan renkleri
   static const Color _darkBackgroundColor = Color(0xFF121212);
   static const Color _darkCardColor = Color(0xFF1E1E1E);
   static const Color _darkCardColorLight = Color(0xFF2A2A2A);
-  
+
   static const Color _lightBackgroundColor = Color(0xFFF5F5F5);
   static const Color _lightCardColor = Color(0xFFFFFFFF);
   static const Color _lightCardColorLight = Color(0xFFF0F0F0);
-  
+
   // Tema modları için metin renkleri
   static const Color _darkTextPrimary = Colors.white;
   static const Color _darkTextSecondary = Color(0xFFB0B0B0);
-  
+
   static const Color _lightTextPrimary = Color(0xFF212121);
   static const Color _lightTextSecondary = Color(0xFF757575);
-  
+
   // Statik erişimler için mevcut renkler (geriye dönük uyumluluk için)
   static const Color primaryColor = Color(0xFF0D47A1);
   static const Color accentColor = Color(0xFF00E5FF);
@@ -78,26 +78,26 @@ class AppTheme {
   static const Color positiveColor = Color(0xFF00E676);
   static const Color negativeColor = Color(0xFFFF1744);
   static const Color warningColor = Color(0xFFFFD600);
-  
+
   static const List<Color> primaryGradient = [
     Color(0xFF0D47A1),
     Color(0xFF00E5FF),
   ];
-  
+
   // Karanlık tema oluştur (varsayılan tema - geriye dönük uyumluluk)
   static ThemeData get darkTheme {
     return getDarkTheme(ColorPalette.blue);
   }
-  
+
   // Karanlık tema oluştur (paletle birlikte)
   static ThemeData getDarkTheme(ColorPalette palette) {
     final colors = _themeColors[palette]!;
-    
+
     final List<Color> gradientColors = [
       colors.primaryColor,
       colors.accentColor,
     ];
-    
+
     return ThemeData.dark().copyWith(
       scaffoldBackgroundColor: _darkBackgroundColor,
       primaryColor: colors.primaryColor,
@@ -144,13 +144,15 @@ class AppTheme {
           color: _darkTextPrimary,
           fontWeight: FontWeight.w600,
         ),
-        titleLarge: TextStyle(color: _darkTextPrimary, fontWeight: FontWeight.w600),
+        titleLarge:
+            TextStyle(color: _darkTextPrimary, fontWeight: FontWeight.w600),
         titleMedium: TextStyle(color: _darkTextPrimary),
         titleSmall: TextStyle(color: _darkTextSecondary),
         bodyLarge: TextStyle(color: _darkTextPrimary),
         bodyMedium: TextStyle(color: _darkTextPrimary),
         bodySmall: TextStyle(color: _darkTextSecondary),
-        labelLarge: TextStyle(color: _darkTextPrimary, fontWeight: FontWeight.w600),
+        labelLarge:
+            TextStyle(color: _darkTextPrimary, fontWeight: FontWeight.w600),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -209,27 +211,31 @@ class AppTheme {
           textSecondary: _darkTextSecondary,
           gradientColors: gradientColors,
           isDark: true,
+          gradientBackgroundColors: [
+            _darkBackgroundColor,
+            const Color(0xFF192138), // Karanlık moda özel gradyan rengi
+          ],
         ),
       ],
     );
   }
-  
+
   // Aydınlık tema oluştur
   static ThemeData getLightTheme(ColorPalette palette) {
     final colors = _themeColors[palette]!;
-    
+
     final List<Color> gradientColors = [
       colors.primaryColor,
       colors.accentColor,
     ];
-    
+
     return ThemeData.light().copyWith(
       scaffoldBackgroundColor: _lightBackgroundColor,
       primaryColor: colors.primaryColor,
       colorScheme: ColorScheme.light(
         primary: colors.primaryColor,
         secondary: colors.accentColor,
-        background: _lightBackgroundColor, 
+        background: _lightBackgroundColor,
         surface: _lightCardColor,
       ),
       cardTheme: CardTheme(
@@ -269,13 +275,15 @@ class AppTheme {
           color: _lightTextPrimary,
           fontWeight: FontWeight.w600,
         ),
-        titleLarge: TextStyle(color: _lightTextPrimary, fontWeight: FontWeight.w600),
+        titleLarge:
+            TextStyle(color: _lightTextPrimary, fontWeight: FontWeight.w600),
         titleMedium: TextStyle(color: _lightTextPrimary),
         titleSmall: TextStyle(color: _lightTextSecondary),
         bodyLarge: TextStyle(color: _lightTextPrimary),
         bodyMedium: TextStyle(color: _lightTextPrimary),
         bodySmall: TextStyle(color: _lightTextSecondary),
-        labelLarge: TextStyle(color: _lightTextPrimary, fontWeight: FontWeight.w600),
+        labelLarge:
+            TextStyle(color: _lightTextPrimary, fontWeight: FontWeight.w600),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -334,6 +342,10 @@ class AppTheme {
           textSecondary: _lightTextSecondary,
           gradientColors: gradientColors,
           isDark: false,
+          gradientBackgroundColors: [
+            _lightBackgroundColor,
+            const Color(0xFFEDEDED), // Açık moda özel gradyan rengi
+          ],
         ),
       ],
     );
@@ -370,6 +382,8 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
   final Color textSecondary;
   final List<Color> gradientColors;
   final bool isDark;
+  // Yeni eklenen gradientBackgroundColors
+  final List<Color> gradientBackgroundColors;
 
   AppThemeExtension({
     required this.primaryColor,
@@ -383,6 +397,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
     required this.textSecondary,
     required this.gradientColors,
     required this.isDark,
+    required this.gradientBackgroundColors,
   });
 
   @override
@@ -398,6 +413,7 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
     Color? textSecondary,
     List<Color>? gradientColors,
     bool? isDark,
+    List<Color>? gradientBackgroundColors, // Bu satırı ekledik
   }) {
     return AppThemeExtension(
       primaryColor: primaryColor ?? this.primaryColor,
@@ -411,6 +427,8 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
       textSecondary: textSecondary ?? this.textSecondary,
       gradientColors: gradientColors ?? this.gradientColors,
       isDark: isDark ?? this.isDark,
+      gradientBackgroundColors: gradientBackgroundColors ??
+          this.gradientBackgroundColors, // Bu satırı ekledik
     );
   }
 
@@ -438,6 +456,13 @@ class AppThemeExtension extends ThemeExtension<AppThemeExtension> {
         Color.lerp(gradientColors[1], other.gradientColors[1], t)!,
       ],
       isDark: t < 0.5 ? isDark : other.isDark,
+      gradientBackgroundColors: [
+        // Bu bloğu ekledik
+        Color.lerp(
+            gradientBackgroundColors[0], other.gradientBackgroundColors[0], t)!,
+        Color.lerp(
+            gradientBackgroundColors[1], other.gradientBackgroundColors[1], t)!,
+      ],
     );
   }
 }
@@ -465,8 +490,9 @@ class GradientButton extends StatelessWidget {
   Widget build(BuildContext context) {
     // ThemeExtension'dan renkleri al
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
-    final colors = gradientColors ?? themeExtension?.gradientColors ?? 
-      [AppTheme.primaryColor, AppTheme.accentColor];
+    final colors = gradientColors ??
+        themeExtension?.gradientColors ??
+        [AppTheme.primaryColor, AppTheme.accentColor];
 
     return Container(
       width: width,
