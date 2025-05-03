@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'portfolio_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
 import '../widgets/mini_chart.dart';
@@ -108,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ChartScreen(),
     BacktestingScreen(),
     StockReelsScreen(),
+    PortfolioScreen(),
   ];
 
   @override
@@ -227,6 +228,7 @@ class CurvedNavigationBar extends StatelessWidget {
                   _buildNavItem(
                       context, 3, Icons.analytics_rounded, 'Backtest'),
                   _buildNavItem(context, 4, Icons.slideshow_rounded, 'Reels'),
+                  _buildNavItem(context, 5, Icons.account_balance_wallet, 'Portfolio'),
                 ],
               ),
             ),
@@ -307,8 +309,8 @@ class _HomeContentState extends State<HomeContent> {
   Future<void> fetchData() async {
     try {
       // Make network request using stock_api_service.dart
-      final result =
-          await api_service.StockApiService.getWatchlistStocks(); // Replace with your actual method
+      final result = await api_service.StockApiService
+          .getWatchlistStocks(); // Replace with your actual method
 
       // Check if the widget is still mounted before calling setState
       if (mounted) {

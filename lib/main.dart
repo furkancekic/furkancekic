@@ -5,6 +5,11 @@ import 'screens/home_screen.dart';
 // HomeScreen import edildi
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
+import '../screens/screener_screen.dart';
+import '../screens/chart_screen.dart';
+import '../screens/stock_reels_screen.dart';
+import '../screens/backtesting_screen.dart'; // Bu satırı ekleyin
+import '../screens/theme_settings_screen.dart'; // Bu satırı ekleyin
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,15 +44,16 @@ class MyApp extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
-        title: 'Modern Finance',
-        debugShowCheckedModeBanner: false,
-        themeMode: themeProvider.themeMode,
-        theme: AppTheme.getLightTheme(themeProvider.colorPalette),
-        darkTheme: AppTheme.getDarkTheme(themeProvider.colorPalette),
-        home: const HomeScreen(),
+        // ...
+        // home: const HomeScreen(), // Bu satırı kaldırın
+        initialRoute: '/',
         routes: {
-          '/': (context) =>
-              const HomeScreen(), // Ana sayfa olarak HomeScreen ayarlandı
+          '/': (context) => const HomeScreen(),
+          '/chart': (context) => const ChartScreen(),
+          '/screener': (context) => const ScreenerScreen(),
+          '/backtest': (context) => const BacktestingScreen(),
+          '/reels': (context) => const StockReelsScreen(),
+          '/theme': (context) => const ThemeSettingsScreen(),
         });
   }
 }

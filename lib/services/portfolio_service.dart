@@ -8,7 +8,7 @@ import '../models/transaction.dart';
 class PortfolioService {
   // Base URL for the API
   static const String baseUrl =
-      'https://replacing-piece-wc-fit.trycloudflare.com/api';
+      'https://equity-moldova-demo-lee.trycloudflare.com/api';
 
   // --- PORTFOLIO OPERATIONS ---
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../screens/theme_settings_screen.dart';
+import '../screens/portfolio_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({Key? key}) : super(key: key);
@@ -98,6 +99,20 @@ class AppDrawer extends StatelessWidget {
               // Stock Reel ekranı navigasyonu
             },
           ),
+          ListTile(
+            leading: Icon(Icons.account_balance_wallet, color: accentColor),
+            title: Text('Portfolio', style: TextStyle(color: textPrimary)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PortfolioScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
           const Divider(),
           ListTile(
             leading: Icon(Icons.color_lens, color: accentColor),

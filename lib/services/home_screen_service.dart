@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 class StockApiService {
   // Base URL for the API - change to your actual server address in production
   static const String baseUrl =
-      'https://replacing-piece-wc-fit.trycloudflare.com/api';
+      'https://equity-moldova-demo-lee.trycloudflare.com/api';
 
   // Get market indices data
   static Future<List<MarketIndex>> getMarketIndices() async {
