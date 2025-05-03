@@ -272,6 +272,43 @@ class StockApiService {
     ];
   }
 
+  static Future<StockInfo> getStockInfo(String ticker) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/stock?ticker=$ticker&timeframe=1D'));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // Get company info data
+        final companyInfo = data['company_info'] ?? {};
+
+        // Create StockInfo object
+        return StockInfo(
+          ticker: ticker,
+          name: companyInfo['company_name'] ?? ticker,
+          price: companyInfo['price']?.toDouble() ?? 0.0,
+          priceChange: companyInfo['price_change']?.toDouble() ?? 0.0,
+          percentChange: companyInfo['price_change_percent']?.toDouble() ?? 0.0,
+          chartData: [], // We don't need chart data for this use case
+        );
+      } else {
+        throw Exception('Failed to load stock info');
+      }
+    } catch (e) {
+      print('Error fetching stock info for $ticker: $e');
+      // Return a default stock info object
+      return StockInfo(
+        ticker: ticker,
+        name: ticker,
+        price: 0.0,
+        priceChange: 0.0,
+        percentChange: 0.0,
+        chartData: [],
+      );
+    }
+  }
+
   // Helper function for sample watchlist stocks
   static List<StockInfo> _getSampleWatchlistStocks() {
     return [

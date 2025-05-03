@@ -40,7 +40,7 @@ class _AddPortfolioScreenState extends State<AddPortfolioScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Portfolio created successfully'),
             backgroundColor: AppTheme.positiveColor,
           ),
@@ -122,7 +122,61 @@ class _AddPortfolioScreenState extends State<AddPortfolioScreen> {
                           color: textPrim,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _nameController,
+                        style: TextStyle(color: textPrim),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: AppTheme.backgroundColor.withOpacity(0.3),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                          hintText: 'Enter portfolio name',
+                          hintStyle: TextStyle(
+                            color: AppTheme.textSecondary.withOpacity(0.5),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Portfolio name is required';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Description (Optional)',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textPrim,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _descriptionController,
+                        style: TextStyle(color: textPrim),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: AppTheme.backgroundColor.withOpacity(0.3),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                          hintText: 'Enter a description',
+                          hintStyle: TextStyle(
+                            color: AppTheme.textSecondary.withOpacity(0.5),
+                          ),
+                        ),
+                        maxLines: 3,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
                 
                 // Create button
                 SizedBox(
@@ -209,58 +263,4 @@ class _AddPortfolioScreenState extends State<AddPortfolioScreen> {
       ),
     );
   }
-} 8),
-                      TextFormField(
-                        controller: _nameController,
-                        style: TextStyle(color: textPrim),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: AppTheme.backgroundColor.withOpacity(0.3),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
-                          hintText: 'Enter portfolio name',
-                          hintStyle: TextStyle(
-                            color: AppTheme.textSecondary.withOpacity(0.5),
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Portfolio name is required';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Description (Optional)',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: textPrim,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _descriptionController,
-                        style: TextStyle(color: textPrim),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: AppTheme.backgroundColor.withOpacity(0.3),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
-                          hintText: 'Enter a description',
-                          hintStyle: TextStyle(
-                            color: AppTheme.textSecondary.withOpacity(0.5),
-                          ),
-                        ),
-                        maxLines: 3,
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height:
+}

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
+import '../widgets/mini_chart.dart';
 import '../models/portfolio.dart';
 import '../models/position.dart';
 import '../services/portfolio_service.dart';
@@ -504,19 +505,21 @@ class _PortfolioDetailScreenState extends State<PortfolioDetailScreen> {
                             LineChartBarData(
                               spots: _createChartSpots(),
                               isCurved: true,
-                              colors: [AppTheme.accentColor],
+                              color: AppTheme
+                                  .accentColor, // Changed from colors to color
                               barWidth: 3,
                               isStrokeCapRound: true,
                               dotData: const FlDotData(show: false),
                               belowBarData: BarAreaData(
                                 show: true,
-                                colors: [
-                                  AppTheme.accentColor.withOpacity(0.3),
-                                  AppTheme.accentColor.withOpacity(0.0),
-                                ],
-                                gradientColorStops: [0.5, 1.0],
-                                gradientFrom: const Offset(0, 0),
-                                gradientTo: const Offset(0, 1),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppTheme.accentColor.withOpacity(0.3),
+                                    AppTheme.accentColor.withOpacity(0.0),
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
                               ),
                             ),
                           ],

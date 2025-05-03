@@ -527,19 +527,22 @@ class _PositionDetailScreenState extends State<PositionDetailScreen> {
                         LineChartBarData(
                           spots: _createChartSpots(),
                           isCurved: true,
-                          colors: [accent],
+                          color: accent,
                           barWidth: 3,
                           isStrokeCapRound: true,
                           dotData: const FlDotData(show: false),
                           belowBarData: BarAreaData(
                             show: true,
-                            colors: [
-                              accent.withOpacity(0.3),
-                              accent.withOpacity(0.0),
-                            ],
-                            gradientColorStops: [0.5, 1.0],
-                            gradientFrom: const Offset(0, 0),
-                            gradientTo: const Offset(0, 1),
+                            // Replace the three incorrect parameters with gradient
+                            gradient: LinearGradient(
+                              colors: [
+                                accent.withOpacity(0.3),
+                                accent.withOpacity(0.0),
+                              ],
+                              stops: [0.5, 1.0],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
                           ),
                         ),
                       ],

@@ -7,6 +7,7 @@ import '../models/portfolio.dart';
 import '../services/portfolio_service.dart';
 import 'portfolio_detail_screen.dart';
 import 'add_portfolio_screen.dart';
+import '../widgets/mini_chart.dart';
 
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({Key? key}) : super(key: key);
