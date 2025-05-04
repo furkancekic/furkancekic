@@ -12,7 +12,7 @@ class BacktestService {
 
   // Base URL for the API
   static const String baseUrl =
-      'https://equity-moldova-demo-lee.trycloudflare.com/api';
+      'https://feof-all-base-complimentary.trycloudflare.com/api';
 
   /// Static class initialization for logging
   static void initialize() {

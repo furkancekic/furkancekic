@@ -6,7 +6,7 @@ import '../models/indicator.dart';
 class ChartService {
   // API'nin base URL'i - Kendi sunucu adresinizle değiştirin
   static const String baseUrl =
-      'https://equity-moldova-demo-lee.trycloudflare.com/api';
+      'https://feof-all-base-complimentary.trycloudflare.com/api';
 
   // Tarihsel veri almak için API çağrısı
   static Future<List<CandleData>> getHistoricalData(

@@ -8,7 +8,7 @@ import '../models/transaction.dart';
 class PortfolioService {
   // Base URL for the API
   static const String baseUrl =
-      'https://equity-moldova-demo-lee.trycloudflare.com/api';
+      'https://feof-all-base-complimentary.trycloudflare.com/api';
 
   // --- PORTFOLIO OPERATIONS ---
 
@@ -192,6 +192,55 @@ class PortfolioService {
       position.performanceData = _generateMockPerformanceData(timeframe);
 
       return position;
+    }
+  }
+
+  static Future<PerformanceData> getTotalPortfoliosPerformance(
+      String timeframe) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/portfolios/total-performance?timeframe=$timeframe'),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+
+        if (jsonData['status'] == 'success' && jsonData['data'] != null) {
+          return PerformanceData.fromJson(jsonData['data']);
+        } else {
+          throw Exception(
+              jsonData['message'] ?? 'Failed to load total performance data');
+        }
+      } else {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+    } catch (e) {
+      // Return mock data for now (for development)
+      return PerformanceData(
+        timeframe: timeframe,
+        data: _generateMockPerformancePoints(timeframe),
+      );
+    }
+  }
+
+  static Future<double?> getHistoricalPrice(
+      String ticker, DateTime date) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/stock-historical-price?ticker=$ticker&date=${date.toIso8601String()}'),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        if (jsonData['status'] == 'success' && jsonData['price'] != null) {
+          return jsonData['price'].toDouble();
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching historical price: $e');
+      return null;
     }
   }
 
@@ -394,6 +443,67 @@ class PortfolioService {
         timeframe: timeframe,
         data: _generateMockPerformancePoints(timeframe),
       );
+    }
+  }
+
+  // --- BENCHMARK COMPARISON FEATURE ---
+
+  /// Get benchmark performance data
+  static Future<BenchmarkPerformanceData> getBenchmarkPerformance(
+    String benchmarkTicker,
+    String timeframe,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/benchmark-performance?ticker=$benchmarkTicker&timeframe=$timeframe'),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+
+        if (jsonData['status'] == 'success' && jsonData['data'] != null) {
+          return BenchmarkPerformanceData.fromJson(jsonData['data']);
+        } else {
+          throw Exception(
+              jsonData['message'] ?? 'Failed to load benchmark data');
+        }
+      } else {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+    } catch (e) {
+      // Return mock data for now (for development)
+      return BenchmarkPerformanceData(
+        ticker: benchmarkTicker,
+        name: _getBenchmarkName(benchmarkTicker),
+        timeframe: timeframe,
+        data: _generateMockPerformancePoints(timeframe),
+        startValue: 100.0,
+        endValue: 105.0,
+        percentChange: 5.0,
+      );
+    }
+  }
+
+  // Helper method to get benchmark name
+  static String _getBenchmarkName(String ticker) {
+    switch (ticker) {
+      case '^GSPC':
+        return 'S&P 500';
+      case '^IXIC':
+        return 'NASDAQ';
+      case '^DJI':
+        return 'Dow Jones';
+      case '^RUT':
+        return 'Russell 2000';
+      case '^XU100':
+        return 'BIST 100';
+      case 'SPY':
+        return 'S&P 500 ETF';
+      case 'QQQ':
+        return 'NASDAQ 100 ETF';
+      default:
+        return ticker;
     }
   }
 
@@ -656,6 +766,41 @@ class PerformancePoint {
     return PerformancePoint(
       date: DateTime.parse(json['date']),
       value: json['value'].toDouble(),
+    );
+  }
+}
+
+/// Class to store benchmark performance data
+class BenchmarkPerformanceData {
+  final String ticker;
+  final String name;
+  final String timeframe;
+  final List<PerformancePoint> data;
+  final double startValue;
+  final double endValue;
+  final double percentChange;
+
+  BenchmarkPerformanceData({
+    required this.ticker,
+    required this.name,
+    required this.timeframe,
+    required this.data,
+    required this.startValue,
+    required this.endValue,
+    required this.percentChange,
+  });
+
+  factory BenchmarkPerformanceData.fromJson(Map<String, dynamic> json) {
+    return BenchmarkPerformanceData(
+      ticker: json['ticker'] ?? '',
+      name: json['name'] ?? '',
+      timeframe: json['timeframe'] ?? '',
+      data: (json['data'] as List<dynamic>)
+          .map((pointJson) => PerformancePoint.fromJson(pointJson))
+          .toList(),
+      startValue: (json['start_value'] ?? 0.0).toDouble(),
+      endValue: (json['end_value'] ?? 0.0).toDouble(),
+      percentChange: (json['percent_change'] ?? 0.0).toDouble(),
     );
   }
 }
