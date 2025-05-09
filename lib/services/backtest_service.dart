@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/backtest_models.dart';
 import 'package:logging/logging.dart';
 import 'dart:async';
+import '../src/config.dart';
 
 /// Backtest API service class for handling strategy management and backtest operations
 class BacktestService {
@@ -10,9 +11,12 @@ class BacktestService {
   static final _logger = Logger('BacktestService');
   static bool _isInitialized = false;
 
-  // Base URL for the API
-  static const String baseUrl =
-      'https://feof-all-base-complimentary.trycloudflare.com/api';
+  // artık burada sabit URL yok
+  final String _baseUrl;
+
+  // constructor: eğer baseUrl verilmezse Config.baseUrl kullanılır
+  BacktestService({String? baseUrl}) : _baseUrl = baseUrl ?? Config.baseUrl;
+  static String get baseUrl => Config.baseUrl;
 
   /// Static class initialization for logging
   static void initialize() {

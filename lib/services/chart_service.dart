@@ -2,11 +2,15 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/candle_data.dart';
 import '../models/indicator.dart';
+import '../src/config.dart';
 
 class ChartService {
   // API'nin base URL'i - Kendi sunucu adresinizle değiştirin
-  static const String baseUrl =
-      'https://feof-all-base-complimentary.trycloudflare.com/api';
+  final String _baseUrl;
+
+  // constructor: eğer baseUrl verilmezse Config.baseUrl kullanılır
+  ChartService({String? baseUrl}) : _baseUrl = baseUrl ?? Config.baseUrl;
+  static String get baseUrl => Config.baseUrl;
 
   // Tarihsel veri almak için API çağrısı
   static Future<List<CandleData>> getHistoricalData(

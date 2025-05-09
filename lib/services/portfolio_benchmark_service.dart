@@ -2,12 +2,16 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/portfolio.dart';
+import '../src/config.dart';
 
 /// Service for handling benchmark comparisons for portfolios
 class PortfolioBenchmarkService {
   // Base URL for the API
-  static const String baseUrl =
-      'https://feof-all-base-complimentary.trycloudflare.com/api';
+  final String _baseUrl;
+  // constructor: eğer baseUrl verilmezse Config.baseUrl kullanılır
+  PortfolioBenchmarkService({String? baseUrl})
+      : _baseUrl = baseUrl ?? Config.baseUrl;
+  static String get baseUrl => Config.baseUrl;
 
   /// Get benchmark performance data for comparison with portfolio
   /// Benchmarks include major indices like S&P 500, NASDAQ, etc.

@@ -4,11 +4,14 @@ import 'package:http/http.dart' as http;
 import '../models/portfolio.dart';
 import '../models/position.dart';
 import '../models/transaction.dart';
+import '../src/config.dart';
 
 class PortfolioService {
   // Base URL for the API
-  static const String baseUrl =
-      'https://feof-all-base-complimentary.trycloudflare.com/api';
+  final String _baseUrl;
+  // constructor: eğer baseUrl verilmezse Config.baseUrl kullanılır
+  PortfolioService({String? baseUrl}) : _baseUrl = baseUrl ?? Config.baseUrl;
+  static String get baseUrl => Config.baseUrl;
 
   // --- PORTFOLIO OPERATIONS ---
 

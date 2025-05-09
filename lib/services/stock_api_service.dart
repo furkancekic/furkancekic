@@ -1,11 +1,14 @@
 // services/stock_api_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../src/config.dart';
 
 class StockApiService {
   // Base URL for the API
-  static const String baseUrl =
-      'https://feof-all-base-complimentary.trycloudflare.com/api';
+  final String _baseUrl;
+  // constructor: eğer baseUrl verilmezse Config.baseUrl kullanılır
+  StockApiService({String? baseUrl}) : _baseUrl = baseUrl ?? Config.baseUrl;
+  static String get baseUrl => Config.baseUrl;
 
   // Get market indices data
   static Future<List<MarketIndex>> getMarketIndices() async {
