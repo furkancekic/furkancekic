@@ -1,4 +1,4 @@
-// screens/portfolio_screen.dart
+// Updated portfolio_screen.dart without pie charts, with benchmark comparison feature
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
@@ -8,9 +8,9 @@ import '../services/portfolio_service.dart';
 import 'portfolio_detail_screen.dart';
 import 'add_portfolio_screen.dart';
 import '../widgets/mini_chart.dart';
-import '../widgets/benchmark_comparison_chart.dart';
-import '../widgets/interactive_pie_chart.dart';
-import '../models/position.dart';
+import 'package:fl_chart/fl_chart.dart';
+import '../utils/logger.dart';
+import 'benchmark_comparison_screen.dart'; // Import the new screen
 
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({Key? key}) : super(key: key);
@@ -24,14 +24,46 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   List<Portfolio> _portfolios = [];
   String _selectedTimeframe = '1M'; // Default to 1 month view
   final List<String> _timeframes = ['1W', '1M', '3M', '6M', '1Y', 'All'];
+  final _logger = AppLogger('PortfolioScreen');
+  // Chart related fields
+  List<PerformancePoint> _totalPerformanceData = [];
   List<PerformancePoint> _selectedPortfolioPerformanceData = [];
   String? _selectedPortfolioId; // null means showing total portfolio
   bool _isLoadingChart = true;
-  
+
   @override
   void initState() {
     super.initState();
     _loadPortfolios();
+  }
+
+  Future<void> _loadPortfolios() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final portfolios = await PortfolioService.getPortfolios();
+      setState(() {
+        _portfolios = portfolios;
+        _isLoading = false;
+      });
+
+      // Load performance data after portfolios
+      _loadPerformanceData();
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load portfolios: $e'),
+            backgroundColor: AppTheme.negativeColor,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadPerformanceData() async {
@@ -42,11 +74,10 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     try {
       if (_selectedPortfolioId == null) {
         // Load total portfolio performance
-        final totalPerformance =
-            await PortfolioService.getTotalPortfoliosPerformance(
-                _selectedTimeframe);
+        final totalPerformance = await _calculateTotalPortfolioPerformance();
         setState(() {
-          _selectedPortfolioPerformanceData = totalPerformance.data;
+          _totalPerformanceData = totalPerformance;
+          _selectedPortfolioPerformanceData = totalPerformance;
           _isLoadingChart = false;
         });
       } else {
@@ -76,41 +107,41 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     }
   }
 
-  // Add this method to get the total value of all portfolios
-  double _getTotalValueOfAllPortfolios() {
-    double total = 0;
-    for (var portfolio in _portfolios) {
-      if (portfolio.totalValue != null) {
-        total += portfolio.totalValue!;
-      }
-    }
-    return total;
-  }
-
-  Future<void> _loadPortfolios() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+  Future<List<PerformancePoint>> _calculateTotalPortfolioPerformance() async {
     try {
-      final portfolios = await PortfolioService.getPortfolios();
-      setState(() {
-        _portfolios = portfolios;
-        _isLoading = false;
-      });
-      _loadPerformanceData(); // Load performance data after portfolios are loaded
+      final performance = await PortfolioService.getTotalPortfoliosPerformance(
+          _selectedTimeframe);
+      return performance.data;
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load portfolios: $e'),
-            backgroundColor: AppTheme.negativeColor,
-          ),
-        );
+      _logger.severe('Error calculating total portfolio performance: $e');
+
+      // Fallback to local calculation if API fails
+      final allPerformances = <DateTime, double>{};
+
+      for (var portfolio in _portfolios) {
+        if (portfolio.id != null) {
+          final performance = await PortfolioService.getPortfolioPerformance(
+            portfolio.id!,
+            _selectedTimeframe,
+          );
+
+          for (var point in performance.data) {
+            allPerformances.update(
+              point.date,
+              (value) => value + point.value,
+              ifAbsent: () => point.value,
+            );
+          }
+        }
       }
+
+      // Convert to sorted list
+      final totalPerformance = allPerformances.entries
+          .map((e) => PerformancePoint(date: e.key, value: e.value))
+          .toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
+
+      return totalPerformance;
     }
   }
 
@@ -135,285 +166,439 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
       _loadPortfolios(); // Refresh when returning
     });
   }
-
-  // Yeni eklenen metod: Portföyün pie chart modalını göster
-  void _showPortfolioPieChartModal(Portfolio portfolio) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.85,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).extension<AppThemeExtension>()?.cardColor ?? 
-                      AppTheme.cardColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-              ),
-              child: Column(
-                children: [
-                  // Pull handle
-                  Container(
-                    margin: EdgeInsets.only(top: 12, bottom: 12),
-                    height: 4,
-                    width: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Asset Allocation',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).extension<AppThemeExtension>()?.textPrimary ??
-                                        AppTheme.textPrimary,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                portfolio.name,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Theme.of(context).extension<AppThemeExtension>()?.textSecondary ??
-                                        AppTheme.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                          color: Theme.of(context).extension<AppThemeExtension>()?.textPrimary ??
-                                AppTheme.textPrimary,
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  Divider(),
-                  
-                  // Portfolio value
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Total Value: ',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(context).extension<AppThemeExtension>()?.textSecondary ??
-                                  AppTheme.textSecondary,
-                          ),
-                        ),
-                        Text(
-                          '\$${portfolio.totalValue?.toStringAsFixed(2) ?? '0.00'}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).extension<AppThemeExtension>()?.textPrimary ??
-                                  AppTheme.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Pie chart (taking most of the modal space)
-                  Expanded(
-                    child: InteractivePieChart(
-                      portfolio: portfolio,
-                      size: MediaQuery.of(context).size.width * 0.8,
-                      showPercentage: true,
-                      showLabels: true,
-                    ),
-                  ),
-                  
-                  // Bottom padding
-                  SizedBox(height: 24),
-                ],
-              ),
-            );
-          },
-        );
-      },
+  
+  void _navigateToBenchmarkComparison([Portfolio? portfolio]) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BenchmarkComparisonScreen(portfolio: portfolio),
+      ),
     );
   }
 
-  // Aynı şekilde toplam portföy dağılımını gösteren modal
-  void _showTotalPortfolioPieChartModal() {
-    // Tüm pozisyonları birleştir
-    final allPositions = <Position>[];
-    for (var portfolio in _portfolios) {
-      allPositions.addAll(portfolio.positions);
+  Widget _buildPerformanceChart() {
+    final ext = Theme.of(context).extension<AppThemeExtension>();
+    final accent = ext?.accentColor ?? AppTheme.accentColor;
+    final cardColor = ext?.cardColor ?? AppTheme.cardColor;
+    final textPrimary = ext?.textPrimary ?? AppTheme.textPrimary;
+    final textSecondary = ext?.textSecondary ?? AppTheme.textSecondary;
+    final positiveColor = ext?.positiveColor ?? AppTheme.positiveColor;
+    final negativeColor = ext?.negativeColor ?? AppTheme.negativeColor;
+
+    if (_isLoadingChart) {
+      return FuturisticCard(
+        child: SizedBox(
+          height: 300,
+          child: Center(
+            child: CircularProgressIndicator(color: accent),
+          ),
+        ),
+      );
     }
 
-    // Birleştirilmiş portföy nesnesi oluştur
-    final combinedPortfolio = Portfolio(
-      id: 'combined',
-      name: 'Total Portfolio',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      totalValue: _getTotalValueOfAllPortfolios(),
-      positions: allPositions,
-    );
+    if (_selectedPortfolioPerformanceData.isEmpty) {
+      return FuturisticCard(
+        child: SizedBox(
+          height: 300,
+          child: Center(
+            child: Text(
+              'No performance data available',
+              style: TextStyle(color: textSecondary),
+            ),
+          ),
+        ),
+      );
+    }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.85,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).extension<AppThemeExtension>()?.cardColor ?? 
-                      AppTheme.cardColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+    // Calculate performance metrics
+    final firstValue = _selectedPortfolioPerformanceData.first.value;
+    final lastValue = _selectedPortfolioPerformanceData.last.value;
+    final change = lastValue - firstValue;
+    final changePercent = firstValue > 0 ? (change / firstValue) * 100 : 0;
+    final isPositive = change >= 0;
+
+    return FuturisticCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Portfolio selector
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Portfolio Performance',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
+                      ),
+                    ),
+                    // Benchmark Comparison Button
+                    TextButton.icon(
+                      onPressed: () {
+                        // Navigate to benchmark comparison with current selection
+                        if (_selectedPortfolioId != null) {
+                          final selectedPortfolio = _portfolios.firstWhere(
+                            (p) => p.id == _selectedPortfolioId,
+                            orElse: () => _portfolios.first,
+                          );
+                          _navigateToBenchmarkComparison(selectedPortfolio);
+                        } else {
+                          _navigateToBenchmarkComparison();
+                        }
+                      },
+                      icon: Icon(Icons.compare_arrows, color: accent, size: 18),
+                      label: Text(
+                        'Compare to Benchmark',
+                        style: TextStyle(
+                          color: accent,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Portfolio dropdown
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.backgroundColor.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: accent.withOpacity(0.3)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      value: _selectedPortfolioId,
+                      isExpanded: true,
+                      dropdownColor: cardColor,
+                      icon: Icon(Icons.arrow_drop_down, color: accent),
+                      style: TextStyle(color: textPrimary),
+                      items: [
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text(
+                            'All Portfolios',
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontWeight: _selectedPortfolioId == null
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                        ..._portfolios.map((portfolio) {
+                          return DropdownMenuItem<String?>(
+                            value: portfolio.id,
+                            child: Text(
+                              portfolio.name,
+                              style: TextStyle(
+                                color: textPrimary,
+                                fontWeight: _selectedPortfolioId == portfolio.id
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                      onChanged: (String? value) {
+                        setState(() {
+                          _selectedPortfolioId = value;
+                        });
+                        _loadPerformanceData();
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Performance metrics
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Current Value',
+                      style: TextStyle(color: textSecondary, fontSize: 12),
+                    ),
+                    Text(
+                      '\$${lastValue.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Return ($_selectedTimeframe)',
+                      style: TextStyle(color: textSecondary, fontSize: 12),
+                    ),
+                    Text(
+                      '${isPositive ? '+' : ''}${changePercent.toStringAsFixed(2)}%',
+                      style: TextStyle(
+                        color: isPositive ? positiveColor : negativeColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Chart
+          SizedBox(
+            height: 200,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: LineChart(
+                LineChartData(
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: (lastValue - firstValue).abs() / 5,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: textSecondary.withOpacity(0.1),
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
+                  titlesData: FlTitlesData(
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 32,
+                        interval: _selectedPortfolioPerformanceData.length / 5,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index < 0 ||
+                              index >=
+                                  _selectedPortfolioPerformanceData.length) {
+                            return const SizedBox.shrink();
+                          }
+
+                          final date =
+                              _selectedPortfolioPerformanceData[index].date;
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              _getDateLabel(date),
+                              style: TextStyle(
+                                color: textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 60,
+                        interval: (lastValue - firstValue).abs() / 5,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '\$${value.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 10,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: _buildChartSpots(),
+                      isCurved: true,
+                      color: isPositive ? positiveColor : negativeColor,
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            (isPositive ? positiveColor : negativeColor)
+                                .withOpacity(0.3),
+                            (isPositive ? positiveColor : negativeColor)
+                                .withOpacity(0.0),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ],
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      tooltipBgColor: cardColor.withOpacity(0.8),
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots.map((spot) {
+                          final index = spot.x.toInt();
+                          final date =
+                              _selectedPortfolioPerformanceData[index].date;
+                          final value = spot.y;
+
+                          return LineTooltipItem(
+                            '${_formatDate(date)}\n\$${value.toStringAsFixed(2)}',
+                            const TextStyle(color: AppTheme.textPrimary),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
                 ),
               ),
-              child: Column(
-                children: [
-                  // Pull handle
-                  Container(
-                    margin: EdgeInsets.only(top: 12, bottom: 12),
-                    height: 4,
-                    width: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Total Asset Allocation',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).extension<AppThemeExtension>()?.textPrimary ??
-                                        AppTheme.textPrimary,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'All Portfolios',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Theme.of(context).extension<AppThemeExtension>()?.textSecondary ??
-                                        AppTheme.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                          color: Theme.of(context).extension<AppThemeExtension>()?.textPrimary ??
-                                AppTheme.textPrimary,
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  Divider(),
-                  
-                  // Portfolio value
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Total Value: ',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(context).extension<AppThemeExtension>()?.textSecondary ??
-                                  AppTheme.textSecondary,
-                          ),
-                        ),
-                        Text(
-                          '\$${combinedPortfolio.totalValue?.toStringAsFixed(2) ?? '0.00'}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).extension<AppThemeExtension>()?.textPrimary ??
-                                  AppTheme.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Pie chart (taking most of the modal space)
-                  Expanded(
-                    child: InteractivePieChart(
-                      portfolio: combinedPortfolio,
-                      size: MediaQuery.of(context).size.width * 0.8,
-                      showPercentage: true,
-                      showLabels: true,
-                    ),
-                  ),
-                  
-                  // Bottom padding
-                  SizedBox(height: 24),
-                ],
-              ),
-            );
-          },
-        );
-      },
+            ),
+          ),
+
+          const SizedBox(height: 16),
+        ],
+      ),
     );
+  }
+
+  List<FlSpot> _buildChartSpots() {
+    return _selectedPortfolioPerformanceData.asMap().entries.map((entry) {
+      return FlSpot(entry.key.toDouble(), entry.value.value);
+    }).toList();
+  }
+
+  String _getDateLabel(DateTime date) {
+    switch (_selectedTimeframe) {
+      case '1W':
+        return '${date.day}';
+      case '1M':
+      case '3M':
+        return '${date.day}/${date.month}';
+      case '6M':
+      case '1Y':
+        return '${date.month}/${date.year}';
+      case 'All':
+        return '${date.year}';
+      default:
+        return '${date.day}';
+    }
   }
 
   String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
+    return '${date.day}/${date.month}/${date.year}';
+  }
 
-    if (difference.inDays < 1) {
-      if (difference.inHours < 1) {
-        return '${difference.inMinutes} mins ago';
-      }
-      return '${difference.inHours} hours ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
-    } else {
-      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-    }
+  // New widget to replace the asset allocation pie chart
+  Widget _buildBenchmarkComparisonCard() {
+    if (_portfolios.isEmpty) return const SizedBox.shrink();
+    
+    final accent = Theme.of(context).extension<AppThemeExtension>()?.accentColor ?? AppTheme.accentColor;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: FuturisticCard(
+        onTap: () => _navigateToBenchmarkComparison(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Benchmark Comparison',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Compare your portfolio performance against market indices',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Sample benchmark options
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildBenchmarkChip('S&P 500', accent),
+                _buildBenchmarkChip('NASDAQ', Colors.purple),
+                _buildBenchmarkChip('Bitcoin', Colors.orange),
+                _buildBenchmarkChip('Gold', Colors.amber),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: () => _navigateToBenchmarkComparison(),
+                icon: const Icon(Icons.compare_arrows),
+                label: const Text('Compare Performance'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 20,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildBenchmarkChip(String name, Color color) {
+    return Chip(
+      label: Text(
+        name,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
+      backgroundColor: color,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+    );
   }
 
   Widget _buildPortfolioSummary() {
@@ -443,28 +628,15 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
       child: FuturisticCard(
-        onTap: _showTotalPortfolioPieChartModal, // Modal göstermek için tıklama
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Total Portfolio Value',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                // Modal açma göstergesi olarak ikon ekleme
-                Icon(
-                  Icons.pie_chart,
-                  size: 18,
-                  color: Theme.of(context).extension<AppThemeExtension>()?.accentColor ?? 
-                        AppTheme.accentColor,
-                ),
-              ],
+            const Text(
+              'Total Portfolio Value',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -479,7 +651,8 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -524,7 +697,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     final color = isPositive ? AppTheme.positiveColor : AppTheme.negativeColor;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 12),
       child: FuturisticCard(
         onTap: () => _navigateToPortfolioDetail(portfolio),
         child: Column(
@@ -622,7 +795,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       );
                     }),
 
-                    // Position labels and pie chart icon on the right
+                    // Position labels on the right
                     Positioned(
                       top: 0,
                       right: 0,
@@ -630,25 +803,15 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         color: AppTheme.cardColor.withOpacity(0.8),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
                               '${portfolio.positions.length} positions',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: AppTheme.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Pie chart butonu ekledik
-                            GestureDetector(
-                              onTap: () => _showPortfolioPieChartModal(portfolio),
-                              child: Icon(
-                                Icons.pie_chart,
-                                size: 18,
-                                color: Theme.of(context).extension<AppThemeExtension>()?.accentColor ?? 
-                                      AppTheme.accentColor,
                               ),
                             ),
                           ],
@@ -661,9 +824,35 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
 
             const SizedBox(height: 8),
 
+            // Button to compare with benchmarks
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _navigateToBenchmarkComparison(portfolio),
+                  icon: Icon(
+                    Icons.compare_arrows,
+                    size: 16,
+                    color: Theme.of(context).extension<AppThemeExtension>()?.accentColor ?? AppTheme.accentColor,
+                  ),
+                  label: Text(
+                    'Compare to Benchmark',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).extension<AppThemeExtension>()?.accentColor ?? AppTheme.accentColor,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
+
             // Last updated date
             Text(
-              'Last updated: ${_formatDate(portfolio.updatedAt)}',
+              'Last updated: ${_formatUpdateDate(portfolio.updatedAt)}',
               style: const TextStyle(
                 fontSize: 10,
                 color: AppTheme.textSecondary,
@@ -717,132 +906,20 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     );
   }
 
-  Widget _buildPerformanceChart() {
-    final ext = Theme.of(context).extension<AppThemeExtension>();
-    final accent = ext?.accentColor ?? AppTheme.accentColor;
-    final cardColor = ext?.cardColor ?? AppTheme.cardColor;
-    final textPrimary = ext?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary = ext?.textSecondary ?? AppTheme.textSecondary;
+  String _formatUpdateDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
 
-    if (_isLoadingChart) {
-      return FuturisticCard(
-        child: SizedBox(
-          height: 250,
-          child: Center(
-            child: CircularProgressIndicator(color: accent),
-          ),
-        ),
-      );
+    if (difference.inDays < 1) {
+      if (difference.inHours < 1) {
+        return '${difference.inMinutes} mins ago';
+      }
+      return '${difference.inHours} hours ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     }
-
-    if (_selectedPortfolioPerformanceData.isEmpty) {
-      return FuturisticCard(
-        child: SizedBox(
-          height: 250,
-          child: Center(
-            child: Text(
-              'No performance data available',
-              style: TextStyle(color: textSecondary),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Portfolio selector dropdown widget
-    return FuturisticCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Portfolio Performance',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Portfolio dropdown
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.backgroundColor.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: accent.withOpacity(0.3)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String?>(
-                      value: _selectedPortfolioId,
-                      isExpanded: true,
-                      dropdownColor: cardColor,
-                      icon: Icon(Icons.arrow_drop_down, color: accent),
-                      style: TextStyle(color: textPrimary),
-                      items: [
-                        DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text(
-                            'All Portfolios',
-                            style: TextStyle(
-                              color: textPrimary,
-                              fontWeight: _selectedPortfolioId == null
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                        ..._portfolios.map((portfolio) {
-                          return DropdownMenuItem<String?>(
-                            value: portfolio.id,
-                            child: Text(
-                              portfolio.name,
-                              style: TextStyle(
-                                color: textPrimary,
-                                fontWeight: _selectedPortfolioId == portfolio.id
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ],
-                      onChanged: (String? value) {
-                        setState(() {
-                          _selectedPortfolioId = value;
-                        });
-                        _loadPerformanceData();
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Here you would add your chart visualization
-          // For example, using a LineChart from fl_chart
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Container(
-              height: 200,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: accent.withOpacity(0.3)),
-              ),
-              child: const Center(
-                child: Text('Portfolio performance chart would go here'),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -851,163 +928,135 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     final textPrim = ext?.textPrimary ?? AppTheme.textPrimary;
     final accent = ext?.accentColor ?? AppTheme.accentColor;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Theme.of(context).scaffoldBackgroundColor,
-            const Color(0xFF192138),
-          ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'My Portfolios',
+          style: TextStyle(
+            color: textPrim,
+            fontWeight: FontWeight.bold,
+          ),
         ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.menu, color: accent),
+          onPressed: () {
+            Scaffold.of(context).openDrawer();
+          },
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add, color: accent),
+            onPressed: _navigateToAddPortfolio,
+            tooltip: 'Add New Portfolio',
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh, color: accent),
+            onPressed: _loadPortfolios,
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
-      child: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadPortfolios,
-          backgroundColor: ext?.cardColor ?? AppTheme.cardColor,
-          color: accent,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // App Bar
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Row(
-                  children: [
-                    Icon(Icons.account_balance_wallet, color: accent, size: 28),
-                    const SizedBox(width: 12),
-                    Text(
-                      'My Portfolios',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: textPrim,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(Icons.add, color: accent),
-                      onPressed: _navigateToAddPortfolio,
-                      tooltip: 'Add New Portfolio',
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.refresh, color: accent),
-                      onPressed: _loadPortfolios,
-                      tooltip: 'Refresh',
-                    ),
-                  ],
-                ),
-              ),
-
-              // Timeframe selector
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: SizedBox(
-                  height: 40,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _timeframes.length,
-                    itemBuilder: (context, index) {
-                      final timeframe = _timeframes[index];
-                      final isSelected = timeframe == _selectedTimeframe;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(timeframe),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setState(() {
-                                _selectedTimeframe = timeframe;
-                              });
-                              _loadPerformanceData(); // Reload chart data
-                            }
-                          },
-                          backgroundColor: ext?.cardColor ?? AppTheme.cardColor,
-                          selectedColor: accent,
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.black : textPrim,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  children: [
-                    // Portfolio Performance Chart
-                    const SizedBox(height: 8),
-                    _buildPerformanceChart(),
-                    const SizedBox(height: 24),
-
-                    // Benchmark Comparison Chart
-                    if (!_isLoading &&
-                        _portfolios.isNotEmpty &&
-                        _selectedPortfolioPerformanceData.isNotEmpty)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          BenchmarkComparisonChart(
-                            portfolioData: _selectedPortfolioPerformanceData,
-                            timeframe: _selectedTimeframe,
-                            selectedPortfolioId: _selectedPortfolioId,
-                            portfolioStartValue:
-                                _selectedPortfolioPerformanceData.first.value,
-                            portfolioEndValue:
-                                _selectedPortfolioPerformanceData.last.value,
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-                      ),
-
-                    // Portfolio Summary
-                    if (!_isLoading && _portfolios.isNotEmpty)
-                      _buildPortfolioSummary(),
-
-                    // Portfolios List Title
-                    if (!_isLoading && _portfolios.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
-                        child: Text(
-                          'Your Portfolios',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: textPrim,
-                          ),
-                        ),
-                      ),
-
-                    // Portfolios List
-                    if (_isLoading)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: CircularProgressIndicator(color: accent),
-                        ),
-                      )
-                    else if (_portfolios.isEmpty)
-                      _buildEmptyState()
-                    else
-                      ..._portfolios
-                          .map((portfolio) => _buildPortfolioCard(portfolio))
-                          .toList(),
-
-                    // Add some bottom padding
-                    const SizedBox(height: 100),
-                  ],
-                ),
-              ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).scaffoldBackgroundColor,
+              const Color(0xFF192138),
             ],
           ),
         ),
+        child: _isLoading
+            ? Center(child: CircularProgressIndicator(color: accent))
+            : RefreshIndicator(
+                onRefresh: _loadPortfolios,
+                backgroundColor: ext?.cardColor ?? AppTheme.cardColor,
+                color: accent,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Timeframe selector
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: SizedBox(
+                        height: 40,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _timeframes.length,
+                          itemBuilder: (context, index) {
+                            final timeframe = _timeframes[index];
+                            final isSelected = timeframe == _selectedTimeframe;
+
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: ChoiceChip(
+                                label: Text(timeframe),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    setState(() {
+                                      _selectedTimeframe = timeframe;
+                                    });
+                                    _loadPerformanceData(); // Reload chart data
+                                  }
+                                },
+                                backgroundColor: ext?.cardColor ?? AppTheme.cardColor,
+                                selectedColor: accent,
+                                labelStyle: TextStyle(
+                                  color: isSelected ? Colors.black : textPrim,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                
+                    // Main content - scrollable
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [
+                          // Portfolio Performance Chart
+                          const SizedBox(height: 8),
+                          _buildPerformanceChart(),
+                          const SizedBox(height: 24),
+
+                          // Portfolio Summary
+                          if (!_isLoading && _portfolios.isNotEmpty)
+                            _buildPortfolioSummary(),
+                            
+                          // Benchmark Comparison Card (replaces pie chart)
+                          if (!_isLoading && _portfolios.isNotEmpty)
+                            _buildBenchmarkComparisonCard(),
+
+                          // Portfolios List
+                          if (_isLoading)
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: CircularProgressIndicator(color: accent),
+                              ),
+                            )
+                          else if (_portfolios.isEmpty)
+                            _buildEmptyState()
+                          else
+                            ..._portfolios
+                                .map((portfolio) => _buildPortfolioCard(portfolio))
+                                .toList(),
+
+                          // Add some bottom padding
+                          const SizedBox(height: 100),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
       ),
     );
   }
