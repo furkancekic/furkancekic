@@ -723,7 +723,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
               ElevatedButton(
                 onPressed: _customTickerController.text
                             .trim()
-                            .isEmpty || // YENİ EKLENEN KONTROL
+                            .isEmpty || // YENİ EKLENEN KONTROLssss
                         _isValidatingTicker
                     ? null // Koşullardan biri true ise buton devre dışı
                     : _addCustomTicker,
