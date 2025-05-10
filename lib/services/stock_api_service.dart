@@ -312,6 +312,27 @@ class StockApiService {
     }
   }
 
+  static Future<List<Map<String, dynamic>>> getStockData(
+      String ticker, String timeframe) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/stock?ticker=$ticker&timeframe=$timeframe'));
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+
+        if (jsonData['status'] == 'success' && jsonData['chart_data'] != null) {
+          return List<Map<String, dynamic>>.from(jsonData['chart_data']);
+        }
+      }
+
+      return [];
+    } catch (e) {
+      print('Error fetching stock data: $e');
+      return [];
+    }
+  }
+
   // Helper function for sample watchlist stocks
   static List<StockInfo> _getSampleWatchlistStocks() {
     return [
