@@ -2,6 +2,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../src/config.dart';
+import 'package:logging/logging.dart';
+
+final logger = Logger('StockApiService');
 
 class StockApiService {
   // Base URL for the API
@@ -275,6 +278,47 @@ class StockApiService {
     ];
   }
 
+  static Future<List<Map<String, dynamic>>> getStockData(
+      String ticker, String timeframe,
+      {String? startDate, String? endDate, String? interval}) async {
+    try {
+      // Build query parameters
+      final Map<String, String> queryParams = {
+        'ticker': ticker,
+        'timeframe': timeframe,
+      };
+
+      // Add optional parameters if provided
+      if (startDate != null) queryParams['start_date'] = startDate;
+      if (endDate != null) queryParams['end_date'] = endDate;
+      if (interval != null) queryParams['interval'] = interval;
+
+      // Construct URL with query parameters
+      final uri = Uri.parse('$baseUrl/stock').replace(
+        queryParameters: queryParams,
+      );
+
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+
+        if (jsonData['status'] == 'success' && jsonData['chart_data'] != null) {
+          return List<Map<String, dynamic>>.from(jsonData['chart_data']);
+        }
+      }
+
+      logger.warning(
+        'Failed to get stock data for $ticker (${response.statusCode}): ${response.body}',
+      );
+      return [];
+    } catch (e) {
+      logger.severe('Error fetching stock data: $e');
+      return [];
+    }
+  }
+
+  /// Get stock info with current price
   static Future<StockInfo> getStockInfo(String ticker) async {
     try {
       final response = await http
@@ -296,10 +340,13 @@ class StockApiService {
           chartData: [], // We don't need chart data for this use case
         );
       } else {
+        logger.warning(
+          'Failed to get stock info for $ticker (${response.statusCode})',
+        );
         throw Exception('Failed to load stock info');
       }
     } catch (e) {
-      print('Error fetching stock info for $ticker: $e');
+      logger.severe('Error fetching stock info for $ticker: $e');
       // Return a default stock info object
       return StockInfo(
         ticker: ticker,
@@ -312,24 +359,18 @@ class StockApiService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getStockData(
-      String ticker, String timeframe) async {
+  /// Helper method to convert ISO string dates to proper format for API
+  static String formatDateForApi(DateTime date) {
+    return date.toIso8601String().split('T')[0]; // YYYY-MM-DD
+  }
+
+  /// Helper method to parse API date string to DateTime
+  static DateTime parseDateFromApi(String dateStr) {
     try {
-      final response = await http
-          .get(Uri.parse('$baseUrl/stock?ticker=$ticker&timeframe=$timeframe'));
-
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-
-        if (jsonData['status'] == 'success' && jsonData['chart_data'] != null) {
-          return List<Map<String, dynamic>>.from(jsonData['chart_data']);
-        }
-      }
-
-      return [];
+      return DateTime.parse(dateStr);
     } catch (e) {
-      print('Error fetching stock data: $e');
-      return [];
+      logger.severe('Error parsing date from API: $e');
+      return DateTime.now();
     }
   }
 
