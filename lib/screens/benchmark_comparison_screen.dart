@@ -1,4 +1,3 @@
-// Hem önceden tanımlanmış benchmarklar hem de özel ticker girişi için güncellenmiş BenchmarkComparisonScreen
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../theme/app_theme.dart';
@@ -7,6 +6,71 @@ import '../models/portfolio.dart';
 import '../services/portfolio_service.dart' as portfolio_service;
 import '../services/portfolio_benchmark_service.dart';
 import '../services/stock_api_service.dart';
+
+// Varsayılan olarak bu sınıfların var olduğunu kabul ediyorum
+// class BenchmarkInfo {
+//   final String id;
+//   final String name;
+//   final String symbol;
+//   final String description;
+//   final String category;
+//   final String region;
+
+//   BenchmarkInfo({
+//     required this.id,
+//     required this.name,
+//     required this.symbol,
+//     required this.description,
+//     required this.category,
+//     required this.region,
+//   });
+// }
+
+// class BenchmarkData {
+//   final String id;
+//   final String name;
+//   final String symbol;
+//   final String timeframe;
+//   final List<PerformancePoint> data;
+//   final double returnPercent;
+
+//   BenchmarkData({
+//     required this.id,
+//     required this.name,
+//     required this.symbol,
+//     required this.timeframe,
+//     required this.data,
+//     required this.returnPercent,
+//   });
+// }
+
+// class PerformancePoint {
+//   final DateTime date;
+//   final double value;
+
+//   PerformancePoint({
+//     required this.date,
+//     required this.value,
+//   });
+// }
+
+// class PortfolioBenchmarkMetrics {
+//   final double alpha;
+//   final double beta;
+//   final double rSquared;
+//   final double sharpeRatio;
+//   final double correlation;
+//   final double informationRatio; // Treynor yerine Information Ratio kullanıldığı varsayılıyor
+
+//   PortfolioBenchmarkMetrics({
+//     required this.alpha,
+//     required this.beta,
+//     required this.rSquared,
+//     required this.sharpeRatio,
+//     required this.correlation,
+//     required this.informationRatio,
+//   });
+// }
 
 class BenchmarkComparisonScreen extends StatefulWidget {
   final Portfolio?
@@ -29,9 +93,12 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
   String _selectedTimeframe = '1M'; // Default to 1 month view
   final List<String> _timeframes = ['1W', '1M', '3M', '6M', '1Y', 'All'];
 
-  // Özel ticker için controller ve state değişkenleri
+  // Custom ticker controller and state variables
   final TextEditingController _customTickerController = TextEditingController();
-  String? _customTicker;
+  String? _customTicker; // Bu değişken son eklenen özel ticker'ı tutuyordu,
+  // artık birden fazla özel ticker olabileceği için
+  // _selectedBenchmarkIds listesindeki 'CUSTOM_' prefix'li ID'lere bakacağız.
+  // Ancak _customTicker'ı chip göstermek için hala kullanabiliriz.
   bool _isCustomTickerValid = false;
   bool _isValidatingTicker = false;
 
@@ -42,17 +109,38 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
   List<PerformancePoint> _portfolioPerformanceData = [];
   double _portfolioReturn = 0.0;
 
+  // Date range for normalization
+  DateTime? _startDate;
+  DateTime? _endDate;
+
   // Colors for different benchmarks and portfolio
   final Color _portfolioColor = Colors.blue;
   final List<Color> _benchmarkColors = [
-    Colors.red,
-    Colors.green,
-    Colors.orange,
-    Colors.purple,
-    Colors.teal,
-    Colors.amber,
-    Colors.pink,
-    Colors.indigo,
+    // Standart benchmarklar için ana renk paleti
+    Colors.red.shade400,
+    Colors.green.shade600,
+    Colors.orange.shade500,
+    Colors.purple.shade400,
+    Colors.teal.shade500,
+    Colors.yellow.shade700,
+    Colors.pink.shade300,
+    Colors.indigo.shade400,
+    Colors.lightGreen.shade500,
+    Colors.deepOrange.shade400,
+    Colors.cyan.shade500,
+    Colors.blueGrey.shade400,
+  ];
+
+  // Özel tickerlar için kullanılacak renkler
+  final List<Color> _customTickerSpecificColors = [
+    Colors.pinkAccent.shade200,
+    Colors.lightBlueAccent.shade200,
+    Colors.amberAccent.shade200,
+    Colors.deepPurpleAccent.shade100,
+    Colors.tealAccent.shade200,
+    Colors.redAccent.shade100,
+    Colors.greenAccent.shade400,
+    Colors.orangeAccent.shade200,
   ];
 
   @override
@@ -94,11 +182,21 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
 
       // Load comparison metrics if a specific portfolio is selected
       if (widget.portfolio != null && _selectedBenchmarkIds.isNotEmpty) {
-        _comparisonMetrics = await PortfolioBenchmarkService.compareToBenchmark(
-          widget.portfolio!.id!,
-          _selectedBenchmarkIds.first,
-          _selectedTimeframe,
+        final firstBenchmarkId = _selectedBenchmarkIds.firstWhere(
+          (id) => !_isCustomBenchmarkId(
+              id), // Metrikler için standart bir benchmark seç
+          orElse: () => _selectedBenchmarkIds.isNotEmpty
+              ? _selectedBenchmarkIds.first
+              : '', // Fallback
         );
+        if (firstBenchmarkId.isNotEmpty) {
+          _comparisonMetrics =
+              await PortfolioBenchmarkService.compareToBenchmark(
+            widget.portfolio!.id!,
+            firstBenchmarkId,
+            _selectedTimeframe,
+          );
+        }
       }
 
       if (mounted) {
@@ -121,7 +219,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     }
   }
 
-  // Ticker geçerliliğini kontrol eden function
+  // Validate ticker
   Future<bool> _validateTicker(String ticker) async {
     if (ticker.isEmpty) return false;
 
@@ -130,10 +228,10 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     });
 
     try {
-      // StockApiService'i kullanarak ticker'ın geçerliliğini kontrol et
+      // Use StockApiService to check if ticker is valid
       final stockInfo = await StockApiService.getStockInfo(ticker);
 
-      // Eğer price 0 ise, muhtemelen geçersiz bir ticker
+      // If price is 0, it's probably an invalid ticker
       final isValid = stockInfo.price > 0;
 
       setState(() {
@@ -151,12 +249,12 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     }
   }
 
-  // Özel ticker'ı benchmarklara ekle
+  // Add custom ticker to benchmarks
   Future<void> _addCustomTicker() async {
     final ticker = _customTickerController.text.trim().toUpperCase();
     if (ticker.isEmpty) return;
 
-    // Ticker'ı doğrula
+    // Validate ticker
     final isValid = await _validateTicker(ticker);
     if (!isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -168,69 +266,104 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
       return;
     }
 
-    // Özel bir ID oluştur (örn: 'CUSTOM_AAPL')
+    // Create custom ID (e.g., 'CUSTOM_AAPL')
     final customId = 'CUSTOM_$ticker';
 
-    // Eğer zaten seçilmişse, tekrar ekleme
+    // If already selected, don't add again
     if (_selectedBenchmarkIds.contains(customId)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$ticker is already added.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
       return;
     }
 
-    // Maksimum 3 benchmark kontrolü
-    if (_selectedBenchmarkIds.length >= 3) {
-      _selectedBenchmarkIds.removeAt(0); // İlk seçilen benchmark'ı kaldır
-    }
-
     setState(() {
-      _customTicker = ticker;
+      // _customTicker'ı son eklenen ticker için güncellemek yerine,
+      // _selectedBenchmarkIds'e eklemek yeterli. Chip gösterimi için _customTickerController.text kullanılabilir.
       _selectedBenchmarkIds.add(customId);
+      _customTickerController.clear(); // Input'u temizle
+      _isCustomTickerValid = false; // Bir sonraki giriş için sıfırla
     });
 
-    // Benchmark verilerini yeniden yükle
+    // Reload benchmark data
     await _loadBenchmarkData();
+  }
+
+  // Determine date range based on timeframe
+  void _determineTimeframeDateRange() {
+    final now = DateTime.now();
+    _endDate = now;
+
+    switch (_selectedTimeframe) {
+      case '1W':
+        _startDate = now.subtract(const Duration(days: 7));
+        break;
+      case '1M':
+        _startDate = now.subtract(const Duration(days: 30));
+        break;
+      case '3M':
+        _startDate = now.subtract(const Duration(days: 90));
+        break;
+      case '6M':
+        _startDate = now.subtract(const Duration(days: 180));
+        break;
+      case '1Y':
+        _startDate = now.subtract(const Duration(days: 365));
+        break;
+      case 'All':
+        _startDate = now.subtract(const Duration(days: 3 * 365));
+        break;
+      default:
+        _startDate = now.subtract(const Duration(days: 30));
+    }
   }
 
   Future<void> _loadPortfolioData() async {
     try {
+      _determineTimeframeDateRange();
+
       if (widget.portfolio != null) {
-        // Load specific portfolio data
         final performance =
             await portfolio_service.PortfolioService.getPortfolioPerformance(
           widget.portfolio!.id!,
           _selectedTimeframe,
         );
-
-        // Convert performance.data (from portfolio_service) to PerformancePoint (from portfolio_benchmark_service)
         final convertedData = _convertPerformancePoints(performance.data);
-
         setState(() {
           _portfolioPerformanceData = convertedData;
-
-          // Calculate portfolio return
           if (_portfolioPerformanceData.isNotEmpty) {
             final firstValue = _portfolioPerformanceData.first.value;
             final lastValue = _portfolioPerformanceData.last.value;
-            _portfolioReturn = ((lastValue / firstValue) - 1) * 100;
+            if (firstValue > 0) {
+              _portfolioReturn = ((lastValue / firstValue) - 1) * 100;
+            } else {
+              _portfolioReturn = 0.0;
+            }
+          } else {
+            _portfolioReturn = 0.0;
           }
         });
       } else {
-        // Load combined portfolio data
         final performance = await portfolio_service.PortfolioService
             .getTotalPortfoliosPerformance(
           _selectedTimeframe,
         );
-
-        // Convert performance.data (from portfolio_service) to PerformancePoint (from portfolio_benchmark_service)
         final convertedData = _convertPerformancePoints(performance.data);
-
         setState(() {
           _portfolioPerformanceData = convertedData;
-
-          // Calculate portfolio return
           if (_portfolioPerformanceData.isNotEmpty) {
             final firstValue = _portfolioPerformanceData.first.value;
             final lastValue = _portfolioPerformanceData.last.value;
-            _portfolioReturn = ((lastValue / firstValue) - 1) * 100;
+            if (firstValue > 0) {
+              _portfolioReturn = ((lastValue / firstValue) - 1) * 100;
+            } else {
+              _portfolioReturn = 0.0;
+            }
+          } else {
+            _portfolioReturn = 0.0;
           }
         });
       }
@@ -244,7 +377,6 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     }
   }
 
-  // Helper method to convert between types
   List<PerformancePoint> _convertPerformancePoints(
       List<portfolio_service.PerformancePoint> points) {
     return points
@@ -257,49 +389,33 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
 
   Future<void> _loadBenchmarkData() async {
     try {
-      List<String> benchmarkIdsToLoad = [];
+      List<BenchmarkData> newBenchmarkData = [];
 
-      // Normal benchmarkları ekle
       for (String id in _selectedBenchmarkIds) {
-        if (!id.startsWith('CUSTOM_')) {
-          benchmarkIdsToLoad.add(id);
-        }
-      }
-
-      // Önce standart benchmarkların verilerini yükle
-      if (benchmarkIdsToLoad.isNotEmpty) {
-        _benchmarkData =
-            await PortfolioBenchmarkService.getBenchmarkPerformance(
-          _selectedTimeframe,
-          benchmarkIdsToLoad,
-        );
-      } else {
-        _benchmarkData = [];
-      }
-
-      // Özel ticker varsa, onun için de veri yükle ve listeye ekle
-      for (String id in _selectedBenchmarkIds) {
-        if (id.startsWith('CUSTOM_')) {
+        if (_isCustomBenchmarkId(id)) {
+          // Custom Ticker
           final ticker = id.substring('CUSTOM_'.length);
-
           try {
-            // Ticker için veri al (StockApiService'i kullanarak)
-            final stockData =
-                await StockApiService.getStockData(ticker, _selectedTimeframe);
+            final String interval =
+                _getApiIntervalForTimeframe(_selectedTimeframe);
+            final stockData = await StockApiService.getStockData(
+                ticker, _selectedTimeframe,
+                startDate: _startDate?.toIso8601String(),
+                endDate: _endDate?.toIso8601String(),
+                interval: interval);
 
-            if (stockData != null && stockData.isNotEmpty) {
-              // Veriyi PerformancePoint formatına dönüştür
+            if (stockData.isNotEmpty) {
               List<PerformancePoint> dataPoints = [];
               for (var point in stockData) {
                 if (point.containsKey('date') && point.containsKey('close')) {
                   dataPoints.add(PerformancePoint(
-                    date: DateTime.parse(point['date']),
+                    date: DateTime.parse(point['date'].toString()),
                     value: double.parse(point['close'].toString()),
                   ));
                 }
               }
+              dataPoints.sort((a, b) => a.date.compareTo(b.date));
 
-              // İlk ve son değer arasındaki yüzde değişimini hesapla
               double returnPercent = 0;
               if (dataPoints.isNotEmpty && dataPoints.first.value > 0) {
                 returnPercent =
@@ -307,23 +423,45 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                         100;
               }
 
-              // BenchmarkData olarak formatla ve listeye ekle
-              _benchmarkData.add(BenchmarkData(
+              final normalizedPoints =
+                  _normalizeDataPointsToMatchTimeframe(dataPoints);
+              newBenchmarkData.add(BenchmarkData(
                 id: id,
                 name: ticker,
                 symbol: ticker,
                 timeframe: _selectedTimeframe,
-                data: dataPoints,
+                data: normalizedPoints,
                 returnPercent: returnPercent,
               ));
             }
           } catch (e) {
-            print('Error loading custom ticker data: $e');
+            print('Error loading custom ticker data ($ticker): $e');
+            // Optionally, remove the failed ticker from _selectedBenchmarkIds or show a specific error
           }
+        } else {
+          // Standard Benchmark
+          // Assuming PortfolioBenchmarkService.getBenchmarkPerformance can take a single ID
+          // If not, you might need to batch these or call it for each standard benchmark.
+          // For simplicity, let's assume it works for a list (even if it's a list of one).
         }
       }
 
-      setState(() {});
+      // Load standard benchmarks in a single call if possible
+      List<String> standardBenchmarkIdsToLoad = _selectedBenchmarkIds
+          .where((id) => !_isCustomBenchmarkId(id))
+          .toList();
+      if (standardBenchmarkIdsToLoad.isNotEmpty) {
+        List<BenchmarkData> standardData =
+            await PortfolioBenchmarkService.getBenchmarkPerformance(
+          _selectedTimeframe,
+          standardBenchmarkIdsToLoad,
+        );
+        newBenchmarkData.addAll(standardData);
+      }
+
+      setState(() {
+        _benchmarkData = newBenchmarkData;
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -334,45 +472,118 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     }
   }
 
+  String _getApiIntervalForTimeframe(String timeframe) {
+    switch (timeframe) {
+      case '1W':
+        return '1d';
+      case '1M':
+        return '1d';
+      case '3M':
+        return '1d';
+      case '6M':
+        return '1d'; // For 6M, daily might be too much, weekly could be an option
+      case '1Y':
+        return '1wk';
+      case 'All':
+        return '1mo'; // For 'All' (e.g., 3 years), monthly is good
+      default:
+        return '1d';
+    }
+  }
+
+  List<PerformancePoint> _normalizeDataPointsToMatchTimeframe(
+      List<PerformancePoint> points) {
+    if (points.isEmpty) return [];
+
+    final expectedPoints =
+        _getExpectedDataPointsForTimeframe(_selectedTimeframe);
+    if (points.length == expectedPoints || points.length < 2) {
+      // If too few points, no need to sample
+      return points;
+    }
+
+    if (points.length > expectedPoints) {
+      final sampledPoints = <PerformancePoint>[];
+      final step = (points.length - 1) /
+          (expectedPoints - 1); // Ensure first and last points are included
+
+      for (int i = 0; i < expectedPoints; i++) {
+        final index = (i * step).round();
+        if (index < points.length) {
+          sampledPoints.add(points[index]);
+        }
+      }
+      // Ensure the last point is always included if not already by rounding
+      if (sampledPoints.isEmpty ||
+          sampledPoints.last.date != points.last.date) {
+        if (sampledPoints.isNotEmpty && sampledPoints.length >= expectedPoints)
+          sampledPoints.removeLast();
+        sampledPoints.add(points.last);
+      }
+      return sampledPoints
+          .take(expectedPoints)
+          .toList(); // Ensure we don't exceed expected points
+    }
+    // If we have fewer points than expected (but more than 1), just return them.
+    // Or you could implement interpolation if needed, but for now, this is simpler.
+    return points;
+  }
+
+  int _getExpectedDataPointsForTimeframe(String timeframe) {
+    switch (timeframe) {
+      case '1W':
+        return 7; // Daily for a week
+      case '1M':
+        return 15; // ~Every other day for a month
+      case '3M':
+        return 15; // ~Weekly for 3 months
+      case '6M':
+        return 15; // ~Bi-weekly for 6 months
+      case '1Y':
+        return 12; // Monthly for a year
+      case 'All':
+        return 20; // More points for longer "All" views
+      default:
+        return 15;
+    }
+  }
+
   void _updateSelectedBenchmarks(String benchmarkId, bool isSelected) {
     setState(() {
-      if (isSelected && !_selectedBenchmarkIds.contains(benchmarkId)) {
-        // Limit to 3 benchmarks maximum
-        if (_selectedBenchmarkIds.length < 3) {
+      if (isSelected) {
+        if (!_selectedBenchmarkIds.contains(benchmarkId)) {
           _selectedBenchmarkIds.add(benchmarkId);
-        } else {
-          // Show message that max reached
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-                  Text('Maximum 3 benchmarks can be selected for comparison'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-          return;
         }
-      } else if (!isSelected && _selectedBenchmarkIds.contains(benchmarkId)) {
+      } else {
         _selectedBenchmarkIds.remove(benchmarkId);
       }
     });
 
-    // Reload data with new selections
     _loadBenchmarkData();
 
-    // If portfolio is specified, update metrics for first selected benchmark
     if (widget.portfolio != null && _selectedBenchmarkIds.isNotEmpty) {
-      PortfolioBenchmarkService.compareToBenchmark(
-        widget.portfolio!.id!,
-        _selectedBenchmarkIds.first,
-        _selectedTimeframe,
-      ).then((metrics) {
-        if (mounted) {
-          setState(() {
-            _comparisonMetrics = metrics;
-          });
-        }
-      });
+      final firstStandardBenchmarkId = _selectedBenchmarkIds.firstWhere(
+        (id) => !_isCustomBenchmarkId(id),
+        orElse: () => '',
+      );
+      if (firstStandardBenchmarkId.isNotEmpty) {
+        PortfolioBenchmarkService.compareToBenchmark(
+          widget.portfolio!.id!,
+          firstStandardBenchmarkId,
+          _selectedTimeframe,
+        ).then((metrics) {
+          if (mounted) setState(() => _comparisonMetrics = metrics);
+        });
+      } else {
+        if (mounted) setState(() => _comparisonMetrics = null);
+      }
+    } else {
+      if (mounted) setState(() => _comparisonMetrics = null);
     }
+  }
+
+  bool _isCustomBenchmarkId(String id) {
+    return id.startsWith('CUSTOM_');
   }
 
   @override
@@ -389,10 +600,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
       appBar: AppBar(
         title: Text(
           screenTitle,
-          style: TextStyle(
-            color: textPrim,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: textPrim, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -421,35 +629,18 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    // Timeframe selector
                     _buildTimeframeSelector(),
-
                     const SizedBox(height: 16),
-
-                    // Custom Ticker Input
                     _buildCustomTickerInput(),
-
                     const SizedBox(height: 16),
-
-                    // Benchmark selector
                     _buildBenchmarkSelector(),
-
                     const SizedBox(height: 24),
-
-                    // Performance comparison chart
                     _buildPerformanceChart(),
-
                     const SizedBox(height: 24),
-
-                    // Metrics comparison (if portfolio is specified)
                     if (widget.portfolio != null && _comparisonMetrics != null)
                       _buildMetricsComparison(),
-
-                    // Return statistics table
                     const SizedBox(height: 24),
                     _buildReturnStatistics(),
-
-                    // Add some bottom padding
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -458,37 +649,32 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     );
   }
 
-  // Custom Ticker Input widget'ı
   Widget _buildCustomTickerInput() {
     final ext = Theme.of(context).extension<AppThemeExtension>();
     final cardColor = ext?.cardColor ?? AppTheme.cardColor;
     final accent = ext?.accentColor ?? AppTheme.accentColor;
     final textPrim = ext?.textPrimary ?? AppTheme.textPrimary;
 
+    List<String> customTickersAdded = _selectedBenchmarkIds
+        .where((id) => _isCustomBenchmarkId(id))
+        .map((id) => id.substring('CUSTOM_'.length))
+        .toList();
+
     return FuturisticCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Custom Ticker',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
-          ),
+          const Text('Custom Ticker',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary)),
           const SizedBox(height: 8),
-          const Text(
-            'Add any stock ticker to compare with your portfolio',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
-            ),
-          ),
+          const Text('Add any stock ticker to compare (max 3 total selections)',
+              style: TextStyle(fontSize: 14, color: AppTheme.textSecondary)),
           const SizedBox(height: 16),
           Row(
             children: [
-              // Ticker Input field
               Expanded(
                 child: TextField(
                   controller: _customTickerController,
@@ -500,23 +686,18 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                     hintStyle: TextStyle(
                         color: AppTheme.textSecondary.withOpacity(0.5)),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     suffixIcon: _isValidatingTicker
-                        ? Padding(
-                            padding: const EdgeInsets.all(8.0),
+                        ? const Padding(
+                            padding: EdgeInsets.all(12.0),
                             child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                color: accent,
-                                strokeWidth: 2,
-                              ),
-                            ),
-                          )
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2)))
                         : _isCustomTickerValid
                             ? Icon(Icons.check_circle,
                                 color: AppTheme.positiveColor)
@@ -524,55 +705,61 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                   ),
                   textCapitalization: TextCapitalization.characters,
                   onChanged: (value) {
-                    // Tüm karakterleri büyük harfe çevir
                     if (value != value.toUpperCase()) {
                       _customTickerController.value = TextEditingValue(
                         text: value.toUpperCase(),
                         selection: _customTickerController.selection,
                       );
                     }
+                    if (mounted) {
+                      // Widget'ın hala ağaçta olduğundan emin ol
+                      setState(() {});
+                    }
+                    // Optionally, trigger validation as user types after a delay
                   },
                 ),
               ),
               const SizedBox(width: 12),
-              // Add button
               ElevatedButton(
-                onPressed: _isValidatingTicker ? null : _addCustomTicker,
+                onPressed: _customTickerController.text
+                            .trim()
+                            .isEmpty || // YENİ EKLENEN KONTROLssss
+                        _isValidatingTicker
+                    ? null // Koşullardan biri true ise buton devre dışı
+                    : _addCustomTicker,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: accent,
-                  foregroundColor: Colors.black,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
+                    backgroundColor: accent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8))),
                 child: const Text('Add'),
               ),
             ],
           ),
-          if (_customTicker != null) ...[
+          if (customTickersAdded.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Chip(
-              label: Text(_customTicker!),
-              backgroundColor: accent,
-              labelStyle: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-              deleteIcon:
-                  const Icon(Icons.close, size: 16, color: Colors.white),
-              onDeleted: () {
-                setState(() {
-                  // Custom ticker'ı seçilen benchmarklardan kaldır
-                  _selectedBenchmarkIds
-                      .removeWhere((id) => id == 'CUSTOM_$_customTicker');
-                  _customTicker = null;
-                  _customTickerController.clear();
-                  _isCustomTickerValid = false;
-                });
-                _loadBenchmarkData();
-              },
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              children: customTickersAdded.map((ticker) {
+                return Chip(
+                  label: Text(ticker),
+                  backgroundColor:
+                      _getBenchmarkColor('CUSTOM_$ticker').withOpacity(0.7),
+                  labelStyle: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                  deleteIcon:
+                      const Icon(Icons.close, size: 16, color: Colors.white70),
+                  onDeleted: () {
+                    setState(() {
+                      _selectedBenchmarkIds.remove('CUSTOM_$ticker');
+                    });
+                    _loadBenchmarkData(); // Reload data after removing a custom ticker
+                  },
+                );
+              }).toList(),
             ),
           ],
         ],
@@ -589,7 +776,6 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
         itemBuilder: (context, index) {
           final timeframe = _timeframes[index];
           final isSelected = timeframe == _selectedTimeframe;
-
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
@@ -597,27 +783,28 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
               selected: isSelected,
               onSelected: (selected) {
                 if (selected) {
-                  setState(() {
-                    _selectedTimeframe = timeframe;
-                  });
-
-                  // Reload both portfolio and benchmark data
+                  setState(() => _selectedTimeframe = timeframe);
+                  _determineTimeframeDateRange();
                   _loadPortfolioData().then((_) => _loadBenchmarkData());
-
-                  // Update metrics if portfolio is specified
                   if (widget.portfolio != null &&
                       _selectedBenchmarkIds.isNotEmpty) {
-                    PortfolioBenchmarkService.compareToBenchmark(
-                      widget.portfolio!.id!,
-                      _selectedBenchmarkIds.first,
-                      _selectedTimeframe,
-                    ).then((metrics) {
-                      if (mounted) {
-                        setState(() {
-                          _comparisonMetrics = metrics;
-                        });
-                      }
-                    });
+                    final firstStandardBenchmarkId =
+                        _selectedBenchmarkIds.firstWhere(
+                      (id) => !_isCustomBenchmarkId(id),
+                      orElse: () => '',
+                    );
+                    if (firstStandardBenchmarkId.isNotEmpty) {
+                      PortfolioBenchmarkService.compareToBenchmark(
+                        widget.portfolio!.id!,
+                        firstStandardBenchmarkId,
+                        _selectedTimeframe,
+                      ).then((metrics) {
+                        if (mounted)
+                          setState(() => _comparisonMetrics = metrics);
+                      });
+                    } else {
+                      if (mounted) setState(() => _comparisonMetrics = null);
+                    }
                   }
                 }
               },
@@ -629,13 +816,12 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                       ?.accentColor ??
                   AppTheme.accentColor,
               labelStyle: TextStyle(
-                color: isSelected
-                    ? Colors.black
-                    : Theme.of(context)
-                            .extension<AppThemeExtension>()
-                            ?.textPrimary ??
-                        AppTheme.textPrimary,
-              ),
+                  color: isSelected
+                      ? Colors.black
+                      : Theme.of(context)
+                              .extension<AppThemeExtension>()
+                              ?.textPrimary ??
+                          AppTheme.textPrimary),
             ),
           );
         },
@@ -655,38 +841,26 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Select Benchmarks',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
-          ),
+          const Text('Select Benchmarks',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary)),
           const SizedBox(height: 16),
-
-          // Group benchmarks by category
           ...['Equity', 'Currency', 'Commodity', 'Crypto', 'Volatility']
               .map((category) {
             final benchmarksInCategory = _availableBenchmarks
                 .where((b) => b.category == category)
                 .toList();
-
-            if (benchmarksInCategory.isEmpty) {
-              return const SizedBox.shrink();
-            }
-
+            if (benchmarksInCategory.isEmpty) return const SizedBox.shrink();
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  category,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: textPrim.withOpacity(0.7),
-                  ),
-                ),
+                Text(category,
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: textPrim.withOpacity(0.7))),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -697,16 +871,14 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                     return FilterChip(
                       label: Text(benchmark.name),
                       selected: isSelected,
-                      onSelected: (selected) {
-                        _updateSelectedBenchmarks(benchmark.id, selected);
-                      },
+                      onSelected: (selected) =>
+                          _updateSelectedBenchmarks(benchmark.id, selected),
                       backgroundColor: cardColor,
                       selectedColor: _getBenchmarkColor(benchmark.id),
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : textPrim,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
+                          color: isSelected ? Colors.white : textPrim,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal),
                       showCheckmark: false,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
@@ -733,125 +905,132 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
         Theme.of(context).extension<AppThemeExtension>()?.textSecondary ??
             AppTheme.textSecondary;
 
-    // Create normalized data for better comparison
     Map<String, List<FlSpot>> normalizedDataSets = {};
+    int expectedPoints = _getExpectedDataPointsForTimeframe(_selectedTimeframe);
 
-    // Add portfolio data if available
     if (_portfolioPerformanceData.isNotEmpty) {
       final List<FlSpot> portfolioSpots = [];
-
-      // Normalize the first point to 100 for all data sets
       double baseValue = _portfolioPerformanceData.first.value;
       if (baseValue > 0) {
-        for (int i = 0; i < _portfolioPerformanceData.length; i++) {
+        // Portföy verisini de normalize et (eğer beklenen nokta sayısından farklıysa)
+        List<PerformancePoint> pointsToNormalize = _portfolioPerformanceData
+                    .length ==
+                expectedPoints
+            ? _portfolioPerformanceData
+            : _normalizeDataPointsToMatchTimeframe(_portfolioPerformanceData);
+
+        for (int i = 0; i < pointsToNormalize.length; i++) {
           double normalizedValue =
-              (_portfolioPerformanceData[i].value / baseValue) * 100;
+              (pointsToNormalize[i].value / baseValue) * 100;
           portfolioSpots.add(FlSpot(i.toDouble(), normalizedValue));
         }
-
-        normalizedDataSets['Portfolio'] = portfolioSpots;
+        if (portfolioSpots.isNotEmpty) {
+          // Sadece doluysa ekle
+          normalizedDataSets['Portfolio'] = portfolioSpots;
+        }
       }
     }
 
-    // Add benchmark data
     for (var benchmark in _benchmarkData) {
       final List<FlSpot> spots = [];
-
-      // Normalize the first point to 100 for all data sets
       if (benchmark.data.isNotEmpty) {
         double baseValue = benchmark.data.first.value;
         if (baseValue > 0) {
-          for (int i = 0; i < benchmark.data.length; i++) {
+          // Benchmark verisini de normalize et (eğer beklenen nokta sayısından farklıysa)
+          List<PerformancePoint> pointsToNormalize =
+              benchmark.data.length == expectedPoints
+                  ? benchmark.data
+                  : _normalizeDataPointsToMatchTimeframe(benchmark.data);
+
+          for (int i = 0; i < pointsToNormalize.length; i++) {
             double normalizedValue =
-                (benchmark.data[i].value / baseValue) * 100;
+                (pointsToNormalize[i].value / baseValue) * 100;
             spots.add(FlSpot(i.toDouble(), normalizedValue));
           }
-
-          normalizedDataSets[benchmark.name] = spots;
+          if (spots.isNotEmpty) {
+            // Sadece doluysa ekle
+            normalizedDataSets[benchmark.name] = spots;
+          }
         }
       }
     }
 
-    // If there's no data to display
     if (normalizedDataSets.isEmpty) {
       return FuturisticCard(
         child: SizedBox(
-          height: 300,
-          child: Center(
-            child: Text(
-              'No data available for comparison',
-              style: TextStyle(color: textSecondary),
-            ),
-          ),
-        ),
+            height: 300,
+            child: Center(
+                child: Text('No data available for comparison',
+                    style: TextStyle(color: textSecondary)))),
       );
     }
+
+    // Ensure all datasets have the same number of points for x-axis consistency if needed,
+    // or rely on FlSpot's x value for correct plotting. _normalizeDataPointsToMatchTimeframe should handle this.
+    // However, if _portfolioPerformanceData and _benchmarkData have different original date points
+    // before normalization to `expectedPoints`, their x-axis might not perfectly align semantically
+    // if `_normalizeDataPointsToMatchTimeframe` isn't perfectly aligning them to common date points.
+    // For simplicity, we assume `i.toDouble()` as x-axis is sufficient after normalization.
 
     return FuturisticCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Performance Comparison',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
-          ),
+          const Text('Performance Comparison',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary)),
           const SizedBox(height: 8),
-          const Text(
-            'Normalized to 100 at start of period',
-            style: TextStyle(
-              fontSize: 12,
-              fontStyle: FontStyle.italic,
-              color: AppTheme.textSecondary,
-            ),
-          ),
+          const Text('Normalized to 100 at start of period',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: AppTheme.textSecondary)),
           const SizedBox(height: 16),
-
-          // Chart
           SizedBox(
             height: 300,
             child: LineChart(
               LineChartData(
                 gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: textSecondary.withOpacity(0.1),
-                      strokeWidth: 1,
-                    );
-                  },
-                ),
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (value) => FlLine(
+                        color: textSecondary.withOpacity(0.1), strokeWidth: 1)),
                 titlesData: FlTitlesData(
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
+                  rightTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 32,
-                      interval: _benchmarkData.isNotEmpty &&
-                              _benchmarkData.first.data.isNotEmpty
-                          ? (_benchmarkData.first.data.length / 5).toDouble()
-                          : 1,
+                      showTitles: true, reservedSize: 32,
+                      interval: expectedPoints > 5
+                          ? (expectedPoints / 5).floorToDouble()
+                          : 1, // Use floorToDouble
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
-
-                        // Get dates from available sources
                         List<DateTime> dateSeries = [];
-                        if (_portfolioPerformanceData.isNotEmpty) {
-                          dateSeries = _portfolioPerformanceData
+
+                        // Get dates from a representative dataset (e.g., portfolio or first benchmark)
+                        // Ensure the dataset used for dates actually has data and matches expectedPoints count.
+                        if (normalizedDataSets['Portfolio'] != null &&
+                            _portfolioPerformanceData.length >=
+                                expectedPoints) {
+                          dateSeries = _normalizeDataPointsToMatchTimeframe(
+                                  _portfolioPerformanceData)
                               .map((p) => p.date)
                               .toList();
                         } else if (_benchmarkData.isNotEmpty &&
-                            _benchmarkData.first.data.isNotEmpty) {
-                          dateSeries = _benchmarkData.first.data
+                            _benchmarkData.first.data.length >=
+                                expectedPoints) {
+                          dateSeries = _normalizeDataPointsToMatchTimeframe(
+                                  _benchmarkData.first.data)
+                              .map((p) => p.date)
+                              .toList();
+                        } else if (_portfolioPerformanceData.isNotEmpty) {
+                          // Fallback if counts don't match expectedPoints
+                          dateSeries = _portfolioPerformanceData
                               .map((p) => p.date)
                               .toList();
                         }
@@ -861,35 +1040,23 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                             index >= dateSeries.length) {
                           return const SizedBox.shrink();
                         }
-
                         final date = dateSeries[index];
                         return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            _getDateLabel(date),
-                            style: TextStyle(
-                              color: textSecondary,
-                              fontSize: 10,
-                            ),
-                          ),
-                        );
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(_getDateLabel(date),
+                                style: TextStyle(
+                                    color: textSecondary, fontSize: 10)));
                       },
                     ),
                   ),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          value.toInt().toString(),
-                          style: TextStyle(
-                            color: textSecondary,
-                            fontSize: 10,
-                          ),
-                        );
-                      },
-                    ),
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (value, meta) => Text(
+                            value.toInt().toString(),
+                            style:
+                                TextStyle(color: textSecondary, fontSize: 10))),
                   ),
                 ),
                 borderData: FlBorderData(show: false),
@@ -899,14 +1066,14 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                     tooltipBgColor: cardColor.withOpacity(0.8),
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
-                        final datasetName =
-                            _getDatasetNameForLineId(spot.barIndex);
+                        final datasetName = _getDatasetNameForLineId(
+                            spot.barIndex, normalizedDataSets.keys.toList());
                         return LineTooltipItem(
                           '$datasetName: ${spot.y.toStringAsFixed(2)}',
                           TextStyle(
-                            color: _getColorForLineId(spot.barIndex),
-                            fontWeight: FontWeight.bold,
-                          ),
+                              color: _getColorForLineId(spot.barIndex,
+                                  normalizedDataSets.keys.toList()),
+                              fontWeight: FontWeight.bold),
                         );
                       }).toList();
                     },
@@ -915,45 +1082,60 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
               ),
             ),
           ),
-
-          // Legend
           const SizedBox(height: 16),
           Wrap(
             spacing: 16,
-            runSpacing: 8,
+            runSpacing: 12,
             children: normalizedDataSets.keys.map((name) {
-              final color = name == 'Portfolio'
+              final id = _getBenchmarkIdForName(name); // Get ID from name
+              final color = (name == 'Portfolio')
                   ? _portfolioColor
-                  : _getBenchmarkColor(_getBenchmarkIdForName(name));
+                  : _getBenchmarkColor(id);
+              final isCustom = _isCustomBenchmarkId(id);
 
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 12,
-                    height: 12,
+                    width: 14,
+                    height: 14,
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: color.withOpacity(0.5),
-                          blurRadius: 4,
-                          spreadRadius: 1,
-                          offset: const Offset(0, 2),
-                        ),
+                            color: color.withOpacity(0.5),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 2))
                       ],
+                      border: isCustom
+                          ? Border.all(
+                              color: Colors.white.withOpacity(0.7), width: 1.5)
+                          : null,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    name,
-                    style: TextStyle(
-                      color: textPrim,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(width: 6),
+                  Text(name,
+                      style: TextStyle(
+                          color: textPrim,
+                          fontSize: 12,
+                          fontWeight:
+                              isCustom ? FontWeight.bold : FontWeight.w500)),
+                  if (isCustom)
+                    Container(
+                      margin: const EdgeInsets.only(left: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                          color: color.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4)),
+                      child: Text('Özel',
+                          style: TextStyle(
+                              color: color,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold)),
                     ),
-                  ),
                 ],
               );
             }).toList(),
@@ -965,68 +1147,58 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
 
   List<LineChartBarData> _createLineData(Map<String, List<FlSpot>> dataSets) {
     final List<LineChartBarData> lineBarsData = [];
-    int index = 0;
+    List<String> sortedKeys = dataSets.keys.toList();
+    // Portfolio'yu başa al
+    if (sortedKeys.contains('Portfolio')) {
+      sortedKeys.remove('Portfolio');
+      sortedKeys.insert(0, 'Portfolio');
+    }
 
-    // Always put Portfolio first if it exists
-    if (dataSets.containsKey('Portfolio')) {
+    for (String name in sortedKeys) {
+      final spots = dataSets[name]!;
+      final id =
+          (name == 'Portfolio') ? 'Portfolio' : _getBenchmarkIdForName(name);
+      final color =
+          (name == 'Portfolio') ? _portfolioColor : _getBenchmarkColor(id);
+      final isCustom = _isCustomBenchmarkId(id);
+
       lineBarsData.add(
         LineChartBarData(
-          spots: dataSets['Portfolio']!,
+          spots: spots,
           isCurved: true,
-          color: _portfolioColor,
-          barWidth: 3.5,
+          color: color,
+          barWidth: (name == 'Portfolio') ? 3.5 : (isCustom ? 2.5 : 2.0),
           isStrokeCapRound: true,
           dotData: FlDotData(show: false),
+          dashArray: isCustom ? [4, 4] : null, // Özel ticker için kesikli çizgi
           belowBarData: BarAreaData(
-            show: true,
+            show: name == 'Portfolio', // Sadece portföy için alanı göster
             gradient: LinearGradient(
-              colors: [
-                _portfolioColor.withOpacity(0.3),
-                _portfolioColor.withOpacity(0.0),
-              ],
+              colors: [color.withOpacity(0.3), color.withOpacity(0.0)],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
           ),
         ),
       );
-
-      index++;
     }
-
-    // Add benchmarks
-    dataSets.forEach((name, spots) {
-      if (name != 'Portfolio') {
-        final color = _getBenchmarkColor(_getBenchmarkIdForName(name));
-
-        lineBarsData.add(
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: color,
-            barWidth: 2.5,
-            isStrokeCapRound: true,
-            dotData: FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: false, // Only show area for portfolio
-            ),
-          ),
-        );
-
-        index++;
-      }
-    });
-
     return lineBarsData;
   }
 
   Widget _buildMetricsComparison() {
-    if (_comparisonMetrics == null || _selectedBenchmarkIds.isEmpty) {
+    if (_comparisonMetrics == null || _selectedBenchmarkIds.isEmpty)
       return const SizedBox.shrink();
-    }
 
     final metrics = _comparisonMetrics!;
-    final benchmarkName = _getBenchmarkName(_selectedBenchmarkIds.first);
+    final firstStandardBenchmarkId = _selectedBenchmarkIds.firstWhere(
+      (id) => !_isCustomBenchmarkId(id),
+      orElse: () => '',
+    );
+    if (firstStandardBenchmarkId.isEmpty)
+      return const SizedBox
+          .shrink(); // Karşılaştırılacak standart benchmark yok
+
+    final benchmarkName = _getBenchmarkName(firstStandardBenchmarkId);
     final textPrim =
         Theme.of(context).extension<AppThemeExtension>()?.textPrimary ??
             AppTheme.textPrimary;
@@ -1037,185 +1209,124 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
         Theme.of(context).extension<AppThemeExtension>()?.negativeColor ??
             AppTheme.negativeColor;
 
-    // Helper function to get color based on whether higher value is better
     Color getMetricColor(double value, bool higherIsBetter) {
       if (value > 0 && higherIsBetter) return positiveColor;
-      if (value < 0 && !higherIsBetter) return positiveColor;
+      if (value < 0 && !higherIsBetter)
+        return positiveColor; // e.g. lower beta might be "good" if it's very low
       if (value < 0 && higherIsBetter) return negativeColor;
-      if (value > 0 && !higherIsBetter) return negativeColor;
-      return textPrim; // Neutral for zero
+      if (value > 0 && !higherIsBetter)
+        return negativeColor; // e.g. higher beta might be "bad" if too high
+      return textPrim;
     }
 
     return FuturisticCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Comparison with $benchmarkName',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
-          ),
+          Text('Comparison with $benchmarkName',
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary)),
           const SizedBox(height: 16),
-
-          // Alpha & Beta
-          Row(
-            children: [
-              Expanded(
+          Row(children: [
+            Expanded(
                 child: _buildMetricCard(
-                  'Alpha',
-                  '${metrics.alpha.toStringAsFixed(2)}%',
-                  'Excess return relative to market risk',
-                  metrics.alpha > 0 ? Icons.trending_up : Icons.trending_down,
-                  getMetricColor(metrics.alpha, true),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
+                    'Alpha',
+                    '${metrics.alpha.toStringAsFixed(2)}%',
+                    'Excess return vs market risk',
+                    metrics.alpha > 0 ? Icons.trending_up : Icons.trending_down,
+                    getMetricColor(metrics.alpha, true))),
+            const SizedBox(width: 8),
+            Expanded(
                 child: _buildMetricCard(
-                  'Beta',
-                  metrics.beta.toStringAsFixed(2),
-                  'Portfolio volatility relative to benchmark',
-                  metrics.beta < 1 ? Icons.shield : Icons.waves,
-                  metrics.beta > 1.5
-                      ? negativeColor
-                      : metrics.beta < 0.5
-                          ? Colors.amber
-                          : textPrim,
-                ),
-              ),
-            ],
-          ),
-
+                    'Beta',
+                    metrics.beta.toStringAsFixed(2),
+                    'Volatility vs benchmark',
+                    metrics.beta < 1 ? Icons.shield_outlined : Icons.waves,
+                    metrics.beta > 1.5
+                        ? negativeColor
+                        : (metrics.beta < 0.8 ? positiveColor : textPrim))),
+          ]),
           const SizedBox(height: 8),
-
-          // Correlation & R-Squared
-          Row(
-            children: [
-              Expanded(
+          Row(children: [
+            Expanded(
                 child: _buildMetricCard(
-                  'Correlation',
-                  '${(metrics.correlation * 100).toStringAsFixed(0)}%',
-                  'How closely returns move together',
-                  metrics.correlation > 0.7 ? Icons.link : Icons.link_off,
-                  textPrim,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
+                    'Correlation',
+                    '${(metrics.correlation * 100).toStringAsFixed(0)}%',
+                    'How returns move together',
+                    metrics.correlation > 0.7 ? Icons.link : Icons.link_off,
+                    textPrim)),
+            const SizedBox(width: 8),
+            Expanded(
                 child: _buildMetricCard(
-                  'R-Squared',
-                  '${(metrics.rSquared * 100).toStringAsFixed(0)}%',
-                  'Percentage of returns explained by benchmark',
-                  null,
-                  textPrim,
-                ),
-              ),
-            ],
-          ),
-
+                    'R-Squared',
+                    '${(metrics.rSquared * 100).toStringAsFixed(0)}%',
+                    '% returns explained by benchmark',
+                    null,
+                    textPrim)),
+          ]),
           const SizedBox(height: 8),
-
-          // Sharpe & Treynor Ratios
-          Row(
-            children: [
-              Expanded(
+          Row(children: [
+            Expanded(
                 child: _buildMetricCard(
-                  'Sharpe Ratio',
-                  metrics.sharpeRatio.toStringAsFixed(2),
-                  'Return per unit of total risk',
-                  null,
-                  metrics.sharpeRatio > 1
-                      ? positiveColor
-                      : metrics.sharpeRatio < 0
-                          ? negativeColor
-                          : textPrim,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
+                    'Sharpe Ratio',
+                    metrics.sharpeRatio.toStringAsFixed(2),
+                    'Return per unit of total risk',
+                    null,
+                    metrics.sharpeRatio > 1
+                        ? positiveColor
+                        : (metrics.sharpeRatio < 0
+                            ? negativeColor
+                            : textPrim))),
+            const SizedBox(width: 8),
+            Expanded(
                 child: _buildMetricCard(
-                  'Information Ratio',
-                  metrics.informationRatio.toStringAsFixed(2),
-                  'Excess return per unit of tracking risk',
-                  null,
-                  metrics.informationRatio > 0.5
-                      ? positiveColor
-                      : metrics.informationRatio < -0.5
-                          ? negativeColor
-                          : textPrim,
-                ),
-              ),
-            ],
-          ),
+                    'Information Ratio',
+                    metrics.informationRatio.toStringAsFixed(2),
+                    'Excess return per unit of tracking risk',
+                    null,
+                    metrics.informationRatio > 0.5
+                        ? positiveColor
+                        : (metrics.informationRatio < -0.5
+                            ? negativeColor
+                            : textPrim))),
+          ]),
         ],
       ),
     );
   }
 
-  Widget _buildMetricCard(
-    String title,
-    String value,
-    String description,
-    IconData? icon,
-    Color color,
-  ) {
+  Widget _buildMetricCard(String title, String value, String description,
+      IconData? icon, Color color) {
     final cardColor =
         Theme.of(context).extension<AppThemeExtension>()?.cardColor ??
             AppTheme.cardColor;
-
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.5),
-          width: 1,
-        ),
-      ),
+          color: cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.5), width: 1)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text(title,
                 style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-              if (icon != null)
-                Icon(
-                  icon,
-                  color: color,
-                  size: 16,
-                ),
-            ],
-          ),
+                    fontSize: 12, color: AppTheme.textSecondary)),
+            if (icon != null) Icon(icon, color: color, size: 16),
+          ]),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold, color: color)),
           const SizedBox(height: 4),
-          Text(
-            description,
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppTheme.textSecondary,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          Text(description,
+              style:
+                  const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis),
         ],
       ),
     );
@@ -1235,204 +1346,163 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
         Theme.of(context).extension<AppThemeExtension>()?.negativeColor ??
             AppTheme.negativeColor;
 
-    // First check if we have data to display
-    if (_benchmarkData.isEmpty && _portfolioPerformanceData.isEmpty) {
+    if (_benchmarkData.isEmpty && _portfolioPerformanceData.isEmpty)
       return const SizedBox.shrink();
-    }
 
-    // Create the table data
     final List<TableRow> rows = [];
-
-    // Header row
-    rows.add(
-      TableRow(
-        decoration: BoxDecoration(
+    rows.add(TableRow(
+      decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(
-              color: textSecondary.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-        ),
-        children: [
-          Padding(
+              bottom:
+                  BorderSide(color: textSecondary.withOpacity(0.3), width: 1))),
+      children: [
+        Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              'Asset',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: textPrim,
-              ),
-            ),
-          ),
-          Padding(
+            child: Text('Asset',
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, color: textPrim))),
+        Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              'Return (${_selectedTimeframe})',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: textPrim,
-              ),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
-      ),
-    );
+            child: Text('Return (${_selectedTimeframe})',
+                style: TextStyle(fontWeight: FontWeight.bold, color: textPrim),
+                textAlign: TextAlign.right)),
+      ],
+    ));
 
-    // Portfolio row (if available)
     if (_portfolioPerformanceData.isNotEmpty) {
       final portfolioName = widget.portfolio?.name ?? 'All Portfolios';
-      rows.add(
-        TableRow(
-          decoration: BoxDecoration(
+      rows.add(TableRow(
+        decoration: BoxDecoration(
             color: _portfolioColor.withOpacity(0.1),
             border: Border(
-              bottom: BorderSide(
-                color: textSecondary.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-          ),
-          children: [
-            Padding(
+                bottom: BorderSide(
+                    color: textSecondary.withOpacity(0.1), width: 1))),
+        children: [
+          Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  Container(
+              child: Row(children: [
+                Container(
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: _portfolioColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      portfolioName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: textPrim,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
+                        color: _portfolioColor, shape: BoxShape.circle)),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: Text(portfolioName,
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: textPrim),
+                        overflow: TextOverflow.ellipsis)),
+              ])),
+          Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                '${_portfolioReturn >= 0 ? '+' : ''}${_portfolioReturn.toStringAsFixed(2)}%',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: _portfolioReturn >= 0 ? positiveColor : negativeColor,
-                ),
-                textAlign: TextAlign.right,
-              ),
-            ),
-          ],
-        ),
-      );
+                  '${_portfolioReturn >= 0 ? '+' : ''}${_portfolioReturn.toStringAsFixed(2)}%',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: _portfolioReturn >= 0
+                          ? positiveColor
+                          : negativeColor),
+                  textAlign: TextAlign.right)),
+        ],
+      ));
     }
 
-    // Benchmark rows
-    for (int i = 0; i < _benchmarkData.length; i++) {
-      final benchmark = _benchmarkData[i];
-      final color = _getBenchmarkColor(_getBenchmarkIdForName(benchmark.name));
+    // Sıralamayı, efsanedekiyle tutarlı hale getirmek için _benchmarkData'yı _selectedBenchmarkIds'ye göre sırala
+    List<BenchmarkData> sortedBenchmarkData = [];
+    for (String id in _selectedBenchmarkIds) {
+      var found = _benchmarkData.where((b) => b.id == id);
+      if (found.isNotEmpty) {
+        sortedBenchmarkData.add(found.first);
+      }
+    }
 
-      rows.add(
-        TableRow(
-          decoration: BoxDecoration(
+    for (final benchmark in sortedBenchmarkData) {
+      // Sıralanmış listeyi kullan
+      final benchmarkId = benchmark
+          .id; // benchmark.id zaten doğru ID'yi ('CUSTOM_XXX' veya 'SP500') içermeli
+      final color = _getBenchmarkColor(benchmarkId);
+      final isCustom = _isCustomBenchmarkId(benchmarkId);
+
+      rows.add(TableRow(
+        decoration: BoxDecoration(
+            color: isCustom ? color.withOpacity(0.05) : null,
             border: Border(
-              bottom: BorderSide(
-                color: textSecondary.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-          ),
-          children: [
-            Padding(
+                bottom: BorderSide(
+                    color: textSecondary.withOpacity(0.1), width: 1))),
+        children: [
+          Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  Container(
+              child: Row(children: [
+                Container(
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      benchmark.name,
-                      style: TextStyle(
-                        color: textPrim,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: isCustom
+                            ? Border.all(
+                                color: Colors.white.withOpacity(0.5), width: 1)
+                            : null)),
+                const SizedBox(width: 8),
+                Expanded(
+                    child: Text(benchmark.name,
+                        style: TextStyle(
+                            color: textPrim,
+                            fontWeight:
+                                isCustom ? FontWeight.bold : FontWeight.normal),
+                        overflow: TextOverflow.ellipsis)),
+                if (isCustom)
+                  Icon(Icons.star_border,
+                      color: color.withOpacity(0.7), size: 14),
+              ])),
+          Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                '${benchmark.returnPercent >= 0 ? '+' : ''}${benchmark.returnPercent.toStringAsFixed(2)}%',
-                style: TextStyle(
-                  color: benchmark.returnPercent >= 0
-                      ? positiveColor
-                      : negativeColor,
-                ),
-                textAlign: TextAlign.right,
-              ),
-            ),
-          ],
-        ),
-      );
+                  '${benchmark.returnPercent >= 0 ? '+' : ''}${benchmark.returnPercent.toStringAsFixed(2)}%',
+                  style: TextStyle(
+                      color: benchmark.returnPercent >= 0
+                          ? positiveColor
+                          : negativeColor,
+                      fontWeight:
+                          isCustom ? FontWeight.bold : FontWeight.normal),
+                  textAlign: TextAlign.right)),
+        ],
+      ));
     }
 
     return FuturisticCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Return Comparison',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
-          ),
+          const Text('Return Comparison',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary)),
           const SizedBox(height: 16),
           Table(
-            columnWidths: const {
-              0: FlexColumnWidth(2),
-              1: FlexColumnWidth(1),
-            },
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-            children: rows,
-          ),
+              columnWidths: const {
+                0: FlexColumnWidth(2),
+                1: FlexColumnWidth(1)
+              },
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              children: rows),
         ],
       ),
     );
   }
 
   // Utility functions
-
   String _getDateLabel(DateTime date) {
     switch (_selectedTimeframe) {
       case '1W':
-        return '${date.day}';
+        return '${date.day}'; // Belki gün adı daha iyi olur: DateFormat('E').format(date)
       case '1M':
       case '3M':
         return '${date.day}/${date.month}';
       case '6M':
       case '1Y':
-        return '${date.month}/${date.year}';
+        return '${date.month}/${date.year.toString().substring(2)}';
       case 'All':
         return '${date.year}';
       default:
@@ -1440,98 +1510,109 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     }
   }
 
+  // *** GÜNCELLENMİŞ FONKSİYON ***
   Color _getBenchmarkColor(String benchmarkId) {
-    // Özel ticker'lar için özel koşul ekle
-    if (benchmarkId.startsWith('CUSTOM_')) {
-      // Özel bir renk döndür (örn. pembe)
-      return Colors.pink;
+    if (_isCustomBenchmarkId(benchmarkId)) {
+      String ticker = benchmarkId.substring('CUSTOM_'.length);
+      int hashCode = ticker.hashCode.abs();
+      if (_customTickerSpecificColors.isNotEmpty) {
+        return _customTickerSpecificColors[
+            hashCode % _customTickerSpecificColors.length];
+      }
+      // Fallback if custom colors list is empty
+      return Colors.grey.shade700;
+    } else {
+      // Standart benchmarklar için: ID'nin hash'ini kullanarak _benchmarkColors listesinden bir renk seç.
+      // Bu, _selectedBenchmarkIds listesindeki sıradan bağımsız, tutarlı bir renk ataması sağlar.
+      int idHash = benchmarkId.hashCode.abs();
+      if (_benchmarkColors.isNotEmpty) {
+        return _benchmarkColors[idHash % _benchmarkColors.length];
+      }
+      // Fallback if benchmark colors list is empty
+      return Colors.grey.shade500;
     }
-
-    // Get index of benchmark in selected list
-    final index = _selectedBenchmarkIds.indexOf(benchmarkId);
-    if (index >= 0 && index < _benchmarkColors.length) {
-      return _benchmarkColors[index];
-    }
-    return _benchmarkColors[0]; // Default color
   }
 
+  // *** GÜNCELLENMİŞ FONKSİYON ***
   String _getBenchmarkName(String benchmarkId) {
-    // Özel ticker'lar için özel koşul ekle
-    if (benchmarkId.startsWith('CUSTOM_')) {
+    if (_isCustomBenchmarkId(benchmarkId)) {
       return benchmarkId.substring('CUSTOM_'.length);
     }
-
-    // Find benchmark info from available benchmarks
     final benchmark = _availableBenchmarks.firstWhere(
       (b) => b.id == benchmarkId,
       orElse: () => BenchmarkInfo(
-        id: benchmarkId,
-        name: benchmarkId,
-        symbol: benchmarkId,
-        description: '',
-        category: '',
-        region: '',
-      ),
+          id: benchmarkId,
+          name: benchmarkId,
+          symbol: benchmarkId,
+          description: '',
+          category: '',
+          region: ''),
     );
-
     return benchmark.name;
   }
 
+  // *** GÜNCELLENMİŞ FONKSİYON ***
   String _getBenchmarkIdForName(String name) {
-    // Özel ticker'lar için kontrol
-    if (_customTicker != null && name == _customTicker) {
-      return 'CUSTOM_$_customTicker';
+    // Önce _benchmarkData'dan (yani grafikte gerçekten olan verilerden) ID'yi bulmaya çalış
+    for (final data in _benchmarkData) {
+      if (data.name == name) {
+        return data.id; // Bu ID "SP500" veya "CUSTOM_AAPL" olabilir
+      }
     }
+    // Eğer _benchmarkData'da yoksa (örneğin henüz yüklenmemişse veya efsane dışında bir yerde çağrıldıysa)
+    // _availableBenchmarks'tan (standart benchmarklar için) bulmayı dene
+    final availableInfo =
+        _availableBenchmarks.firstWhere((b) => b.name == name, orElse: () {
+      // Eğer bu da bulunamazsa ve isim 'CUSTOM_' ile başlamıyorsa,
+      // potansiyel bir özel ticker olabilir, bu durumda 'CUSTOM_' prefix'ini ekleyerek ID oluştur.
+      // Bu durum, _benchmarkData henüz tam oluşmadığında efsane çizilirken olabilir.
+      // Ancak _isCustomBenchmarkId kontrolü zaten _getBenchmarkColor'da var.
+      // En güvenlisi, eğer yukarıdaki kontrollerde bulunamazsa, adı olduğu gibi ID kabul etmek
+      // ve _getBenchmarkColor'ın bunu işlemesini beklemek.
+      // Veya daha spesifik olarak:
+      bool mightBeCustom = true;
+      for (var bInfo in _availableBenchmarks) {
+        if (bInfo.name == name) {
+          mightBeCustom = false;
+          break;
+        }
+      }
+      if (mightBeCustom)
+        return BenchmarkInfo(
+            id: 'CUSTOM_$name',
+            name: name,
+            symbol: name,
+            category: '',
+            description: '',
+            region: '');
 
-    // Find benchmark info from available benchmarks
-    final benchmark = _availableBenchmarks.firstWhere(
-      (b) => b.name == name,
-      orElse: () => BenchmarkInfo(
-        id: name,
-        name: name,
-        symbol: name,
-        description: '',
-        category: '',
-        region: '',
-      ),
-    );
-
-    return benchmark.id;
+      return BenchmarkInfo(
+          id: name,
+          name: name,
+          symbol: name,
+          description: '',
+          category: '',
+          region: '');
+    });
+    return availableInfo.id;
   }
 
-  String _getDatasetNameForLineId(int lineId) {
-    final datasetNames = normalizedDatasetNames();
-    if (lineId >= 0 && lineId < datasetNames.length) {
-      return datasetNames[lineId];
+  String _getDatasetNameForLineId(int lineId, List<String> datasetKeys) {
+    // datasetKeys, _createLineData'da oluşturulan sırayla gelmeli
+    if (lineId >= 0 && lineId < datasetKeys.length) {
+      return datasetKeys[lineId];
     }
     return 'Unknown';
   }
 
-  List<String> normalizedDatasetNames() {
-    List<String> names = [];
-    if (_portfolioPerformanceData.isNotEmpty) {
-      names.add('Portfolio');
-    }
+  Color _getColorForLineId(int lineId, List<String> datasetKeys) {
+    if (lineId < 0 || lineId >= datasetKeys.length) return Colors.grey;
 
-    for (var benchmark in _benchmarkData) {
-      names.add(benchmark.name);
-    }
+    final name = datasetKeys[lineId];
+    if (name == 'Portfolio') return _portfolioColor;
 
-    return names;
-  }
-
-  Color _getColorForLineId(int lineId) {
-    final names = normalizedDatasetNames();
-
-    if (lineId < 0 || lineId >= names.length) {
-      return Colors.grey;
-    }
-
-    final name = names[lineId];
-    if (name == 'Portfolio') {
-      return _portfolioColor;
-    } else {
-      return _getBenchmarkColor(_getBenchmarkIdForName(name));
-    }
+    final id = _getBenchmarkIdForName(
+        name); // Ensure we get the correct ID ('CUSTOM_XXX' or 'SP500')
+    return _getBenchmarkColor(id);
   }
 }
