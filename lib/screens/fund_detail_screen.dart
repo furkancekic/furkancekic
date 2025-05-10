@@ -6,7 +6,8 @@ import 'dart:math' as math;
 import '../services/fund_api_service.dart'; // API servisini import et
 
 class FundDetailScreen extends StatefulWidget {
-  final Map<String, dynamic> fund; // Bu hala başlangıç için temel bilgileri taşıyabilir
+  final Map<String, dynamic>
+      fund; // Bu hala başlangıç için temel bilgileri taşıyabilir
 
   const FundDetailScreen({Key? key, required this.fund}) : super(key: key);
 
@@ -26,7 +27,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   List<Map<String, dynamic>> _historicalChartData = [];
   Map<String, dynamic> _riskMetricsData = {};
   Map<String, dynamic> _monteCarloData = {}; // Monte Carlo verisi için
-  List<Map<String, dynamic>> _fetchedComparisonFunds = []; // API'den gelecek benzer fonlar
+  List<Map<String, dynamic>> _fetchedComparisonFunds =
+      []; // API'den gelecek benzer fonlar
 
   // Yüklenme durumları için flag'ler
   bool _isLoadingDetails = true;
@@ -34,7 +36,6 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   bool _isLoadingMetrics = true;
   bool _isLoadingMonteCarlo = true;
   bool _isLoadingComparisonFunds = true;
-
 
   final List<String> _timeframes = [
     '1H',
@@ -67,7 +68,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
       return;
     }
     await _fetchFundDetails();
-    await _fetchHistoricalData(_selectedTimeframe); // Başlangıç zaman aralığı ile
+    await _fetchHistoricalData(
+        _selectedTimeframe); // Başlangıç zaman aralığı ile
     await _fetchRiskMetrics();
     await _fetchMonteCarlo();
     // Örnek olarak aynı kategorideki fonları çekelim (veya API'nizde benzer fonlar endpoint'i varsa onu kullanın)
@@ -75,7 +77,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     if (_fetchedFundDetails['kategori'] != null) {
       await _fetchComparisonFundsByCategory(_fetchedFundDetails['kategori']);
     } else {
-       setState(() => _isLoadingComparisonFunds = false);
+      setState(() => _isLoadingComparisonFunds = false);
     }
   }
 
@@ -116,7 +118,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   Future<void> _fetchRiskMetrics() async {
     setState(() => _isLoadingMetrics = true);
     try {
-      final metrics = await FundApiService.getFundRiskMetrics(widget.fund['kod']);
+      final metrics =
+          await FundApiService.getFundRiskMetrics(widget.fund['kod']);
       setState(() {
         _riskMetricsData = metrics;
         _isLoadingMetrics = false;
@@ -129,12 +132,13 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     }
   }
 
-   Future<void> _fetchMonteCarlo() async {
+  Future<void> _fetchMonteCarlo() async {
     setState(() => _isLoadingMonteCarlo = true);
     try {
       // API'nizdeki parametrelere göre period ve simulation değerlerini ayarlayın
       // Örnek: 1 yıl (12 periyot), 1000 simülasyon
-      final monteCarlo = await FundApiService.getMonteCarlo(widget.fund['kod'], 12, 1000);
+      final monteCarlo =
+          await FundApiService.getMonteCarlo(widget.fund['kod'], 12, 1000);
       setState(() {
         _monteCarloData = monteCarlo;
         _isLoadingMonteCarlo = false;
@@ -153,17 +157,17 @@ class _FundDetailScreenState extends State<FundDetailScreen>
       final funds = await FundApiService.getFundsByCategory(category);
       // Mevcut fonu listeden çıkaralım
       setState(() {
-        _fetchedComparisonFunds = funds.where((f) => f['kod'] != widget.fund['kod']).toList();
+        _fetchedComparisonFunds =
+            funds.where((f) => f['kod'] != widget.fund['kod']).toList();
         _isLoadingComparisonFunds = false;
       });
     } catch (e) {
       setState(() => _isLoadingComparisonFunds = false);
-       ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Benzer fonlar yüklenemedi: $e')),
       );
     }
   }
-
 
   @override
   void dispose() {
@@ -183,8 +187,12 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     final negColor = ext?.negativeColor ?? AppTheme.negativeColor;
 
     // API'den gelen veriyi kullan
-    final String fundCodeToDisplay = _fetchedFundDetails['kod'] ?? widget.fund['kod'] ?? 'Fon Detayı';
-    final dailyReturn = _parseDailyReturn(_fetchedFundDetails['gunluk_getiri'] ?? widget.fund['gunluk_getiri'] ?? '0%');
+    final String fundCodeToDisplay =
+        _fetchedFundDetails['kod'] ?? widget.fund['kod'] ?? 'Fon Detayı';
+    final dailyReturn = _parseDailyReturn(
+        _fetchedFundDetails['gunluk_getiri'] ??
+            widget.fund['gunluk_getiri'] ??
+            '0%');
     final isPositiveReturn = dailyReturn >= 0;
     final returnColor = isPositiveReturn ? posColor : negColor;
 
@@ -221,17 +229,22 @@ class _FundDetailScreenState extends State<FundDetailScreen>
               ),
               child: SafeArea(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildFundHeader(
-                          textPrimary, textSecondary, returnColor, isPositiveReturn),
+                      _buildFundHeader(textPrimary, textSecondary, returnColor,
+                          isPositiveReturn),
                       const SizedBox(height: 16),
                       _buildTimeframeSelector(accent, cardColor),
                       const SizedBox(height: 16),
                       _isLoadingChart
-                          ? SizedBox(height: 200, child: Center(child: CircularProgressIndicator(color: accent)))
+                          ? SizedBox(
+                              height: 200,
+                              child: Center(
+                                  child:
+                                      CircularProgressIndicator(color: accent)))
                           : _buildPriceChart(cardColor, accent, returnColor),
                       const SizedBox(height: 24),
                       _buildTabBar(accent, textPrimary),
@@ -241,18 +254,29 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                         child: TabBarView(
                           controller: _tabController,
                           children: [
-                            _buildOverviewTab(cardColor, textPrimary, textSecondary,
-                                accent, posColor, negColor),
+                            _buildOverviewTab(cardColor, textPrimary,
+                                textSecondary, accent, posColor, negColor),
                             _buildDistributionTab(
                                 cardColor, textPrimary, textSecondary, accent),
-                            _isLoadingMetrics || _isLoadingMonteCarlo // Performans tabı için yükleme kontrolü
-                                ? Center(child: CircularProgressIndicator(color: accent))
+                            _isLoadingMetrics ||
+                                    _isLoadingMonteCarlo // Performans tabı için yükleme kontrolü
+                                ? Center(
+                                    child: CircularProgressIndicator(
+                                        color: accent))
                                 : _buildPerformanceTab(cardColor, textPrimary,
                                     textSecondary, accent, posColor, negColor),
                             _isLoadingComparisonFunds
-                                ? Center(child: CircularProgressIndicator(color: accent))
-                                : _buildComparisonTab(cardColor, textPrimary, textSecondary,
-                                    accent, posColor, negColor, cardColorLight),
+                                ? Center(
+                                    child: CircularProgressIndicator(
+                                        color: accent))
+                                : _buildComparisonTab(
+                                    cardColor,
+                                    textPrimary,
+                                    textSecondary,
+                                    accent,
+                                    posColor,
+                                    negColor,
+                                    cardColorLight),
                           ],
                         ),
                       ),
@@ -289,16 +313,29 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   Widget _buildFundHeader(Color textPrimary, Color textSecondary,
       Color returnColor, bool isPositiveReturn) {
     // API'den gelen verileri kullan
-    final fundName = _fetchedFundDetails['fon_adi'] ?? widget.fund['fon_adi'] ?? 'Fon Adı';
+    final fundName =
+        _fetchedFundDetails['fon_adi'] ?? widget.fund['fon_adi'] ?? 'Fon Adı';
     final fundCode = _fetchedFundDetails['kod'] ?? widget.fund['kod'] ?? 'KOD';
-    final tefasStatus = _fetchedFundDetails['tefas'] ?? widget.fund['tefas'] ?? '';
-    final lastPrice = _fetchedFundDetails['son_fiyat']?.toString().replaceAll(',', '.') ?? widget.fund['son_fiyat']?.toString().replaceAll(',', '.') ?? '0.00';
-    final dailyChange = _fetchedFundDetails['gunluk_getiri'] ?? widget.fund['gunluk_getiri'] ?? '0%';
-    final totalValue = _fetchedFundDetails['fon_toplam_deger'] ?? widget.fund['fon_toplam_deger'] ?? 0;
-    final investorCount = _fetchedFundDetails['yatirimci_sayisi'] ?? widget.fund['yatirimci_sayisi'] ?? 0;
-    final category = _fetchedFundDetails['kategori'] ?? widget.fund['kategori'] ?? 'Bilinmiyor';
-    final categoryRank = _fetchedFundDetails['kategori_drecece'] ?? widget.fund['kategori_drecece'];
-
+    final tefasStatus =
+        _fetchedFundDetails['tefas'] ?? widget.fund['tefas'] ?? '';
+    final lastPrice =
+        _fetchedFundDetails['son_fiyat']?.toString().replaceAll(',', '.') ??
+            widget.fund['son_fiyat']?.toString().replaceAll(',', '.') ??
+            '0.00';
+    final dailyChange = _fetchedFundDetails['gunluk_getiri'] ??
+        widget.fund['gunluk_getiri'] ??
+        '0%';
+    final totalValue = _fetchedFundDetails['fon_toplam_deger'] ??
+        widget.fund['fon_toplam_deger'] ??
+        0;
+    final investorCount = _fetchedFundDetails['yatirimci_sayisi'] ??
+        widget.fund['yatirimci_sayisi'] ??
+        0;
+    final category = _fetchedFundDetails['kategori'] ??
+        widget.fund['kategori'] ??
+        'Bilinmiyor';
+    final categoryRank = _fetchedFundDetails['kategori_drecece'] ??
+        widget.fund['kategori_drecece'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,9 +363,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                tefasStatus.contains('işlem görüyor')
-                    ? 'TEFAS'
-                    : 'TEFAS DIŞI',
+                tefasStatus.contains('işlem görüyor') ? 'TEFAS' : 'TEFAS DIŞI',
                 style: TextStyle(
                   fontSize: 10,
                   color: tefasStatus.contains('işlem görüyor')
@@ -442,11 +477,13 @@ class _FundDetailScreenState extends State<FundDetailScreen>
           return Expanded(
             child: GestureDetector(
               onTap: () {
-                if (_selectedTimeframe != timeframe) { // Sadece değişirse API çağır
-                    setState(() {
+                if (_selectedTimeframe != timeframe) {
+                  // Sadece değişirse API çağır
+                  setState(() {
                     _selectedTimeframe = timeframe;
-                    });
-                    _fetchHistoricalData(timeframe); // Seçilen zaman aralığı için veriyi çek
+                  });
+                  _fetchHistoricalData(
+                      timeframe); // Seçilen zaman aralığı için veriyi çek
                 }
               },
               child: Container(
@@ -484,16 +521,23 @@ class _FundDetailScreenState extends State<FundDetailScreen>
       for (int i = 0; i < _historicalChartData.length; i++) {
         final item = _historicalChartData[i];
         // API'nizin 'price' ve 'date' anahtarlarını kontrol edin
-        final price = (item['price'] is String ? double.tryParse(item['price']) : item['price'])?.toDouble() ?? 0.0;
+        final price = (item['price'] is String
+                    ? double.tryParse(item['price'])
+                    : item['price'])
+                ?.toDouble() ??
+            0.0;
         spots.add(FlSpot(i.toDouble(), price));
 
-        if (i % (_historicalChartData.length ~/ 5).clamp(1, 7) == 0 || i == _historicalChartData.length - 1) { // Daha dinamik etiketleme
-          final dateStr = item['date'].toString(); // API'nizin tarih formatını kontrol edin
+        if (i % (_historicalChartData.length ~/ 5).clamp(1, 7) == 0 ||
+            i == _historicalChartData.length - 1) {
+          // Daha dinamik etiketleme
+          final dateStr =
+              item['date'].toString(); // API'nizin tarih formatını kontrol edin
           try {
             final date = DateTime.parse(dateStr);
             bottomTitles.add('${date.day}/${date.month}');
           } catch (e) {
-             bottomTitles.add(''); // Hatalı tarih formatı
+            bottomTitles.add(''); // Hatalı tarih formatı
           }
         } else {
           bottomTitles.add('');
@@ -512,7 +556,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ... (Grafik başlığı ve ikonlar aynı kalabilir)
-           Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -543,8 +587,9 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,
-                  horizontalInterval: (_getMaxY(spots) - _getMinY(spots)) / 4, // Dinamik interval
-                  verticalInterval: (spots.length -1) / 5, // Dinamik interval
+                  horizontalInterval: (_getMaxY(spots) - _getMinY(spots)) /
+                      4, // Dinamik interval
+                  verticalInterval: (spots.length - 1) / 5, // Dinamik interval
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
                       color: Colors.white.withOpacity(0.1),
@@ -594,13 +639,17 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
-                         if (spots.isEmpty || (spots.length == 1 && spots.first.y == 0)) { // Veri yoksa veya sadece (0,0) ise
-                            return const SizedBox();
-                          }
+                        if (spots.isEmpty ||
+                            (spots.length == 1 && spots.first.y == 0)) {
+                          // Veri yoksa veya sadece (0,0) ise
+                          return const SizedBox();
+                        }
                         return SideTitleWidget(
                           axisSide: meta.axisSide,
                           child: Text(
-                            value.toStringAsFixed(spots.any((s) => s.y < 10) ? 2 : 1), // Ondalık hassasiyeti
+                            value.toStringAsFixed(spots.any((s) => s.y < 10)
+                                ? 2
+                                : 1), // Ondalık hassasiyeti
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.6),
                               fontSize: 10,
@@ -609,7 +658,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                         );
                       },
                       reservedSize: 40,
-                       interval: (_getMaxY(spots) - _getMinY(spots)) / 4, // Dinamik interval
+                      interval: (_getMaxY(spots) - _getMinY(spots)) /
+                          4, // Dinamik interval
                     ),
                   ),
                 ),
@@ -637,7 +687,11 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                   ),
                   if (_showBenchmark)
                     LineChartBarData(
-                      spots: _getBenchmarkSpots(spots.length, _getMinY(spots), _getMaxY(spots)), // Benchmark'ı ana grafiğe göre ayarla
+                      spots: _getBenchmarkSpots(
+                          spots.length,
+                          _getMinY(spots),
+                          _getMaxY(
+                              spots)), // Benchmark'ı ana grafiğe göre ayarla
                       isCurved: true,
                       color: Colors.white.withOpacity(0.7),
                       barWidth: 1,
@@ -654,7 +708,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                     tooltipRoundedRadius: 8,
                     getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                       return touchedBarSpots.map((barSpot) {
-                        final date = barSpot.x.toInt() < bottomTitles.length && bottomTitles[barSpot.x.toInt()].isNotEmpty
+                        final date = barSpot.x.toInt() < bottomTitles.length &&
+                                bottomTitles[barSpot.x.toInt()].isNotEmpty
                             ? bottomTitles[barSpot.x.toInt()]
                             : '';
                         return LineTooltipItem(
@@ -744,8 +799,10 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   Widget _buildOverviewTab(Color cardColor, Color textPrimary,
       Color textSecondary, Color accent, Color posColor, Color negColor) {
     // API'den gelen _fetchedFundDetails içindeki 'fund_profile'ı kullan
-    final fundProfile = _fetchedFundDetails['fund_profile'] as Map<String, dynamic>? ?? {};
-    final risk = int.tryParse(fundProfile['Fonun Risk Değeri']?.toString() ?? '0') ?? 0;
+    final fundProfile =
+        _fetchedFundDetails['fund_profile'] as Map<String, dynamic>? ?? {};
+    final risk =
+        int.tryParse(fundProfile['Fonun Risk Değeri']?.toString() ?? '0') ?? 0;
 
     final dynamic rawGirisKomisyonu = fundProfile['Giriş Komisyonu'];
     final String girisKomisyonuDisplayValue =
@@ -758,14 +815,16 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         (rawCikisKomisyonu is String && rawCikisKomisyonu.isNotEmpty)
             ? rawCikisKomisyonu
             : 'Yok';
-    
-    if (_isLoadingDetails) {
-        return Center(child: CircularProgressIndicator(color: accent));
-    }
-    if (fundProfile.isEmpty && _fetchedFundDetails.isNotEmpty && _fetchedFundDetails['kod'] == null) { // Eğer detaylar boşsa ve ana fon bilgisi de yoksa
-        return const Center(child: Text("Fon profili bilgisi bulunamadı."));
-    }
 
+    if (_isLoadingDetails) {
+      return Center(child: CircularProgressIndicator(color: accent));
+    }
+    if (fundProfile.isEmpty &&
+        _fetchedFundDetails.isNotEmpty &&
+        _fetchedFundDetails['kod'] == null) {
+      // Eğer detaylar boşsa ve ana fon bilgisi de yoksa
+      return const Center(child: Text("Fon profili bilgisi bulunamadı."));
+    }
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -842,22 +901,19 @@ class _FundDetailScreenState extends State<FundDetailScreen>
               const SizedBox(height: 8),
               _buildInfoRow(
                   'Son İşlem Saati',
-                  fundProfile['Son İşlem Saati']?.toString() ??
-                      'Bilgi yok',
+                  fundProfile['Son İşlem Saati']?.toString() ?? 'Bilgi yok',
                   textPrimary,
                   textSecondary),
               const SizedBox(height: 8),
               _buildInfoRow(
                   'Fon Alış Valörü',
-                  fundProfile['Fon Alış Valörü']?.toString() ??
-                      'Bilgi yok',
+                  fundProfile['Fon Alış Valörü']?.toString() ?? 'Bilgi yok',
                   textPrimary,
                   textSecondary),
               const SizedBox(height: 8),
               _buildInfoRow(
                   'Fon Satış Valörü',
-                  fundProfile['Fon Satış Valörü']?.toString() ??
-                      'Bilgi yok',
+                  fundProfile['Fon Satış Valörü']?.toString() ?? 'Bilgi yok',
                   textPrimary,
                   textSecondary),
               const SizedBox(height: 8),
@@ -898,7 +954,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                   ),
                 ),
                 const SizedBox(height: 12),
-                InkWell( // Linki tıklanabilir yapalım
+                InkWell(
+                  // Linki tıklanabilir yapalım
                   onTap: () {
                     //launchUrl(Uri.parse(fundProfile['KAP Bilgi Adresi'])); // url_launcher paketi lazım
                   },
@@ -930,15 +987,17 @@ class _FundDetailScreenState extends State<FundDetailScreen>
       Color cardColor, Color textPrimary, Color textSecondary, Color accent) {
     // API'den gelen _fetchedFundDetails içindeki 'fund_distributions'ı kullan
     final fundDistributions =
-        _fetchedFundDetails['fund_distributions'] as Map<String, dynamic>? ?? {};
-    
-    if (_isLoadingDetails) {
-        return Center(child: CircularProgressIndicator(color: accent));
-    }
-     if (fundDistributions.isEmpty && _fetchedFundDetails.isNotEmpty && _fetchedFundDetails['kod'] == null) {
-        return const Center(child: Text("Fon dağılım bilgisi bulunamadı."));
-    }
+        _fetchedFundDetails['fund_distributions'] as Map<String, dynamic>? ??
+            {};
 
+    if (_isLoadingDetails) {
+      return Center(child: CircularProgressIndicator(color: accent));
+    }
+    if (fundDistributions.isEmpty &&
+        _fetchedFundDetails.isNotEmpty &&
+        _fetchedFundDetails['kod'] == null) {
+      return const Center(child: Text("Fon dağılım bilgisi bulunamadı."));
+    }
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -964,45 +1023,49 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                     Expanded(
                       flex: 3,
                       child: fundDistributions.isEmpty
-                          ? Center(child: Text('Dağılım verisi yok', style: TextStyle(color: textSecondary)))
+                          ? Center(
+                              child: Text('Dağılım verisi yok',
+                                  style: TextStyle(color: textSecondary)))
                           : Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          PieChart(
-                            PieChartData(
-                              sections: _getPieChartSections(fundDistributions), // Bu metod API verisine göre güncellenmeli
-                              sectionsSpace: 2,
-                              centerSpaceRadius: 40,
-                              startDegreeOffset: -90,
+                              alignment: Alignment.center,
+                              children: [
+                                PieChart(
+                                  PieChartData(
+                                    sections: _getPieChartSections(
+                                        fundDistributions), // Bu metod API verisine göre güncellenmeli
+                                    sectionsSpace: 2,
+                                    centerSpaceRadius: 40,
+                                    startDegreeOffset: -90,
+                                  ),
+                                ),
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Toplam',
+                                      style: TextStyle(
+                                        color: textSecondary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    Text(
+                                      '100%',
+                                      style: TextStyle(
+                                        color: textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                          ),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Toplam',
-                                style: TextStyle(
-                                  color: textSecondary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              Text(
-                                '100%',
-                                style: TextStyle(
-                                  color: textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
                     Expanded(
                       flex: 4,
                       child: fundDistributions.isEmpty
-                          ? const SizedBox.shrink() // Zaten yukarıda mesaj gösteriliyor
+                          ? const SizedBox
+                              .shrink() // Zaten yukarıda mesaj gösteriliyor
                           : Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1082,8 +1145,9 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                     : BarChart(
                         BarChartData(
                           // ... (Bar chart ayarları aynı kalabilir, veri fundDistributions'dan gelecek)
-                           alignment: BarChartAlignment.spaceAround,
-                          maxY: 100, // Veya dağılımdaki max değere göre dinamik yap
+                          alignment: BarChartAlignment.spaceAround,
+                          maxY:
+                              100, // Veya dağılımdaki max değere göre dinamik yap
                           barTouchData: BarTouchData(
                             enabled: true,
                             touchTooltipData: BarTouchTooltipData(
@@ -1132,7 +1196,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                                     return SideTitleWidget(
                                       axisSide: meta.axisSide,
                                       child: Text(
-                                        name.length > 8 // Daha kısa isimler için
+                                        name.length >
+                                                8 // Daha kısa isimler için
                                             ? '${name.substring(0, 8)}...'
                                             : name,
                                         style: TextStyle(
@@ -1179,7 +1244,9 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                               x: index,
                               barRods: [
                                 BarChartRodData(
-                                  toY: double.tryParse(entry.value.toString()) ?? 0.0,
+                                  toY:
+                                      double.tryParse(entry.value.toString()) ??
+                                          0.0,
                                   color: _getAssetColor(index),
                                   width: 15,
                                   borderRadius: const BorderRadius.only(
@@ -1215,14 +1282,15 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     // API'den gelen _riskMetricsData ve _monteCarloData'yı kullan
     // Dönemsel getiriler API'den gelmiyorsa, _historicalChartData'dan hesaplanabilir veya geçici olarak bırakılabilir.
     // Şimdilik dönemsel getirileri widget.fund veya _fetchedFundDetails üzerinden almaya çalışalım.
-    final dailyReturn = _fetchedFundDetails['gunluk_getiri'] ?? widget.fund['gunluk_getiri'] ?? '0%';
+    final dailyReturn = _fetchedFundDetails['gunluk_getiri'] ??
+        widget.fund['gunluk_getiri'] ??
+        '0%';
     // Diğer periyotlar için API'nizden veri gelmiyorsa, burası statik kalabilir veya hesaplama gerektirir.
     // API'niz `getFundHistoricalData` ile yeterince data sağlıyorsa, bu getiriler hesaplanabilir.
 
     if (_isLoadingMetrics || _isLoadingMonteCarlo) {
-        return Center(child: CircularProgressIndicator(color: accent));
+      return Center(child: CircularProgressIndicator(color: accent));
     }
-
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -1247,17 +1315,41 @@ class _FundDetailScreenState extends State<FundDetailScreen>
               // _buildReturnRow('Haftalık', _fetchedFundDetails['returns']?['weekly'] ?? '%0.00', posColor, negColor),
               // _buildReturnRow('Aylık', _fetchedFundDetails['returns']?['monthly'] ?? '%0.00', posColor, negColor),
               // Şimdilik statik bırakalım veya API'ye göre güncelleyelim
-              _buildReturnRow('Haftalık', _fetchedFundDetails['haftalik_getiri'] ?? '%2.47', posColor, negColor), // Örnek, API'nize göre güncelleyin
+              _buildReturnRow(
+                  'Haftalık',
+                  _fetchedFundDetails['haftalik_getiri'] ?? '%2.47',
+                  posColor,
+                  negColor), // Örnek, API'nize göre güncelleyin
               const SizedBox(height: 8),
-              _buildReturnRow('Aylık', _fetchedFundDetails['aylik_getiri'] ?? '%5.63', posColor, negColor),
+              _buildReturnRow(
+                  'Aylık',
+                  _fetchedFundDetails['aylik_getiri'] ?? '%5.63',
+                  posColor,
+                  negColor),
               const SizedBox(height: 8),
-              _buildReturnRow('3 Aylık', _fetchedFundDetails['uc_aylik_getiri'] ?? '%-1.23', posColor, negColor),
+              _buildReturnRow(
+                  '3 Aylık',
+                  _fetchedFundDetails['uc_aylik_getiri'] ?? '%-1.23',
+                  posColor,
+                  negColor),
               const SizedBox(height: 8),
-              _buildReturnRow('6 Aylık', _fetchedFundDetails['alti_aylik_getiri'] ?? '%8.92', posColor, negColor),
+              _buildReturnRow(
+                  '6 Aylık',
+                  _fetchedFundDetails['alti_aylik_getiri'] ?? '%8.92',
+                  posColor,
+                  negColor),
               const SizedBox(height: 8),
-              _buildReturnRow('Yıllık', _fetchedFundDetails['yillik_getiri'] ?? '%14.76', posColor, negColor),
-               const SizedBox(height: 8),
-              _buildReturnRow('3 Yıllık', _fetchedFundDetails['uc_yillik_getiri'] ?? '%72.34', posColor, negColor),
+              _buildReturnRow(
+                  'Yıllık',
+                  _fetchedFundDetails['yillik_getiri'] ?? '%14.76',
+                  posColor,
+                  negColor),
+              const SizedBox(height: 8),
+              _buildReturnRow(
+                  '3 Yıllık',
+                  _fetchedFundDetails['uc_yillik_getiri'] ?? '%72.34',
+                  posColor,
+                  negColor),
             ],
           ),
         ),
@@ -1278,13 +1370,20 @@ class _FundDetailScreenState extends State<FundDetailScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _buildMetricCard('Sharpe Oranı',
-                        (_riskMetricsData['sharpeRatio'] as num?)?.toDouble() ?? 0.0, textPrimary, accent),
+                    child: _buildMetricCard(
+                        'Sharpe Oranı',
+                        (_riskMetricsData['sharpeRatio'] as num?)?.toDouble() ??
+                            0.0,
+                        textPrimary,
+                        accent),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildMetricCard(
-                        'Beta', (_riskMetricsData['beta'] as num?)?.toDouble() ?? 0.0, textPrimary, accent),
+                        'Beta',
+                        (_riskMetricsData['beta'] as num?)?.toDouble() ?? 0.0,
+                        textPrimary,
+                        accent),
                   ),
                 ],
               ),
@@ -1293,12 +1392,19 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                 children: [
                   Expanded(
                     child: _buildMetricCard(
-                        'Alfa', (_riskMetricsData['alpha'] as num?)?.toDouble() ?? 0.0, textPrimary, accent),
+                        'Alfa',
+                        (_riskMetricsData['alpha'] as num?)?.toDouble() ?? 0.0,
+                        textPrimary,
+                        accent),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildMetricCard(
-                        'R²', (_riskMetricsData['rSquared'] as num?)?.toDouble() ?? 0.0, textPrimary, accent),
+                        'R²',
+                        (_riskMetricsData['rSquared'] as num?)?.toDouble() ??
+                            0.0,
+                        textPrimary,
+                        accent),
                   ),
                 ],
               ),
@@ -1306,13 +1412,20 @@ class _FundDetailScreenState extends State<FundDetailScreen>
               Row(
                 children: [
                   Expanded(
-                    child: _buildMetricCard('Max. Düşüş',
-                        (_riskMetricsData['maxDrawdown'] as num?)?.toDouble() ?? 0.0, textPrimary, negColor),
+                    child: _buildMetricCard(
+                        'Max. Düşüş',
+                        (_riskMetricsData['maxDrawdown'] as num?)?.toDouble() ??
+                            0.0,
+                        textPrimary,
+                        negColor),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildMetricCard(
-                        'Std. Sapma', (_riskMetricsData['stdDev'] as num?)?.toDouble() ?? 0.0, textPrimary, accent),
+                        'Std. Sapma',
+                        (_riskMetricsData['stdDev'] as num?)?.toDouble() ?? 0.0,
+                        textPrimary,
+                        accent),
                   ),
                 ],
               ),
@@ -1339,115 +1452,152 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                 // _monteCarloData'nın yapısına göre spotları oluşturmanız gerekecek.
                 // Örnek: _monteCarloData = {'optimistic': [FlSpot(...), ...], 'expected': ..., 'pessimistic': ...}
                 child: _monteCarloData.isEmpty
-                  ? Center(child: Text("Simülasyon verisi yok.", style: TextStyle(color: textSecondary)))
-                  : LineChart(
-                  LineChartData(
-                    // ... (Grid, Titles, Border ayarları benzer kalabilir)
-                     gridData: FlGridData(
-                      show: true,
-                      drawVerticalLine: false,
-                      horizontalInterval: 10, // API verisine göre dinamik olabilir
-                      getDrawingHorizontalLine: (value) => FlLine(
-                        color: Colors.white.withOpacity(0.1),
-                        strokeWidth: 1,
-                      ),
-                    ),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      rightTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      topTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            // API'den gelen periyot sayısına göre etiketleri ayarla
-                            final periods = (_monteCarloData['periods'] as int?) ?? 12; // Varsayılan 12
-                            final months = List.generate( (periods ~/ 3) +1 , (i) => i == 0 ? 'Bugün' : '${i*3} Ay');
-                             if (periods == 12) { // Özel durum 1 yıl için
-                                months[months.length-1] = '1 Yıl';
-                            }
+                    ? Center(
+                        child: Text("Simülasyon verisi yok.",
+                            style: TextStyle(color: textSecondary)))
+                    : LineChart(
+                        LineChartData(
+                          // ... (Grid, Titles, Border ayarları benzer kalabilir)
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            horizontalInterval:
+                                10, // API verisine göre dinamik olabilir
+                            getDrawingHorizontalLine: (value) => FlLine(
+                              color: Colors.white.withOpacity(0.1),
+                              strokeWidth: 1,
+                            ),
+                          ),
+                          titlesData: FlTitlesData(
+                            show: true,
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  // API'den gelen periyot sayısına göre etiketleri ayarla
+                                  final periods =
+                                      (_monteCarloData['periods'] as int?) ??
+                                          12; // Varsayılan 12
+                                  final months = List.generate(
+                                      (periods ~/ 3) + 1,
+                                      (i) => i == 0 ? 'Bugün' : '${i * 3} Ay');
+                                  if (periods == 12) {
+                                    // Özel durum 1 yıl için
+                                    months[months.length - 1] = '1 Yıl';
+                                  }
 
-                            final index = (value / 3).round().clamp(0, months.length -1);
-                            if (index >= 0 && index < months.length) {
-                              return SideTitleWidget(
-                                axisSide: meta.axisSide,
-                                child: Text(
-                                  months[index],
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.6),
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              );
-                            }
-                            return const SizedBox();
-                          },
-                          reservedSize: 22,
-                          interval: 3, // Her 3 periyotta bir etiket
-                        ),
-                      ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            return SideTitleWidget(
-                              axisSide: meta.axisSide,
-                              child: Text(
-                                '%${value.toInt()}',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.6),
-                                  fontSize: 10,
-                                ),
+                                  final index = (value / 3)
+                                      .round()
+                                      .clamp(0, months.length - 1);
+                                  if (index >= 0 && index < months.length) {
+                                    return SideTitleWidget(
+                                      axisSide: meta.axisSide,
+                                      child: Text(
+                                        months[index],
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.6),
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return const SizedBox();
+                                },
+                                reservedSize: 22,
+                                interval: 3, // Her 3 periyotta bir etiket
                               ),
-                            );
-                          },
-                          reservedSize: 32,
-                          interval: 10, // API verisine göre dinamik olabilir
+                            ),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  return SideTitleWidget(
+                                    axisSide: meta.axisSide,
+                                    child: Text(
+                                      '%${value.toInt()}',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.6),
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                reservedSize: 32,
+                                interval:
+                                    10, // API verisine göre dinamik olabilir
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(
+                            show: false,
+                          ),
+                          minY: (_monteCarloData['min_return'] as num?)
+                                  ?.toDouble() ??
+                              -20,
+                          maxY: (_monteCarloData['max_return'] as num?)
+                                  ?.toDouble() ??
+                              40,
+                          lineBarsData: [
+                            if (_monteCarloData['optimistic_scenario'] != null)
+                              LineChartBarData(
+                                spots: (_monteCarloData['optimistic_scenario']
+                                        as List<dynamic>)
+                                    .asMap()
+                                    .entries
+                                    .map((e) => FlSpot(e.key.toDouble(),
+                                        (e.value as num).toDouble()))
+                                    .toList(),
+                                isCurved: true,
+                                color: posColor,
+                                barWidth: 2,
+                                isStrokeCapRound: true,
+                                dotData: FlDotData(show: false),
+                                belowBarData: BarAreaData(
+                                    show: true,
+                                    color: posColor.withOpacity(0.1)),
+                              ),
+                            if (_monteCarloData['expected_scenario'] != null)
+                              LineChartBarData(
+                                spots: (_monteCarloData['expected_scenario']
+                                        as List<dynamic>)
+                                    .asMap()
+                                    .entries
+                                    .map((e) => FlSpot(e.key.toDouble(),
+                                        (e.value as num).toDouble()))
+                                    .toList(),
+                                isCurved: true,
+                                color: accent,
+                                barWidth: 2,
+                                isStrokeCapRound: true,
+                                dotData: FlDotData(show: false),
+                              ),
+                            if (_monteCarloData['pessimistic_scenario'] != null)
+                              LineChartBarData(
+                                spots: (_monteCarloData['pessimistic_scenario']
+                                        as List<dynamic>)
+                                    .asMap()
+                                    .entries
+                                    .map((e) => FlSpot(e.key.toDouble(),
+                                        (e.value as num).toDouble()))
+                                    .toList(),
+                                isCurved: true,
+                                color: negColor,
+                                barWidth: 2,
+                                isStrokeCapRound: true,
+                                dotData: FlDotData(show: false),
+                                belowBarData: BarAreaData(
+                                    show: true,
+                                    color: negColor.withOpacity(0.1)),
+                              ),
+                          ],
                         ),
                       ),
-                    ),
-                    borderData: FlBorderData(
-                      show: false,
-                    ),
-                    minY: (_monteCarloData['min_return'] as num?)?.toDouble() ?? -20,
-                    maxY: (_monteCarloData['max_return'] as num?)?.toDouble() ?? 40,
-                    lineBarsData: [
-                      if (_monteCarloData['optimistic_scenario'] != null)
-                        LineChartBarData(
-                          spots: (_monteCarloData['optimistic_scenario'] as List<dynamic>).asMap().entries.map((e) => FlSpot(e.key.toDouble(), (e.value as num).toDouble())).toList(),
-                          isCurved: true,
-                          color: posColor,
-                          barWidth: 2,
-                          isStrokeCapRound: true,
-                          dotData: FlDotData(show: false),
-                          belowBarData: BarAreaData(show: true, color: posColor.withOpacity(0.1)),
-                        ),
-                      if (_monteCarloData['expected_scenario'] != null)
-                        LineChartBarData(
-                          spots: (_monteCarloData['expected_scenario'] as List<dynamic>).asMap().entries.map((e) => FlSpot(e.key.toDouble(), (e.value as num).toDouble())).toList(),
-                          isCurved: true,
-                          color: accent,
-                          barWidth: 2,
-                          isStrokeCapRound: true,
-                          dotData: FlDotData(show: false),
-                        ),
-                      if (_monteCarloData['pessimistic_scenario'] != null)
-                        LineChartBarData(
-                          spots: (_monteCarloData['pessimistic_scenario'] as List<dynamic>).asMap().entries.map((e) => FlSpot(e.key.toDouble(), (e.value as num).toDouble())).toList(),
-                          isCurved: true,
-                          color: negColor,
-                          barWidth: 2,
-                          isStrokeCapRound: true,
-                          dotData: FlDotData(show: false),
-                          belowBarData: BarAreaData(show: true, color: negColor.withOpacity(0.1)),
-                        ),
-                    ],
-                  ),
-                ),
               ),
               const SizedBox(height: 8),
               Row(
@@ -1485,14 +1635,23 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     // Kategori karşılaştırması için örnek veri (API'nizden gelmeli)
     // Bu kısım için ayrı bir API çağrısı veya _fetchedFundDetails'den türetme gerekebilir.
     // Örneğin: _fetchedFundDetails['category_comparison_data']
-    final categoryComparisonData = _fetchedFundDetails['category_comparison'] ?? {
-        'this_fund': {'name': 'Bu Fon', 'value': 10.5, 'color_opacity': 1.0},
-        'category_avg': {'name': 'Kat. Ort.', 'value': 8.2, 'color_opacity': 0.7},
-        'bist_100': {'name': 'BIST 100', 'value': 6.7, 'color_opacity': 0.5},
-        'inflation': {'name': 'Enflasyon', 'value': 4.2, 'color_opacity': 0.3},
-    };
-    final List<MapEntry<String, dynamic>> categoryEntries = categoryComparisonData.entries.toList();
-
+    final categoryComparisonData = _fetchedFundDetails['category_comparison'] ??
+        {
+          'this_fund': {'name': 'Bu Fon', 'value': 10.5, 'color_opacity': 1.0},
+          'category_avg': {
+            'name': 'Kat. Ort.',
+            'value': 8.2,
+            'color_opacity': 0.7
+          },
+          'bist_100': {'name': 'BIST 100', 'value': 6.7, 'color_opacity': 0.5},
+          'inflation': {
+            'name': 'Enflasyon',
+            'value': 4.2,
+            'color_opacity': 0.3
+          },
+        };
+    final List<MapEntry<String, dynamic>> categoryEntries =
+        categoryComparisonData.entries.toList();
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -1517,7 +1676,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                 child: BarChart(
                   BarChartData(
                     // ... (Bar chart ayarları benzer kalabilir, veri API'den gelecek)
-                     alignment: BarChartAlignment.spaceAround,
+                    alignment: BarChartAlignment.spaceAround,
                     maxY: 20, // API verisine göre dinamik
                     minY: -10, // API verisine göre dinamik
                     barTouchData: BarTouchData(
@@ -1536,7 +1695,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                               ),
                               children: [
                                 TextSpan(
-                                  text: '%${(entry.value['value'] as num).toStringAsFixed(1)}',
+                                  text:
+                                      '%${(entry.value['value'] as num).toStringAsFixed(1)}',
                                   style: TextStyle(
                                     color: accent,
                                     fontSize: 14,
@@ -1602,14 +1762,15 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                     ),
                     borderData: FlBorderData(show: false),
                     barGroups: categoryEntries.asMap().entries.map((entryMap) {
-                        final index = entryMap.key;
-                        final data = entryMap.value.value;
-                        return BarChartGroupData(
+                      final index = entryMap.key;
+                      final data = entryMap.value.value;
+                      return BarChartGroupData(
                         x: index,
                         barRods: [
                           BarChartRodData(
                             toY: (data['value'] as num).toDouble(),
-                            color: accent.withOpacity((data['color_opacity'] as num).toDouble()),
+                            color: accent.withOpacity(
+                                (data['color_opacity'] as num).toDouble()),
                             width: 22,
                             borderRadius: const BorderRadius.only(
                               topLeft: Radius.circular(4),
@@ -1651,7 +1812,9 @@ class _FundDetailScreenState extends State<FundDetailScreen>
               if (_fetchedComparisonFunds.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20.0),
-                  child: Center(child: Text("Benzer fon bulunamadı.", style: TextStyle(color: textSecondary))),
+                  child: Center(
+                      child: Text("Benzer fon bulunamadı.",
+                          style: TextStyle(color: textSecondary))),
                 )
               else
                 ..._fetchedComparisonFunds.asMap().entries.map((entry) {
@@ -1659,7 +1822,10 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                   final fund = entry.value;
                   final isSelected = index == _selectedComparisonFund;
                   // API'den gelen 'return' değerini kullan
-                  final returnValue = (fund['return'] as num?)?.toDouble() ?? (fund['gunluk_getiri'] != null ? _parseDailyReturn(fund['gunluk_getiri']) : 0.0);
+                  final returnValue = (fund['return'] as num?)?.toDouble() ??
+                      (fund['gunluk_getiri'] != null
+                          ? _parseDailyReturn(fund['gunluk_getiri'])
+                          : 0.0);
                   final returnColor = returnValue >= 0 ? posColor : negColor;
 
                   return GestureDetector(
@@ -1702,7 +1868,9 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  fund['name']?.toString() ?? fund['fon_adi']?.toString() ?? 'İsim Yok',
+                                  fund['name']?.toString() ??
+                                      fund['fon_adi']?.toString() ??
+                                      'İsim Yok',
                                   style: TextStyle(
                                     color: textSecondary,
                                     fontSize: 12,
@@ -1716,7 +1884,9 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                           const SizedBox(width: 8),
                           Text(
                             // API'den gelen return değerini formatla
-                            returnValue >= 0 ? '+${returnValue.toStringAsFixed(2)}%' : '${returnValue.toStringAsFixed(2)}%',
+                            returnValue >= 0
+                                ? '+${returnValue.toStringAsFixed(2)}%'
+                                : '${returnValue.toStringAsFixed(2)}%',
                             style: TextStyle(
                               color: returnColor,
                               fontWeight: FontWeight.bold,
@@ -1736,39 +1906,40 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                 }).toList(),
               const SizedBox(height: 8),
               if (_fetchedComparisonFunds.isNotEmpty)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _selectedComparisonFund != -1 ? () {
-                    // Seçili fonlarla karşılaştırma ekranına git
-                    // final selectedFundCode = _fetchedComparisonFunds[_selectedComparisonFund]['kod'];
-                    // Navigator.push(context, MaterialPageRoute(builder: (context) => FundComparisonScreen(baseFund: widget.fund, compareWithFundCode: selectedFundCode)));
-                  } : null, // Butonu disable et
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _selectedComparisonFund != -1
+                        ? () {
+                            // Seçili fonlarla karşılaştırma ekranına git
+                            // final selectedFundCode = _fetchedComparisonFunds[_selectedComparisonFund]['kod'];
+                            // Navigator.push(context, MaterialPageRoute(builder: (context) => FundComparisonScreen(baseFund: widget.fund, compareWithFundCode: selectedFundCode)));
+                          }
+                        : null, // Butonu disable et
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.sync_alt, size: 16),
+                        SizedBox(width: 8),
+                        Text('KARŞILAŞTIRMA EKRANINI AÇ'),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.sync_alt, size: 16),
-                      SizedBox(width: 8),
-                      Text('KARŞILAŞTIRMA EKRANINI AÇ'),
-                    ],
-                  ),
                 ),
-              ),
             ],
           ),
         ),
       ],
     );
   }
-
 
   // Utility methods (aynı kalabilir)
   Widget _buildInfoRow(
@@ -1799,14 +1970,19 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   Widget _buildReturnRow(
       String period, String returnValue, Color posColor, Color negColor) {
     // ... aynı
-     final returnPercentage = _parseDailyReturn(returnValue);
+    final returnPercentage = _parseDailyReturn(returnValue);
     final isPositive = returnPercentage >= 0;
     final returnColor = isPositive ? posColor : negColor;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(period, style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)), // Temadan renk al
+        Text(period,
+            style: TextStyle(
+                color: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.color)), // Temadan renk al
         Row(
           children: [
             Text(
@@ -1831,7 +2007,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   Widget _buildMetricCard(
       String title, double value, Color textPrimary, Color valueColor) {
     // ... aynı
-     return Container(
+    return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.2), // Temaya göre ayarlanabilir
@@ -1880,9 +2056,12 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).textTheme.bodyLarge?.color // Temadan renk al
-          ),
+              fontSize: 12,
+              color: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.color // Temadan renk al
+              ),
         ),
       ],
     );
@@ -1902,8 +2081,9 @@ class _FundDetailScreenState extends State<FundDetailScreen>
 
   String _formatCurrency(dynamic value) {
     try {
-      final numValue =
-          value is String ? double.tryParse(value.replaceAll(',', '.')) ?? 0.0 : (value as num?)?.toDouble() ?? 0.0;
+      final numValue = value is String
+          ? double.tryParse(value.replaceAll(',', '.')) ?? 0.0
+          : (value as num?)?.toDouble() ?? 0.0;
       if (numValue >= 1000000000) {
         return '${(numValue / 1000000000).toStringAsFixed(2)}B';
       } else if (numValue >= 1000000) {
@@ -1919,25 +2099,29 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   }
 
   double _getMinY(List<FlSpot> spots) {
-    if (spots.isEmpty || (spots.length == 1 && spots.first.y == 0)) return 0; // Veri yoksa veya sadece (0,0) ise
+    if (spots.isEmpty || (spots.length == 1 && spots.first.y == 0))
+      return 0; // Veri yoksa veya sadece (0,0) ise
     double minY = spots[0].y;
     for (final spot in spots) {
       if (spot.y < minY) {
         minY = spot.y;
       }
     }
-    return (minY * 0.98).floorToDouble(); // Biraz boşluk bırak ve tam sayıya yuvarla
+    return (minY * 0.98)
+        .floorToDouble(); // Biraz boşluk bırak ve tam sayıya yuvarla
   }
 
   double _getMaxY(List<FlSpot> spots) {
-     if (spots.isEmpty || (spots.length == 1 && spots.first.y == 0)) return 1; // Veri yoksa veya sadece (0,0) ise
+    if (spots.isEmpty || (spots.length == 1 && spots.first.y == 0))
+      return 1; // Veri yoksa veya sadece (0,0) ise
     double maxY = spots[0].y;
     for (final spot in spots) {
       if (spot.y > maxY) {
         maxY = spot.y;
       }
     }
-    return (maxY * 1.02).ceilToDouble(); // Biraz boşluk bırak ve tam sayıya yuvarla
+    return (maxY * 1.02)
+        .ceilToDouble(); // Biraz boşluk bırak ve tam sayıya yuvarla
   }
 
   // ESKİ: _filterDataByTimeframe API'den filtrelenmiş veri geldiği için artık gerekmeyebilir.
@@ -1945,21 +2129,25 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   // List<dynamic> _filterDataByTimeframe(
   //     List<dynamic> historicalData, String timeframe) { ... }
 
-  List<FlSpot> _getBenchmarkSpots(int length, double mainMinY, double mainMaxY) {
+  List<FlSpot> _getBenchmarkSpots(
+      int length, double mainMinY, double mainMaxY) {
     // API'den benchmark verisi çekilmiyorsa, bu simülasyon kalabilir.
     // İdealde bu da API'den gelmeli: FundApiService.getBenchmarkHistoricalData('BIST100', _selectedTimeframe)
     final spots = <FlSpot>[];
     if (length == 0) return spots;
 
     final random = math.Random(42);
-    double value = (mainMinY + mainMaxY) / 2 ; // Ana grafiğin ortasından başlasın
+    double value =
+        (mainMinY + mainMaxY) / 2; // Ana grafiğin ortasından başlasın
     final range = (mainMaxY - mainMinY).abs();
     final step = range / 20 / length; // Daha küçük adımlar
 
     for (int i = 0; i < length; i++) {
-      final change = (random.nextDouble() - 0.48) * step * 5 ; // Biraz yukarı eğilim
+      final change =
+          (random.nextDouble() - 0.48) * step * 5; // Biraz yukarı eğilim
       value += change;
-      spots.add(FlSpot(i.toDouble(), value.clamp(mainMinY, mainMaxY))); // Ana grafik sınırları içinde kal
+      spots.add(FlSpot(i.toDouble(),
+          value.clamp(mainMinY, mainMaxY))); // Ana grafik sınırları içinde kal
     }
     return spots;
   }
@@ -1994,12 +2182,14 @@ class _FundDetailScreenState extends State<FundDetailScreen>
           title: '${value.toStringAsFixed(1)}%', // Yüzdeyi göster
           radius: 60, // Biraz daha büyük
           titleStyle: const TextStyle(
-            fontSize: 10, // Daha küçük font
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            shadows: [Shadow(color: Colors.black, blurRadius: 2)] // Okunurluk için gölge
-          ),
-           titlePositionPercentageOffset: 0.7, // Etiketi biraz dışarı taşı
+              fontSize: 10, // Daha küçük font
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              shadows: [
+                Shadow(color: Colors.black, blurRadius: 2)
+              ] // Okunurluk için gölge
+              ),
+          titlePositionPercentageOffset: 0.7, // Etiketi biraz dışarı taşı
         ),
       );
     });
