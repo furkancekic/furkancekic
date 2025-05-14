@@ -1,7 +1,9 @@
+// lib/main.dart - Updated to include funds screen
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/funds_screen.dart';  // Yeni eklenen
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
 import 'screens/screener_screen.dart';
@@ -54,8 +56,12 @@ class MyApp extends StatelessWidget {
           '/screener': (context) => const ScreenerScreen(),
           '/backtest': (context) => const BacktestingScreen(),
           '/reels': (context) => const StockReelsScreen(),
+          '/funds': (context) => const FundsScreen(), // Yeni route
           '/theme': (context) => const ThemeSettingsScreen(),
           '/benchmark': (context) => const BenchmarkComparisonScreen(),
         });
   }
 }
+
+// Updated HomeScreen to include Funds tab in navigation
+// lib/screens/home_screen.dart güncellenmeli - navigation'a Funds eklenmeli

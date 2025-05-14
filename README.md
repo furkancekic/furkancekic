@@ -1,158 +1,178 @@
-# myapp - Financial Analysis and Backtesting App
+// README.md - Updated with fund screener documentation
+# Modern Finance - Financial Analysis and Investment Fund Screener
 
 ## Project Overview
 
-myapp is a Flutter-based financial application designed to empower users with the tools they need to analyze and backtest stocks. Whether you're a seasoned investor or just starting, myapp provides a comprehensive platform for researching, strategizing, and simulating stock trades. This app allows users to view real-time and historical stock data, explore various technical indicators, and test their trading strategies in a simulated environment before committing real capital.
+Modern Finance is a cutting-edge Flutter-based financial application that combines stock market analysis with comprehensive investment fund screening capabilities. The app provides users with advanced tools to analyze, compare, and track both stocks and investment funds.
+
+## New Features - Fund Screener
+
+### 🏦 Comprehensive Fund Analysis
+- **Fund Discovery**: Browse and search through investment funds with advanced filtering
+- **Risk Analysis**: Detailed risk metrics including Sharpe ratio, Beta, Alpha, and volatility
+- **Performance Tracking**: Historical performance charts with multiple timeframes
+- **Monte Carlo Simulation**: Advanced risk modeling and scenario analysis
+- **Portfolio Distribution**: Visual breakdown of fund asset allocation
+
+### 📱 Enhanced User Experience
+- **Modern Material 3 Design**: Updated with dynamic color themes and improved accessibility
+- **Smart Filtering**: Multi-criteria filtering with real-time search
+- **Responsive Cards**: Optimized fund cards with key metrics at a glance
+- **Smooth Animations**: Fluid transitions and loading states with shimmer effects
+- **Dark/Light Theme**: Seamless theme switching with custom gradient backgrounds
+
+### 🔧 Technical Improvements
+- **Modular Architecture**: Clean separation of concerns with dedicated fund services
+- **Error Handling**: Robust error management with user-friendly fallbacks
+- **API Integration**: RESTful API integration with MongoDB backend support
+- **Performance Optimization**: Debounced search, infinite scrolling, and efficient state management
+- **Accessibility**: High contrast support and screen reader compatibility
 
 ## Features
 
--   **Real-Time Stock Data:** Access up-to-the-minute stock prices and market information.
--   **Historical Data:** View historical price charts to identify trends and patterns.
--   **Technical Indicators:** Utilize a wide array of technical indicators, such as Moving Averages, MACD, RSI, and Bollinger Bands, to enhance your analysis.
--   **Backtesting:** Simulate trades with historical data to test and refine your strategies.
--   **Customizable Charts:** Configure charts to display the data and indicators most relevant to your analysis.
--   **User-Friendly Interface:** Enjoy an intuitive design that simplifies complex financial data.
-- **Screener**: Find best stocks for you with filters.
-- **Stock Reels**: See stocks reels.
-- **Login**: Login screen to start and save data.
-- **Theme**: Change the theme to light or dark mode.
+### Existing Features
+- **Real-Time Stock Data**: Access up-to-the-minute stock prices and market information
+- **Historical Data**: View historical price charts to identify trends and patterns
+- **Technical Indicators**: Utilize various technical indicators (MA, MACD, RSI, Bollinger Bands)
+- **Backtesting**: Simulate trades with historical data to test strategies
+- **Customizable Charts**: Configure charts with multiple indicators and timeframes
+- **Stock Reels**: Quick stock insights in a swipe-through format
+- **Portfolio Tracking**: Monitor your investment portfolio with detailed analytics
+
+### New Fund Features
+- **Fund Screener**: Advanced filtering by category, risk level, returns, and TEFAS status
+- **Fund Comparison**: Side-by-side comparison of multiple funds
+- **Risk Metrics**: Comprehensive risk analysis with industry-standard measures
+- **Distribution Analysis**: Detailed breakdown of fund asset allocation
+- **Monte Carlo Simulation**: Probabilistic return scenarios and risk modeling
+- **Performance Charts**: Interactive charts with touch tooltips and zoom functionality
 
 ## Tech Stack
 
--   **Flutter:** For cross-platform mobile application development.
--   **Dart:** The programming language used in Flutter.
--   **Various Flutter Packages:** For chart implementation, http requests, state management, etc.
-- **REST API**: For providing data.
+- **Flutter**: Cross-platform mobile development
+- **Dart**: Programming language
+- **Provider**: State management
+- **FL Chart**: Interactive charting library
+- **HTTP**: API communication
+- **SharedPreferences**: Local data persistence
+- **Material 3**: Modern design system with dynamic theming
+
+## API Integration
+
+The app integrates with a comprehensive fund API providing:
+- Fund list and search functionality
+- Historical performance data
+- Risk metrics calculation
+- Monte Carlo simulation results
+- Category and filter options
 
 ## Getting Started
 
 ### Prerequisites
 
--   Flutter SDK installed on your machine.
--   An IDE like VS Code or Android Studio.
--   Android/iOS emulator or a physical device for testing.
+- Flutter SDK (latest stable version)
+- Dart SDK
+- Android Studio / VS Code
+- Android/iOS emulator or physical device
 
 ### Installation
 
-1.  **Clone the repository:**
+1. **Clone the repository:**
+```bash
+git clone [repository-url]
+cd modern_finance
 ```
-bash
-    git clone [repository-url]
-    
-```
-2.  **Navigate to the project directory:**
-```
-bash
-    cd myapp
-    
-```
-3.  **Install dependencies:**
-```
-bash
-    flutter pub get
-    
-```
-4.  **Run the application:**
-    
-```
-bash
-    flutter run
-    
-```
-## How to Use
 
-1.  **Launching the App:** Open the myapp on your emulator or physical device.
-2.  **Exploring Stocks:** Use the search feature to find specific stocks you want to analyze.
-3.  **Viewing Charts:** Tap on a stock to view its interactive chart. Customize the chart by selecting different timeframes and indicators.
-4.  **Analyzing Indicators:** Add and configure technical indicators to overlay on the chart for a deeper analysis.
-5.  **Backtesting:** Go to backtesting screen, choose a stock and date, set your strategy and click backtest button.
-6. **Login:** Go to login screen to save your data.
-7. **Screener:** Go to screener to filter stocks.
-8. **Stock Reels:** Go to stock reels to see reels of stocks.
-9. **Theme**: Change your theme in theme settings screen.
+2. **Install dependencies:**
+```bash
+flutter pub get
+```
+
+3. **Set up API configuration:**
+```dart
+// lib/src/config.dart
+class Config {
+  static const String baseUrl = 'your-api-endpoint';
+}
+```
+
+4. **Run the application:**
+```bash
+flutter run
+```
 
 ## Project Structure
+
 ```
-myapp/
-├── android/                 # Android-specific project files
+lib/
+├── models/              # Data models for funds and stocks
+│   ├── fund.dart       # Fund-related models
 │   └── ...
-├── ios/                     # iOS-specific project files
+├── services/           # API services and business logic
+│   ├── fund_api_service.dart
 │   └── ...
-├── lib/                     # Dart source code
-│   ├── data_sources/        # Data providers, api calls
-│   │   └── stock_api.dart       # API calls and data fetching.
-│   ├── repositories/        # Data retrieval logic, manages data_sources.
-│   │   └── stock_repository.dart  # Interface with data sources.
-│   ├── models/              # Data models
-│   │   ├── backtest_models.dart # Data for backtesting.
-│   │   └── candle_data.dart     # Data for candle.
-│   │   └── indicator.dart # Data for indicators.
-│   ├── providers/           # State management classes
-│   │   └── backtest_provider.dart  # State management for backtest screen.
-│   ├── services/            # Business logic layer
-│   │   ├── backtest_service.dart  # Backtest logic.
-│   │   ├── chart_service.dart   # Chart and indicator logic.
-│   │   ├── home_screen_service.dart # Home screen logic
-│   │   └── stock_api_service.dart # API requests.
-│   ├── screens/             # UI screens
-│   │   ├── backtesting_screen.dart # Backtesting page.
-│   │   ├── chart_screen.dart    # Chart page.
-│   │   ├── home_screen.dart     # Home page.
-│   │   ├── login_screen.dart  # Login page.
-│   │   ├── screener_screen.dart # Screener page.
-│   │   ├── stock_reels_screen.dart # Reels page.
-│   │   └── theme_settings_screen.dart # Theme settings.
-│   ├── theme/               # Theme files
-│   │   ├── app_theme.dart   # Theme settings.
-│   │   └── theme_provider.dart # Provider for theme.
-│   ├── widgets/             # Reusable UI components
-│   │   ├── app_drawer.dart  # Drawer for app.
-│   │   ├── common_widgets.dart # Common UI elements.
-│   │   ├── intraday_chart.dart # Intraday chart.
-│   │   └── mini_chart.dart # Mini charts.
-│   ├── utils/               # Utility functions
-│   │   └── logger.dart          # Logger for project.
-│   ├── main.dart            # Entry point of the app
-├── test/                    # Test files
-│   └── widget_test.dart
-├── web/                     # Web-specific project files
+├── screens/            # UI screens
+│   ├── fund_list_screen.dart
+│   ├── fund_detail_screen.dart
 │   └── ...
-├── assets/                  # Static assets (images, fonts, etc.)
-│   └── fonts/
-│       └── ...
-├── pubspec.yaml             # Project dependencies and configurations
-└── pubspec.lock             # Auto-generated dependencies file
+├── widgets/            # Reusable UI components
+│   ├── fund_card.dart
+│   ├── fund_filter_sheet.dart
+│   └── ...
+├── theme/              # Theme and styling
+│   ├── app_theme.dart
+│   └── theme_provider.dart
+└── utils/              # Utility functions
+    └── logger.dart
 ```
-### File Descriptions:
 
--   **`lib/main.dart`**: The main entry point of the Flutter application.
--   **`lib/models/`**: Contains Dart classes that define the data structures used in the app, such as `backtest_models.dart` for backtest results and `candle_data.dart` for stock prices data. `indicator.dart` to define indicators.
--   **`lib/data_sources/`**: Contains classes for fetching data from remote or local sources. `stock_api.dart` will handle API calls.
--   **`lib/repositories/`**: Contains classes that implement the business logic for data access. `stock_repository.dart` will use the data sources to get the data.
--   **`lib/services/`**: Contains classes that provide services to the UI layer, like `backtest_service.dart` for backtesting logic, `chart_service.dart` for chart logic, `stock_api_service.dart` for API requests, `home_screen_service.dart` for home screen logic.
--   **`lib/providers/`**: Contains state management classes that provide data to the UI layer like `backtest_provider.dart` for backtesting.
--   **`lib/screens/`**: Contains Dart files for each screen of the application like `backtesting_screen.dart`, `chart_screen.dart`, `home_screen.dart`, `login_screen.dart` , `screener_screen.dart`, `stock_reels_screen.dart` and `theme_settings_screen.dart`.
--   **`lib/widgets/`**: Contains reusable UI widgets like `app_drawer.dart`, `common_widgets.dart`, `intraday_chart.dart` and `mini_chart.dart`.
-- **`lib/utils/`**: Contains utility files like `logger.dart`.
--   **`lib/theme/`**: Contains theme files.
--   **`assets/`**: Contains all the assets of the project.
--   **`test/`**: Contains `widget_test.dart` for widget tests.
-- **`web/`**: Contains the web files for the project.
--   **`android/`**: Contains all the configuration files related to Android.
--   **`pubspec.yaml`**: The project configuration file.
--   **`pubspec.lock`**: The auto-generated dependencies file.
+## Fund Screener Usage
 
-## How to Contribute
+1. **Access Fund Screener**: Navigate to the "Funds" tab in the bottom navigation
+2. **Browse Funds**: Scroll through the list of available investment funds
+3. **Search and Filter**: Use the search bar and filter options to find specific funds
+4. **View Details**: Tap on any fund card to see detailed information
+5. **Analyze Performance**: Switch between tabs to view performance, risk, and distribution data
+6. **Compare Funds**: Use filter options to compare multiple funds side by side
 
-Contributions to myapp are welcome! Here's how you can contribute:
+## Customization
 
-1.  **Fork the repository.**
-2.  **Create a new branch** (`git checkout -b feature/YourContribution`).
-3.  **Make your changes.**
-4.  **Commit your changes** (`git commit -m 'Add some feature'`).
-5.  **Push to the branch** (`git push origin feature/YourContribution`).
-6.  **Open a pull request.**
+### Adding New Themes
+The app supports multiple color palettes. To add a new theme:
+
+1. Update `ColorPalette` enum in `theme_provider.dart`
+2. Add new colors in `AppTheme._themeColors` map
+3. The theme system automatically generates light/dark variations
+
+### Extending Fund Features
+To add new fund analysis features:
+
+1. Create new models in `models/fund.dart`
+2. Extend `FundApiService` with new endpoints
+3. Add corresponding UI components in the widgets directory
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Make your changes
+4. Add tests if applicable
+5. Commit your changes (`git commit -m 'Add new feature'`)
+6. Push to the branch (`git push origin feature/your-feature`)
+7. Open a Pull Request
 
 ## License
 
-This project is licensed under the [License Name] - see the [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the [MIT License](LICENSE.md).
+
+## Acknowledgments
+
+- Flutter team for the excellent framework
+- FL Chart contributors for the charting library
+- Community contributors for feedback and suggestions
+
+---
+
+**Note**: This app is for educational and demonstration purposes. Always consult with qualified financial advisors before making investment decisions.
