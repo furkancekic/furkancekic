@@ -1,3 +1,4 @@
+// lib/screens/home_screen.dart - Tamamlanmış
 import 'package:flutter/material.dart';
 import 'portfolio_screen.dart';
 import '../theme/app_theme.dart';
@@ -9,7 +10,8 @@ import '../widgets/app_drawer.dart';
 import 'screener_screen.dart';
 import 'chart_screen.dart';
 import 'stock_reels_screen.dart';
-import 'backtesting_screen.dart'; // Bu satırı ekleyin
+import 'backtesting_screen.dart';
+import 'funds_screen.dart'; // Fund ekranı import'u eklendi
 
 /// ====================================================================
 ///  FeatureCard
@@ -108,6 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ChartScreen(),
     BacktestingScreen(),
     StockReelsScreen(),
+    FundsScreen(), // Funds ekranı eklendi
     PortfolioScreen(),
   ];
 
@@ -126,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 /// ====================================================================
-///  CurvedNavigationBar
+///  CurvedNavigationBar - Güncellendi
 /// ====================================================================
 class CurvedNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -173,7 +176,7 @@ class CurvedNavigationBar extends StatelessWidget {
             ),
           ),
 
-          // orta buton
+          // orta buton (Chart Screen)
           Positioned(
             top: 0,
             left: 0,
@@ -211,7 +214,7 @@ class CurvedNavigationBar extends StatelessWidget {
             ),
           ),
 
-          // menü
+          // menü - Güncellendi (Funds eklendi)
           Positioned(
             bottom: 0,
             left: 0,
@@ -224,14 +227,14 @@ class CurvedNavigationBar extends StatelessWidget {
                   _buildNavItem(context, 0, Icons.home_rounded, 'Home'),
                   _buildNavItem(
                       context, 1, Icons.filter_list_rounded, 'Screener'),
-                  _buildNavItem(context, 3, Icons.account_balance,
-                      'Funds'), // New Funds Button
-                  const SizedBox(width: 60),
+                  const SizedBox(width: 60), // Orta buton için boşluk
                   _buildNavItem(
                       context, 3, Icons.analytics_rounded, 'Backtest'),
                   _buildNavItem(context, 4, Icons.slideshow_rounded, 'Reels'),
+                  _buildNavItem(context, 5, Icons.account_balance,
+                      'Funds'), // Funds eklendi
                   _buildNavItem(
-                      context, 5, Icons.account_balance_wallet, 'Portfolio'),
+                      context, 6, Icons.account_balance_wallet, 'Portfolio'),
                 ],
               ),
             ),
@@ -270,7 +273,7 @@ class CurvedNavigationBar extends StatelessWidget {
 }
 
 /// ====================================================================
-///  HomeContent
+///  HomeContent - Güncellendi
 /// ====================================================================
 class HomeContent extends StatefulWidget {
   const HomeContent({Key? key}) : super(key: key);
@@ -306,24 +309,6 @@ class _HomeContentState extends State<HomeContent> {
     _searchController
       ..removeListener(_onSearchChanged)
       ..dispose();
-    super.dispose();
-  }
-
-  Future<void> fetchData() async {
-    try {
-      // Make network request using stock_api_service.dart
-      final result = await api_service.StockApiService
-          .getWatchlistStocks(); // Replace with your actual method
-
-      // Check if the widget is still mounted before calling setState
-      if (mounted) {
-        setState(() {});
-      }
-    } catch (e) {
-      if (mounted) {
-        print('Error fetching data: $e');
-      }
-    }
     super.dispose();
   }
 
@@ -515,7 +500,7 @@ class _HomeContentState extends State<HomeContent> {
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppThemeExtension>();
 
-    // Temaya göre gradient renkleri al (bu satırı ekleyin)
+    // Temaya göre gradient renkleri al
     final bgGradientColors = ext?.gradientBackgroundColors ??
         [
           Theme.of(context).scaffoldBackgroundColor,
@@ -532,7 +517,7 @@ class _HomeContentState extends State<HomeContent> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: bgGradientColors, // Burayı değiştirin
+          colors: bgGradientColors,
         ),
       ),
       child: SafeArea(
@@ -561,10 +546,6 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  /* ================================================================
-   *                       Sliver helper’ları
-   * ============================================================== */
-
   SliverAppBar _buildAppBar(Color accent) {
     final ext = Theme.of(context).extension<AppThemeExtension>();
 
@@ -579,7 +560,6 @@ class _HomeContentState extends State<HomeContent> {
           Scaffold.of(context).openDrawer();
         },
       ),
-      /* ---------- BAŞLIK ---------- */
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -593,8 +573,6 @@ class _HomeContentState extends State<HomeContent> {
         ],
       ),
       centerTitle: true,
-
-      /* ---------- SAĞ IKON ---------- */
       actions: [
         CircleAvatar(
           backgroundColor: ext?.cardColor ?? AppTheme.cardColor,
@@ -606,15 +584,12 @@ class _HomeContentState extends State<HomeContent> {
         ),
         const SizedBox(width: 16),
       ],
-
-      /* ---------- ESNEK ARKA PLAN ---------- */
       flexibleSpace: FlexibleSpaceBar(
         background: Padding(
           padding: const EdgeInsets.fromLTRB(16, 80, 16, 0),
           child: SearchField(
             controller: _searchController,
             hintText: 'Search stocks, indices, ETFs...',
-            // Parametreyi kullanmadan direkt fonksiyonu çağır
             onSubmitted: () => _performSearch(_searchController.text),
           ),
         ),
@@ -666,7 +641,6 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  /* ----------- HATA ÇIKARAN METOD ARTIK DOĞRU ADLA ------------ */
   SliverToBoxAdapter _buildMarketOverview(Color txtPrim, Color accent) {
     return SliverToBoxAdapter(
       child: Container(
@@ -712,7 +686,6 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  /* -------------------------- Diğerleri ------------------------ */
   SliverToBoxAdapter _watchlistHeader(Color txtPrim) {
     return SliverToBoxAdapter(
       child: Padding(
@@ -780,7 +753,9 @@ class _HomeContentState extends State<HomeContent> {
                     title: 'Stock\nScreener',
                     description: 'Find stocks matching your criteria',
                     color: const Color(0xFF6200EA),
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pushNamed(context, '/screener');
+                    },
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -790,7 +765,9 @@ class _HomeContentState extends State<HomeContent> {
                     title: 'Advanced\nCharts',
                     description: 'Technical analysis tools',
                     color: const Color(0xFF00BFA5),
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pushNamed(context, '/chart');
+                    },
                   ),
                 ),
               ],
@@ -800,21 +777,54 @@ class _HomeContentState extends State<HomeContent> {
               children: [
                 Expanded(
                   child: FeatureCard(
+                    icon: Icons.account_balance,
+                    title: 'Investment\nFunds',
+                    description: 'Explore and analyze funds',
+                    color: const Color(0xFF2E7D32),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/funds');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: FeatureCard(
                     icon: Icons.analytics,
                     title: 'Strategy\nBacktesting',
                     description: 'Test your trading strategies',
                     color: const Color(0xFFFF6D00),
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pushNamed(context, '/backtest');
+                    },
                   ),
                 ),
-                const SizedBox(width: 16),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
                 Expanded(
                   child: FeatureCard(
                     icon: Icons.slideshow,
                     title: 'Stock\nReels',
                     description: 'Quick stock insights in a swipe',
                     color: const Color(0xFFD50000),
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pushNamed(context, '/reels');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: FeatureCard(
+                    icon: Icons.account_balance_wallet,
+                    title: 'Portfolio\nTracker',
+                    description: 'Track your investments',
+                    color: const Color(0xFF1565C0),
+                    onTap: () {
+                      // Portfolio tab zaten mevcut navigation'da
+                      Scaffold.of(context).openDrawer();
+                    },
                   ),
                 ),
               ],

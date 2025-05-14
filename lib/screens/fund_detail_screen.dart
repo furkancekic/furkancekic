@@ -23,17 +23,17 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   late AppLogger _logger;
-  
+
   Fund? _fund;
   FundRiskMetrics? _riskMetrics;
   MonteCarloSimulation? _simulation;
   List<FundHistoricalPoint> _historicalData = [];
-  
+
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
   String _selectedTimeframe = '1M';
-  
+
   final List<String> _timeframes = ['1G', '1H', '1A', '3A', '6A', '1Y', 'Tümü'];
 
   @override
@@ -59,12 +59,15 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     try {
       // Fon detayını getir
       final fund = await FundApiService.getFundDetail(widget.fundCode);
-      
+
       // Paralel olarak diğer verileri getir
       final results = await Future.wait([
-        FundApiService.getFundHistoricalData(widget.fundCode, _selectedTimeframe),
-        FundApiService.getFundRiskMetrics(widget.fundCode).catchError((_) => null),
-        FundApiService.getMonteCarloSimulation(widget.fundCode).catchError((_) => null),
+        FundApiService.getFundHistoricalData(
+            widget.fundCode, _selectedTimeframe),
+        FundApiService.getFundRiskMetrics(widget.fundCode)
+            .catchError((_) => null),
+        FundApiService.getMonteCarloSimulation(widget.fundCode)
+            .catchError((_) => null),
       ]);
 
       if (mounted) {
@@ -91,9 +94,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   Future<void> _loadHistoricalData(String timeframe) async {
     try {
       final data = await FundApiService.getFundHistoricalData(
-        widget.fundCode, 
-        timeframe
-      );
+          widget.fundCode, timeframe);
       if (mounted) {
         setState(() {
           _historicalData = data;
@@ -109,13 +110,12 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
-    
-    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
-    final bgGradientColors = themeExtension?.gradientBackgroundColors ?? [
-      theme.scaffoldBackgroundColor,
-      theme.scaffoldBackgroundColor,
-    ];
+
+    final bgGradientColors = themeExtension?.gradientBackgroundColors ??
+        [
+          theme.scaffoldBackgroundColor,
+          theme.scaffoldBackgroundColor,
+        ];
 
     return Scaffold(
       body: Container(
@@ -131,7 +131,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
             children: [
               // App Bar
               _buildAppBar(),
-              
+
               // Content
               Expanded(
                 child: _isLoading
@@ -151,6 +151,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final textSecondary =
+        themeExtension?.textSecondary ?? AppTheme.textSecondary;
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
 
     return Container(
@@ -179,7 +181,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                     _fund!.fonAdi,
                     style: TextStyle(
                       fontSize: 14,
-                      color: theme.extension<AppThemeExtension>()?.textSecondary ?? AppTheme.textSecondary,
+                      color: textSecondary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -203,7 +205,9 @@ class _FundDetailScreenState extends State<FundDetailScreen>
 
   Widget _buildLoadingContent() {
     final theme = Theme.of(context);
-    final accentColor = theme.extension<AppThemeExtension>()?.accentColor ?? AppTheme.accentColor;
+    final themeExtension = theme.extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
 
     return Center(
       child: Column(
@@ -211,7 +215,10 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         children: [
           CircularProgressIndicator(color: accentColor),
           const SizedBox(height: 16),
-          Text('Fon verileri yükleniyor...'),
+          Text(
+            'Fon verileri yükleniyor...',
+            style: TextStyle(color: textPrimary),
+          ),
         ],
       ),
     );
@@ -221,7 +228,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final textSecondary =
+        themeExtension?.textSecondary ?? AppTheme.textSecondary;
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
 
     return Center(
@@ -267,10 +275,10 @@ class _FundDetailScreenState extends State<FundDetailScreen>
       children: [
         // Fund summary card
         _buildFundSummary(),
-        
+
         // Tab bar
         _buildTabBar(),
-        
+
         // Tab content
         Expanded(
           child: TabBarView(
@@ -294,10 +302,13 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
-    final positiveColor = themeExtension?.positiveColor ?? AppTheme.positiveColor;
-    final negativeColor = themeExtension?.negativeColor ?? AppTheme.negativeColor;
-    
+    final textSecondary =
+        themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final positiveColor =
+        themeExtension?.positiveColor ?? AppTheme.positiveColor;
+    final negativeColor =
+        themeExtension?.negativeColor ?? AppTheme.negativeColor;
+
     final isPositive = _fund!.gunlukGetiriDouble >= 0;
     final changeColor = isPositive ? positiveColor : negativeColor;
 
@@ -352,9 +363,10 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _fund!.isTefasActive 
+                    color: _fund!.isTefasActive
                         ? positiveColor.withOpacity(0.2)
                         : textSecondary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -364,7 +376,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: _fund!.isTefasActive ? positiveColor : textSecondary,
+                      color:
+                          _fund!.isTefasActive ? positiveColor : textSecondary,
                     ),
                   ),
                 ),
@@ -380,6 +393,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
+    final textSecondary =
+        themeExtension?.textSecondary ?? AppTheme.textSecondary;
     final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
 
     return Container(
@@ -397,7 +412,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         indicatorPadding: const EdgeInsets.all(4),
         dividerColor: Colors.transparent,
         labelColor: accentColor,
-        unselectedLabelColor: theme.extension<AppThemeExtension>()?.textSecondary ?? AppTheme.textSecondary,
+        unselectedLabelColor: textSecondary,
         isScrollable: true,
         tabs: const [
           Tab(text: 'Genel'),
@@ -413,34 +428,31 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   Widget _buildOverviewTab() {
     if (_fund == null) return const SizedBox.shrink();
 
-    final theme = Theme.of(context);
-    final themeExtension = theme.extension<AppThemeExtension>();
-    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildInfoCard('Genel Bilgiler', [
-            _buildInfoRow('Fon Toplam Değeri', '${_formatCurrency(_fund!.fonToplamDeger)} TL'),
-            _buildInfoRow('Yatırımcı Sayısı', _formatNumber(_fund!.yatirimciSayisi)),
+            _buildInfoRow('Fon Toplam Değeri',
+                '${_formatCurrency(_fund!.fonToplamDeger)} TL'),
+            _buildInfoRow(
+                'Yatırımcı Sayısı', _formatNumber(_fund!.yatirimciSayisi)),
             _buildInfoRow('Pazar Payı', _fund!.pazarPayi),
             _buildInfoRow('Pay Sayısı', _formatNumber(_fund!.pay)),
             _buildInfoRow('Kayıt Tarihi', _formatDate(_fund!.kayitTarihi)),
           ]),
-          
           const SizedBox(height: 16),
-          
           if (_fund!.fundProfile != null)
             _buildInfoCard('Fon Profili', [
-              if (_fund!.fundProfile!.isınKodu != null)
-                _buildInfoRow('ISIN Kodu', _fund!.fundProfile!.isınKodu!),
+              if (_fund!.fundProfile!.isinKodu != null)
+                _buildInfoRow('ISIN Kodu', _fund!.fundProfile!.isinKodu!),
               if (_fund!.fundProfile!.fonunRiskDegeri != null)
-                _buildInfoRow('Risk Değeri', _fund!.fundProfile!.fonunRiskDegeri!),
-              if (_fund!.fundProfile!.platformİslemDurumu != null)
-                _buildInfoRow('İşlem Durumu', _fund!.fundProfile!.platformİslemDurumu!),
+                _buildInfoRow(
+                    'Risk Değeri', _fund!.fundProfile!.fonunRiskDegeri!),
+              if (_fund!.fundProfile!.platformIslemDurumu != null)
+                _buildInfoRow(
+                    'İşlem Durumu', _fund!.fundProfile!.platformIslemDurumu!),
             ]),
         ],
       ),
@@ -455,9 +467,9 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         children: [
           // Timeframe selector
           _buildTimeframeSelector(),
-          
+
           const SizedBox(height: 16),
-          
+
           // Performance chart
           _buildPerformanceChart(),
         ],
@@ -467,6 +479,12 @@ class _FundDetailScreenState extends State<FundDetailScreen>
 
   Widget _buildRiskTab() {
     if (_riskMetrics == null) {
+      final theme = Theme.of(context);
+      final themeExtension = theme.extension<AppThemeExtension>();
+      final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+      final textSecondary =
+          themeExtension?.textSecondary ?? AppTheme.textSecondary;
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -474,10 +492,13 @@ class _FundDetailScreenState extends State<FundDetailScreen>
             Icon(
               Icons.info_outline,
               size: 64,
-              color: Theme.of(context).extension<AppThemeExtension>()?.textSecondary,
+              color: textSecondary,
             ),
             const SizedBox(height: 16),
-            const Text('Risk verileri yüklenemedi'),
+            Text(
+              'Risk verileri yüklenemedi',
+              style: TextStyle(color: textPrimary),
+            ),
           ],
         ),
       );
@@ -487,27 +508,37 @@ class _FundDetailScreenState extends State<FundDetailScreen>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          _buildRiskMetricCard('Sharpe Ratio', _riskMetrics!.sharpeRatio, 
+          _buildRiskMetricCard('Sharpe Ratio', _riskMetrics!.sharpeRatio,
               'Risk başına getiri oranı'),
-          _buildRiskMetricCard('Beta', _riskMetrics!.beta, 
-              'Piyasa ile korelasyon'),
-          _buildRiskMetricCard('Alpha', _riskMetrics!.alpha, 
-              'Piyasa üstü getiri'),
-          _buildRiskMetricCard('Volatilite', _riskMetrics!.volatility, 
-              'Fiyat dalgalanması', suffix: '%'),
-          _buildRiskMetricCard('Max Drawdown', _riskMetrics!.maxDrawdown, 
-              'Maksimum düşüş', suffix: '%'),
-          _buildRiskMetricCard('Std Deviation', _riskMetrics!.stdDev, 
-              'Standart sapma', suffix: '%'),
+          _buildRiskMetricCard(
+              'Beta', _riskMetrics!.beta, 'Piyasa ile korelasyon'),
+          _buildRiskMetricCard(
+              'Alpha', _riskMetrics!.alpha, 'Piyasa üstü getiri'),
+          _buildRiskMetricCard(
+              'Volatilite', _riskMetrics!.volatility, 'Fiyat dalgalanması',
+              suffix: '%'),
+          _buildRiskMetricCard(
+              'Max Drawdown', _riskMetrics!.maxDrawdown, 'Maksimum düşüş',
+              suffix: '%'),
+          _buildRiskMetricCard(
+              'Std Deviation', _riskMetrics!.stdDev, 'Standart sapma',
+              suffix: '%'),
         ],
       ),
     );
   }
 
   Widget _buildDistributionTab() {
+    final theme = Theme.of(context);
+    final themeExtension = theme.extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+
     if (_fund?.fundDistributions == null || _fund!.fundDistributions!.isEmpty) {
-      return const Center(
-        child: Text('Dağılım verileri bulunamadı'),
+      return Center(
+        child: Text(
+          'Dağılım verileri bulunamadı',
+          style: TextStyle(color: textPrimary),
+        ),
       );
     }
 
@@ -524,6 +555,12 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   }
 
   Widget _buildSimulationTab() {
+    final theme = Theme.of(context);
+    final themeExtension = theme.extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final textSecondary =
+        themeExtension?.textSecondary ?? AppTheme.textSecondary;
+
     if (_simulation == null) {
       return Center(
         child: Column(
@@ -532,10 +569,13 @@ class _FundDetailScreenState extends State<FundDetailScreen>
             Icon(
               Icons.analytics_outlined,
               size: 64,
-              color: Theme.of(context).extension<AppThemeExtension>()?.textSecondary,
+              color: textSecondary,
             ),
             const SizedBox(height: 16),
-            const Text('Monte Carlo simülasyonu yüklenemedi'),
+            Text(
+              'Monte Carlo simülasyonu yüklenemedi',
+              style: TextStyle(color: textPrimary),
+            ),
           ],
         ),
       );
@@ -581,7 +621,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final textSecondary =
+        themeExtension?.textSecondary ?? AppTheme.textSecondary;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -608,7 +649,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
-    final cardColorLight = themeExtension?.cardColorLight ?? AppTheme.cardColorLight;
+    final cardColorLight =
+        themeExtension?.cardColorLight ?? AppTheme.cardColorLight;
 
     return SizedBox(
       height: 40,
@@ -618,7 +660,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         itemBuilder: (context, index) {
           final timeframe = _timeframes[index];
           final isSelected = timeframe == _selectedTimeframe;
-          
+
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
@@ -639,19 +681,26 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   }
 
   Widget _buildPerformanceChart() {
+    final theme = Theme.of(context);
+    final themeExtension = theme.extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+
     if (_historicalData.isEmpty) {
       return Container(
         height: 300,
-        child: const Center(
-          child: Text('Performans verileri bulunamadı'),
+        child: Center(
+          child: Text(
+            'Performans verileri bulunamadı',
+            style: TextStyle(color: textPrimary),
+          ),
         ),
       );
     }
 
-    final theme = Theme.of(context);
-    final themeExtension = theme.extension<AppThemeExtension>();
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
-    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final textSecondary =
+        themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
 
     // Chart verilerini hazırla
     final spots = _historicalData.asMap().entries.map((entry) {
@@ -697,7 +746,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                 ),
               ),
               topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: false),
             lineBarsData: [
@@ -715,7 +765,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
             ],
             lineTouchData: LineTouchData(
               touchTooltipData: LineTouchTooltipData(
-                tooltipBgColor: theme.extension<AppThemeExtension>()?.cardColor ?? AppTheme.cardColor,
+                tooltipBgColor: cardColor,
                 getTooltipItems: (touchedSpots) {
                   return touchedSpots.map((spot) {
                     final index = spot.x.toInt();
@@ -724,7 +774,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                       return LineTooltipItem(
                         '${point.price.toStringAsFixed(4)} TL\n${_formatDate(point.date)}',
                         TextStyle(
-                          color: themeExtension?.textPrimary ?? AppTheme.textPrimary,
+                          color: textPrimary,
                           fontSize: 14,
                         ),
                       );
@@ -740,11 +790,13 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     );
   }
 
-  Widget _buildRiskMetricCard(String title, double value, String description, {String suffix = ''}) {
+  Widget _buildRiskMetricCard(String title, double value, String description,
+      {String suffix = ''}) {
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final textSecondary =
+        themeExtension?.textSecondary ?? AppTheme.textSecondary;
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
 
     return Container(
@@ -806,7 +858,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         Colors.purple,
         Colors.orange,
       ];
-      
+
       final index = _fund!.fundDistributions!.keys.toList().indexOf(entry.key);
       final color = colors[index % colors.length];
 
@@ -868,9 +920,10 @@ class _FundDetailScreenState extends State<FundDetailScreen>
           ),
           const SizedBox(height: 16),
           ..._fund!.fundDistributions!.entries.map((entry) {
-            final index = _fund!.fundDistributions!.keys.toList().indexOf(entry.key);
+            final index =
+                _fund!.fundDistributions!.keys.toList().indexOf(entry.key);
             final color = colors[index % colors.length];
-            
+
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
@@ -911,10 +964,13 @@ class _FundDetailScreenState extends State<FundDetailScreen>
 
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
-    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final textSecondary =
+        themeExtension?.textSecondary ?? AppTheme.textSecondary;
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
-    final positiveColor = themeExtension?.positiveColor ?? AppTheme.positiveColor;
-    final negativeColor = themeExtension?.negativeColor ?? AppTheme.negativeColor;
+    final positiveColor =
+        themeExtension?.positiveColor ?? AppTheme.positiveColor;
+    final negativeColor =
+        themeExtension?.negativeColor ?? AppTheme.negativeColor;
 
     final scenarios = _simulation!.scenarios;
     final data = <LineChartBarData>[];
@@ -996,7 +1052,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                 ),
               ),
               topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
             borderData: FlBorderData(show: false),
             lineBarsData: data,
@@ -1012,17 +1069,19 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
-    final positiveColor = themeExtension?.positiveColor ?? AppTheme.positiveColor;
-    final negativeColor = themeExtension?.negativeColor ?? AppTheme.negativeColor;
+    final positiveColor =
+        themeExtension?.positiveColor ?? AppTheme.positiveColor;
+    final negativeColor =
+        themeExtension?.negativeColor ?? AppTheme.negativeColor;
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
 
+    // Define scenarios with records/tuples
     final scenarios = [
-      ('pessimistic', 'Kötümser', negativeColor),
-      ('below_average', 'Ortalamanın Altı', Colors.orange),
-      ('expected', 'Beklenen', accentColor),
-      ('above_average', 'Ortalamanın Üstü', Colors.blue),
-      ('optimistic', 'İyimser', positiveColor),
+      ScenarioData('pessimistic', 'Kötümser', negativeColor),
+      ScenarioData('below_average', 'Ortalamanın Altı', Colors.orange),
+      ScenarioData('expected', 'Beklenen', accentColor),
+      ScenarioData('above_average', 'Ortalamanın Üstü', Colors.blue),
+      ScenarioData('optimistic', 'İyimser', positiveColor),
     ];
 
     return FuturisticCard(
@@ -1039,15 +1098,13 @@ class _FundDetailScreenState extends State<FundDetailScreen>
           ),
           const SizedBox(height: 16),
           ...scenarios.map((scenario) {
-            final key = scenario.$1;
-            final name = scenario.$2;
-            final color = scenario.$3;
-            final values = _simulation!.scenarios[key];
-            
-            if (values == null || values.isEmpty) return const SizedBox.shrink();
-            
+            final values = _simulation!.scenarios[scenario.key];
+
+            if (values == null || values.isEmpty)
+              return const SizedBox.shrink();
+
             final finalValue = values.last;
-            
+
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
@@ -1056,14 +1113,14 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: color,
+                      color: scenario.color,
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      name,
+                      scenario.name,
                       style: TextStyle(color: textPrimary),
                     ),
                   ),
@@ -1107,4 +1164,13 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
+}
+
+// Helper class for scenario data
+class ScenarioData {
+  final String key;
+  final String name;
+  final Color color;
+
+  ScenarioData(this.key, this.name, this.color);
 }
