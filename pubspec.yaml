@@ -27,8 +27,12 @@ dependencies:
   syncfusion_flutter_charts: ^29.1.38
   intl: ^0.18.1 # Or latest version
   logging: ^1.1.0
-  flutter_typeahead: ^5.2.0 # <--- ADD THIS LINE (Check pub.dev for the latest version)
-
+  flutter_typeahead: ^5.2.0
+  
+  # Eklenen yeni paketler
+  google_fonts: ^4.0.4 # Modern fontlar için
+  shimmer: ^3.0.0     # Yükleme efektleri için
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter

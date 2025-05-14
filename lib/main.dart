@@ -9,7 +9,7 @@ import 'screens/chart_screen.dart';
 import 'screens/stock_reels_screen.dart';
 import 'screens/backtesting_screen.dart';
 import 'screens/theme_settings_screen.dart';
-import 'screens/benchmark_comparison_screen.dart'; // Import the new screen
+import 'screens/benchmark_comparison_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,8 +55,7 @@ class MyApp extends StatelessWidget {
           '/backtest': (context) => const BacktestingScreen(),
           '/reels': (context) => const StockReelsScreen(),
           '/theme': (context) => const ThemeSettingsScreen(),
-          '/benchmark': (context) =>
-              const BenchmarkComparisonScreen(), // Add the new route
+          '/benchmark': (context) => const BenchmarkComparisonScreen(),
         });
   }
 }

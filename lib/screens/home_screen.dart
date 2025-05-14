@@ -224,6 +224,8 @@ class CurvedNavigationBar extends StatelessWidget {
                   _buildNavItem(context, 0, Icons.home_rounded, 'Home'),
                   _buildNavItem(
                       context, 1, Icons.filter_list_rounded, 'Screener'),
+                  _buildNavItem(context, 3, Icons.account_balance,
+                      'Funds'), // New Funds Button
                   const SizedBox(width: 60),
                   _buildNavItem(
                       context, 3, Icons.analytics_rounded, 'Backtest'),
