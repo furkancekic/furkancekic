@@ -14,13 +14,19 @@ class FundMarketOverviewScreen extends StatefulWidget {
 
 class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
   Map<String, dynamic>? _marketData;
+  Map<String, dynamic>? _categoryPerformanceDetails;
   bool _isLoading = true;
   String _error = '';
+
+  // For category filter
+  Set<String> _selectedCategories = {};
+  List<String> _allCategories = [];
 
   @override
   void initState() {
     super.initState();
     _loadMarketOverview();
+    _loadCategoryPerformanceDetails();
   }
 
   Future<void> _loadMarketOverview() async {
@@ -35,6 +41,17 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
 
       setState(() {
         _marketData = marketData;
+
+        // Initialize category selection
+        if (_marketData != null &&
+            _marketData!['category_distribution'] != null) {
+          final categories =
+              _marketData!['category_distribution'] as Map<String, dynamic>;
+          _allCategories = categories.keys.toList();
+          _selectedCategories =
+              Set.from(_allCategories); // Select all by default
+        }
+
         _isLoading = false;
       });
     } catch (e) {
@@ -43,6 +60,18 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
         _error = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadCategoryPerformanceDetails() async {
+    try {
+      final categoryDetails =
+          await FundApiService.getCategoryPerformanceDetails();
+      setState(() {
+        _categoryPerformanceDetails = categoryDetails;
+      });
+    } catch (e) {
+      print('Error loading category performance details: $e');
     }
   }
 
@@ -87,33 +116,20 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
                   ),
                 )
               : RefreshIndicator(
-                  onRefresh: _loadMarketOverview,
+                  onRefresh: () async {
+                    await _loadMarketOverview();
+                    await _loadCategoryPerformanceDetails();
+                  },
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Debug widget - data kontrolü için
-                        if (_marketData != null)
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Debug: Loaded ${_marketData!.keys.length} keys',
-                              style:
-                                  TextStyle(fontSize: 12, color: textSecondary),
-                            ),
-                          ),
-
                         // Temel Pazar İstatistikleri
                         _buildMarketStats(),
                         const SizedBox(height: 24),
 
-                        // Kategori Dağılımı
+                        // Kategori Dağılımı (with improved scrollable filter)
                         _buildCategoryDistribution(),
                         const SizedBox(height: 24),
 
@@ -129,7 +145,7 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
                         _buildTefasAndMarketShare(),
                         const SizedBox(height: 24),
 
-                        // Kategori Performans Sıralaması
+                        // Kategori Performans Sıralaması (with top 5 funds)
                         _buildCategoryPerformanceRanking(),
                       ],
                     ),
@@ -138,6 +154,7 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
     );
   }
 
+  // [Previous methods remain the same: _buildMarketStats, _buildPerformanceAnalysis, _buildRiskDistribution, _buildTefasAndMarketShare]
   Widget _buildMarketStats() {
     if (_marketData == null) return const SizedBox.shrink();
 
@@ -212,43 +229,6 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
     );
   }
 
-  Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
-    return FuturisticCard(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              color: Theme.of(context)
-                      .extension<AppThemeExtension>()
-                      ?.textPrimary ??
-                  AppTheme.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              color: Theme.of(context)
-                      .extension<AppThemeExtension>()
-                      ?.textSecondary ??
-                  AppTheme.textSecondary,
-              fontSize: 12,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCategoryDistribution() {
     if (_marketData == null || _marketData!['category_distribution'] == null) {
       print('Category distribution data is null'); // Debug
@@ -278,22 +258,27 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+          // Category Filter Chips (Scrollable)
+          _buildCategoryFilterChips(categories),
+          const SizedBox(height: 16),
+          // Chart
           SizedBox(
             height: 300,
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: categories.values
-                        .map((v) => (v as num).toDouble())
-                        .reduce((a, b) => a > b ? a : b) *
-                    1.2,
+                maxY: _getMaxYForSelectedCategories(categories) * 1.2,
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
                     tooltipBgColor:
                         themeExtension?.cardColor ?? AppTheme.cardColor,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final category = categories.keys.elementAt(groupIndex);
+                      final filteredCategories =
+                          _getFilteredCategories(categories);
+                      if (groupIndex >= filteredCategories.length) return null;
+                      final category =
+                          filteredCategories.keys.elementAt(groupIndex);
                       return BarTooltipItem(
                         '$category\n${rod.toY.toInt()} fon',
                         TextStyle(
@@ -315,9 +300,12 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
+                        final filteredCategories =
+                            _getFilteredCategories(categories);
                         final index = value.toInt();
-                        if (index >= 0 && index < categories.length) {
-                          final categoryName = categories.keys.elementAt(index);
+                        if (index >= 0 && index < filteredCategories.length) {
+                          final categoryName =
+                              filteredCategories.keys.elementAt(index);
                           final shortName = _getShortCategoryName(categoryName);
                           return SideTitleWidget(
                             axisSide: meta.axisSide,
@@ -356,7 +344,7 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
                   ),
                 ),
                 borderData: FlBorderData(show: false),
-                barGroups: _createBarGroups(categories),
+                barGroups: _createFilteredBarGroups(categories),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
@@ -377,7 +365,138 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
     );
   }
 
+  Widget _buildCategoryFilterChips(Map<String, dynamic> categories) {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
+
+    return SizedBox(
+      height: 40,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            // Select All / Deselect All button
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(
+                  _selectedCategories.length == _allCategories.length
+                      ? 'Tümünü Kaldır'
+                      : 'Tümünü Seç',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                selected: true,
+                selectedColor: accentColor,
+                onSelected: (_) {
+                  setState(() {
+                    if (_selectedCategories.length == _allCategories.length) {
+                      _selectedCategories.clear();
+                    } else {
+                      _selectedCategories = Set.from(_allCategories);
+                    }
+                  });
+                },
+              ),
+            ),
+            // Individual category chips
+            ..._allCategories.map((category) {
+              final isSelected = _selectedCategories.contains(category);
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(
+                    _getShortCategoryName(category),
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : textPrimary,
+                      fontSize: 12,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  selected: isSelected,
+                  selectedColor: accentColor,
+                  backgroundColor: cardColor,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedCategories.add(category);
+                      } else {
+                        _selectedCategories.remove(category);
+                      }
+                    });
+                  },
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Map<String, dynamic> _getFilteredCategories(Map<String, dynamic> categories) {
+    final filtered = <String, dynamic>{};
+    for (String category in _selectedCategories) {
+      if (categories.containsKey(category)) {
+        filtered[category] = categories[category];
+      }
+    }
+    return filtered;
+  }
+
+  double _getMaxYForSelectedCategories(Map<String, dynamic> categories) {
+    final filtered = _getFilteredCategories(categories);
+    if (filtered.isEmpty) return 100.0;
+    return filtered.values
+        .map((v) => (v as num).toDouble())
+        .reduce((a, b) => a > b ? a : b);
+  }
+
+  List<BarChartGroupData> _createFilteredBarGroups(
+      Map<String, dynamic> categories) {
+    final colors = [
+      Theme.of(context).extension<AppThemeExtension>()?.accentColor ??
+          AppTheme.accentColor,
+      Theme.of(context).extension<AppThemeExtension>()?.positiveColor ??
+          AppTheme.positiveColor,
+      Theme.of(context).extension<AppThemeExtension>()?.warningColor ??
+          AppTheme.warningColor,
+      Theme.of(context).extension<AppThemeExtension>()?.primaryColor ??
+          AppTheme.primaryColor,
+      Colors.purple,
+      Colors.orange,
+      Colors.teal,
+      Colors.indigo,
+    ];
+
+    final filteredCategories = _getFilteredCategories(categories);
+
+    return filteredCategories.entries.map((entry) {
+      final index = filteredCategories.keys.toList().indexOf(entry.key);
+      final color = colors[index % colors.length];
+
+      return BarChartGroupData(
+        x: index,
+        barRods: [
+          BarChartRodData(
+            toY: (entry.value as num).toDouble(),
+            color: color,
+            width: 20,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+          ),
+        ],
+      );
+    }).toList();
+  }
+
   Widget _buildPerformanceAnalysis() {
+    // Keep existing implementation
     if (_marketData == null || _marketData!['performance_metrics'] == null) {
       print('Performance metrics data is null'); // Debug
       return _buildEmptySection(
@@ -551,6 +670,314 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryPerformanceRanking() {
+    if (_categoryPerformanceDetails == null) {
+      print('Category performance details is null'); // Debug
+      return _buildEmptySection('Kategori Performans Sıralaması',
+          'Kategori performans verileri mevcut değil');
+    }
+
+    final topCategories =
+        _categoryPerformanceDetails!['top_performing_categories']
+                as List<dynamic>? ??
+            [];
+    final bottomCategories =
+        _categoryPerformanceDetails!['bottom_performing_categories']
+                as List<dynamic>? ??
+            [];
+
+    print('Top categories: $topCategories'); // Debug
+    print('Bottom categories: $bottomCategories'); // Debug
+
+    if (topCategories.isEmpty && bottomCategories.isEmpty) {
+      return _buildEmptySection('Kategori Performans Sıralaması',
+          'Performans sıralaması hesaplanamadı');
+    }
+
+    return FuturisticCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Kategori Performans Sıralaması',
+            style: TextStyle(
+              color: Theme.of(context)
+                      .extension<AppThemeExtension>()
+                      ?.textPrimary ??
+                  AppTheme.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (topCategories.isNotEmpty) ...[
+            Text(
+              'En İyi Performans',
+              style: TextStyle(
+                color: Theme.of(context)
+                        .extension<AppThemeExtension>()
+                        ?.positiveColor ??
+                    AppTheme.positiveColor,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            ...topCategories.take(3).map((cat) {
+              return _buildCategoryPerformanceCard(cat, true);
+            }).toList(),
+            const SizedBox(height: 16),
+          ],
+          if (bottomCategories.isNotEmpty) ...[
+            Text(
+              'En Kötü Performans',
+              style: TextStyle(
+                color: Theme.of(context)
+                        .extension<AppThemeExtension>()
+                        ?.negativeColor ??
+                    AppTheme.negativeColor,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            ...bottomCategories.take(3).map((cat) {
+              return _buildCategoryPerformanceCard(cat, false);
+            }).toList(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryPerformanceCard(dynamic categoryData, bool isPositive) {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final categoryName = categoryData[0];
+    final performance = categoryData[1];
+    final averageReturn = performance['average_return'];
+    final fundCount = performance['fund_count'];
+    final top5Funds = performance['top_5_funds'] ?? [];
+
+    final primaryColor = isPositive
+        ? (themeExtension?.positiveColor ?? AppTheme.positiveColor)
+        : (themeExtension?.negativeColor ?? AppTheme.negativeColor);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      child: Column(
+        children: [
+          // Main category card
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isPositive ? Icons.trending_up : Icons.trending_down,
+                  color: primaryColor,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        categoryName,
+                        style: TextStyle(
+                          color: themeExtension?.textPrimary ??
+                              AppTheme.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '$fundCount fon',
+                        style: TextStyle(
+                          color: themeExtension?.textSecondary ??
+                              AppTheme.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${averageReturn >= 0 ? '+' : ''}${averageReturn.toStringAsFixed(2)}%',
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Top 5 funds (if available)
+          if (top5Funds.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color:
+                    themeExtension?.cardColorLight ?? AppTheme.cardColorLight,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'En İyi 5 Fon:',
+                    style: TextStyle(
+                      color: themeExtension?.textSecondary ??
+                          AppTheme.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  ...top5Funds
+                      .map<Widget>((fund) => _buildTop5FundItem(fund))
+                      .toList(),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTop5FundItem(Map<String, dynamic> fund) {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final kod = fund['kod'] ?? '';
+    final fonAdi = fund['fon_adi'] ?? '';
+    final gunlukGetiri = fund['gunluk_getiri'] ?? '0%';
+
+    // Parse daily return for color
+    double returnValue = 0.0;
+    try {
+      returnValue = double.parse(
+          gunlukGetiri.toString().replaceAll('%', '').replaceAll(',', '.'));
+    } catch (e) {
+      returnValue = 0.0;
+    }
+
+    final returnColor = returnValue >= 0
+        ? (themeExtension?.positiveColor ?? AppTheme.positiveColor)
+        : (themeExtension?.negativeColor ?? AppTheme.negativeColor);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        children: [
+          Text(
+            kod,
+            style: TextStyle(
+              color: themeExtension?.accentColor ?? AppTheme.accentColor,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              fonAdi,
+              style: TextStyle(
+                color: themeExtension?.textPrimary ?? AppTheme.textPrimary,
+                fontSize: 10,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Text(
+            gunlukGetiri,
+            style: TextStyle(
+              color: returnColor,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Keep all existing helper methods
+  Widget _buildEmptySection(String title, String message) {
+    return FuturisticCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: Theme.of(context)
+                      .extension<AppThemeExtension>()
+                      ?.textPrimary ??
+                  AppTheme.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Theme.of(context)
+                          .extension<AppThemeExtension>()
+                          ?.textSecondary ??
+                      AppTheme.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
+    return FuturisticCard(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              color: Theme.of(context)
+                      .extension<AppThemeExtension>()
+                      ?.textPrimary ??
+                  AppTheme.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              color: Theme.of(context)
+                      .extension<AppThemeExtension>()
+                      ?.textSecondary ??
+                  AppTheme.textSecondary,
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -797,266 +1224,6 @@ class _FundMarketOverviewScreenState extends State<FundMarketOverviewScreen> {
         ),
       ],
     );
-  }
-
-  Widget _buildCategoryPerformanceRanking() {
-    if (_marketData == null || _marketData!['category_performance'] == null) {
-      print('Category performance data is null'); // Debug
-      return _buildEmptySection('Kategori Performans Sıralaması',
-          'Kategori performans verileri mevcut değil');
-    }
-
-    final categoryPerformance =
-        _marketData!['category_performance'] as Map<String, dynamic>;
-    final topCategories =
-        _marketData!['top_performing_categories'] as List<dynamic>? ?? [];
-    final bottomCategories =
-        _marketData!['bottom_performing_categories'] as List<dynamic>? ?? [];
-
-    print('Category performance: $categoryPerformance'); // Debug
-    print('Top categories: $topCategories'); // Debug
-    print('Bottom categories: $bottomCategories'); // Debug
-
-    if (topCategories.isEmpty && bottomCategories.isEmpty) {
-      return _buildEmptySection('Kategori Performans Sıralaması',
-          'Performans sıralaması hesaplanamadı');
-    }
-
-    return FuturisticCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Kategori Performans Sıralaması',
-            style: TextStyle(
-              color: Theme.of(context)
-                      .extension<AppThemeExtension>()
-                      ?.textPrimary ??
-                  AppTheme.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (topCategories.isNotEmpty) ...[
-            Text(
-              'En İyi Performans',
-              style: TextStyle(
-                color: Theme.of(context)
-                        .extension<AppThemeExtension>()
-                        ?.positiveColor ??
-                    AppTheme.positiveColor,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            ...topCategories.take(3).map((cat) {
-              final categoryName = cat[0];
-              final performance = cat[1];
-              final averageReturn = performance['average_return'];
-              final fundCount = performance['fund_count'];
-
-              return Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                          .extension<AppThemeExtension>()
-                          ?.positiveColor
-                          ?.withOpacity(0.1) ??
-                      AppTheme.positiveColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.trending_up,
-                        color: Theme.of(context)
-                                .extension<AppThemeExtension>()
-                                ?.positiveColor ??
-                            AppTheme.positiveColor),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(categoryName,
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                          .extension<AppThemeExtension>()
-                                          ?.textPrimary ??
-                                      AppTheme.textPrimary,
-                                  fontWeight: FontWeight.w600)),
-                          Text('$fundCount fon',
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                          .extension<AppThemeExtension>()
-                                          ?.textSecondary ??
-                                      AppTheme.textSecondary,
-                                  fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      '${averageReturn >= 0 ? '+' : ''}${averageReturn.toStringAsFixed(2)}%',
-                      style: TextStyle(
-                          color: Theme.of(context)
-                                  .extension<AppThemeExtension>()
-                                  ?.positiveColor ??
-                              AppTheme.positiveColor,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-            const SizedBox(height: 16),
-          ],
-          if (bottomCategories.isNotEmpty) ...[
-            Text(
-              'En Kötü Performans',
-              style: TextStyle(
-                color: Theme.of(context)
-                        .extension<AppThemeExtension>()
-                        ?.negativeColor ??
-                    AppTheme.negativeColor,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            ...bottomCategories.take(3).map((cat) {
-              final categoryName = cat[0];
-              final performance = cat[1];
-              final averageReturn = performance['average_return'];
-              final fundCount = performance['fund_count'];
-
-              return Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context)
-                          .extension<AppThemeExtension>()
-                          ?.negativeColor
-                          ?.withOpacity(0.1) ??
-                      AppTheme.negativeColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.trending_down,
-                        color: Theme.of(context)
-                                .extension<AppThemeExtension>()
-                                ?.negativeColor ??
-                            AppTheme.negativeColor),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(categoryName,
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                          .extension<AppThemeExtension>()
-                                          ?.textPrimary ??
-                                      AppTheme.textPrimary,
-                                  fontWeight: FontWeight.w600)),
-                          Text('$fundCount fon',
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                          .extension<AppThemeExtension>()
-                                          ?.textSecondary ??
-                                      AppTheme.textSecondary,
-                                  fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      '${averageReturn >= 0 ? '+' : ''}${averageReturn.toStringAsFixed(2)}%',
-                      style: TextStyle(
-                          color: Theme.of(context)
-                                  .extension<AppThemeExtension>()
-                                  ?.negativeColor ??
-                              AppTheme.negativeColor,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptySection(String title, String message) {
-    return FuturisticCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: Theme.of(context)
-                      .extension<AppThemeExtension>()
-                      ?.textPrimary ??
-                  AppTheme.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Text(
-                message,
-                style: TextStyle(
-                  color: Theme.of(context)
-                          .extension<AppThemeExtension>()
-                          ?.textSecondary ??
-                      AppTheme.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<BarChartGroupData> _createBarGroups(Map<String, dynamic> categories) {
-    final colors = [
-      Theme.of(context).extension<AppThemeExtension>()?.accentColor ??
-          AppTheme.accentColor,
-      Theme.of(context).extension<AppThemeExtension>()?.positiveColor ??
-          AppTheme.positiveColor,
-      Theme.of(context).extension<AppThemeExtension>()?.warningColor ??
-          AppTheme.warningColor,
-      Theme.of(context).extension<AppThemeExtension>()?.primaryColor ??
-          AppTheme.primaryColor,
-      Colors.purple,
-      Colors.orange,
-      Colors.teal,
-      Colors.indigo,
-    ];
-
-    return categories.entries.map((entry) {
-      final index = categories.keys.toList().indexOf(entry.key);
-      final color = colors[index % colors.length];
-
-      return BarChartGroupData(
-        x: index,
-        barRods: [
-          BarChartRodData(
-            toY: (entry.value as num).toDouble(),
-            color: color,
-            width: 20,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-          ),
-        ],
-      );
-    }).toList();
   }
 
   String _getShortCategoryName(String category) {
