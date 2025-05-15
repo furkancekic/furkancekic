@@ -11,7 +11,6 @@ import 'screener_screen.dart';
 import 'chart_screen.dart';
 import 'stock_reels_screen.dart';
 import 'backtesting_screen.dart';
-import 'funds_screen.dart'; // Fund ekranı import'u eklendi
 
 /// ====================================================================
 ///  FeatureCard
@@ -110,7 +109,6 @@ class _HomeScreenState extends State<HomeScreen> {
     ChartScreen(),
     BacktestingScreen(),
     StockReelsScreen(),
-    FundsScreen(), // Funds ekranı eklendi
     PortfolioScreen(),
   ];
 
