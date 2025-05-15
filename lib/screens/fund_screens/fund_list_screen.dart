@@ -21,17 +21,13 @@ class _FundListScreenState extends State<FundListScreen> {
 
   // State variables
   List<Fund> _funds = [];
+  List<Fund> _filteredFunds = [];
   bool _isLoading = false;
   bool _hasMore = true;
   int _currentPage = 0;
 
   // Filter variables
-  String? _selectedCategory;
-  String _sortBy = 'total_value'; // total_value, daily_return, investor_count
-  bool _isAscending = false;
-  double? _minReturn;
-  double? _maxReturn;
-  bool _onlyTefas = false;
+  Map<String, dynamic> _currentFilters = {};
 
   static const int _fundsPerPage = 25;
 
@@ -39,6 +35,7 @@ class _FundListScreenState extends State<FundListScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _searchController.addListener(_onSearchChanged);
     _loadFunds(refresh: true);
   }
 
@@ -58,6 +55,24 @@ class _FundListScreenState extends State<FundListScreen> {
     }
   }
 
+  void _onSearchChanged() {
+    _filterLocalFunds();
+  }
+
+  void _filterLocalFunds() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredFunds = List.from(_funds);
+      } else {
+        _filteredFunds = _funds.where((fund) {
+          return fund.kod.toLowerCase().contains(query) ||
+              fund.name.toLowerCase().contains(query);
+        }).toList();
+      }
+    });
+  }
+
   Future<void> _loadFunds({bool refresh = false}) async {
     if (_isLoading) return;
 
@@ -66,24 +81,19 @@ class _FundListScreenState extends State<FundListScreen> {
       if (refresh) {
         _currentPage = 0;
         _funds.clear();
+        _filteredFunds.clear();
         _hasMore = true;
       }
     });
 
     try {
-      final params = {
+      final params = <String, dynamic>{
         'page': _currentPage.toString(),
         'limit': _fundsPerPage.toString(),
-        'sort_by': _sortBy,
-        'order': _isAscending ? 'asc' : 'desc',
-        if (_selectedCategory != null) 'category': _selectedCategory!,
-        if (_minReturn != null) 'min_return': _minReturn.toString(),
-        if (_maxReturn != null) 'max_return': _maxReturn.toString(),
-        if (_onlyTefas) 'only_tefas': 'true',
+        ..._currentFilters,
         if (_searchController.text.isNotEmpty) 'search': _searchController.text,
       };
 
-      // API çağrısı burada yapılacak
       final newFunds = await FundApiService.getFunds(params);
 
       setState(() {
@@ -92,6 +102,7 @@ class _FundListScreenState extends State<FundListScreen> {
         } else {
           _funds.addAll(newFunds);
         }
+        _filterLocalFunds();
         _hasMore = newFunds.length == _fundsPerPage;
         _currentPage++;
         _isLoading = false;
@@ -100,10 +111,11 @@ class _FundListScreenState extends State<FundListScreen> {
       setState(() {
         _isLoading = false;
       });
-      // Error handling
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fonlar yüklenemedi: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fonlar yüklenemedi: $e')),
+        );
+      }
     }
   }
 
@@ -113,21 +125,10 @@ class _FundListScreenState extends State<FundListScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => FundFilterSheet(
-        selectedCategory: _selectedCategory,
-        sortBy: _sortBy,
-        isAscending: _isAscending,
-        minReturn: _minReturn,
-        maxReturn: _maxReturn,
-        onlyTefas: _onlyTefas,
-        onApplyFilters:
-            (category, sortBy, isAscending, minReturn, maxReturn, onlyTefas) {
+        currentFilters: _currentFilters,
+        onFiltersChanged: (filters) {
           setState(() {
-            _selectedCategory = category;
-            _sortBy = sortBy;
-            _isAscending = isAscending;
-            _minReturn = minReturn;
-            _maxReturn = maxReturn;
-            _onlyTefas = onlyTefas;
+            _currentFilters = filters;
           });
           _loadFunds(refresh: true);
         },
@@ -219,6 +220,7 @@ class _FundListScreenState extends State<FundListScreen> {
             child: IconButton(
               onPressed: _showFilterSheet,
               icon: Icon(Icons.tune, color: accent),
+              tooltip: 'Filtreler',
             ),
           ),
         ],
@@ -260,6 +262,16 @@ class _FundListScreenState extends State<FundListScreen> {
               textSecondary,
             ),
           ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildStatCard(
+              'Görüntülenen',
+              '${_filteredFunds.length}',
+              Icons.visibility,
+              textPrimary,
+              textSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -294,18 +306,31 @@ class _FundListScreenState extends State<FundListScreen> {
   }
 
   Widget _buildFundList() {
-    if (_funds.isEmpty && _isLoading) {
+    if (_filteredFunds.isEmpty && _isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_funds.isEmpty) {
+    if (_filteredFunds.isEmpty && !_isLoading) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.search_off, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
-            Text('Fon bulunamadı', style: TextStyle(color: Colors.grey)),
+            Text(
+              _searchController.text.isNotEmpty
+                  ? 'Arama kriterlerinize uygun fon bulunamadı'
+                  : 'Henüz fon yüklenmedi',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            if (!_isLoading) ...[
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => _loadFunds(refresh: true),
+                child: const Text('Tekrar Dene'),
+              ),
+            ],
           ],
         ),
       );
@@ -316,9 +341,9 @@ class _FundListScreenState extends State<FundListScreen> {
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _funds.length + (_hasMore ? 1 : 0),
+        itemCount: _filteredFunds.length + (_hasMore && _isLoading ? 1 : 0),
         itemBuilder: (context, index) {
-          if (index >= _funds.length) {
+          if (index >= _filteredFunds.length) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(16),
@@ -327,16 +352,16 @@ class _FundListScreenState extends State<FundListScreen> {
             );
           }
 
-          final fund = _funds[index];
+          final fund = _filteredFunds[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: FundCard(
-              fund: fund,
+              fund: fund.toJson(),
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => FundDetailScreen(fund: fund),
+                    builder: (context) => FundDetailScreen(fund: fund.toJson()),
                   ),
                 );
               },
@@ -348,18 +373,14 @@ class _FundListScreenState extends State<FundListScreen> {
   }
 
   double _calculateAverageReturn() {
-    if (_funds.isEmpty) return 0.0;
+    if (_filteredFunds.isEmpty) return 0.0;
     double total = 0.0;
     int count = 0;
-    for (final fund in _funds) {
-      final returnStr =
-          fund.dailyReturn?.replaceAll('%', '').replaceAll(',', '.');
-      if (returnStr != null) {
-        final returnValue = double.tryParse(returnStr);
-        if (returnValue != null) {
-          total += returnValue;
-          count++;
-        }
+    for (final fund in _filteredFunds) {
+      final returnValue = fund.dailyReturnValue;
+      if (!returnValue.isNaN) {
+        total += returnValue;
+        count++;
       }
     }
     return count > 0 ? total / count : 0.0;
@@ -367,9 +388,9 @@ class _FundListScreenState extends State<FundListScreen> {
 
   int _getUniqueCategories() {
     final categories = <String>{};
-    for (final fund in _funds) {
-      if (fund.category != null) {
-        categories.add(fund.category!);
+    for (final fund in _filteredFunds) {
+      if (fund.category.isNotEmpty) {
+        categories.add(fund.category);
       }
     }
     return categories.length;
