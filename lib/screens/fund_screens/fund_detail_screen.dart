@@ -1,9 +1,11 @@
+// lib/screens/fund_screens/fund_detail_screen.dart - Düzeltilmiş importlar ile
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../widgets/fund_widgets/fund_performance_chart.dart';
 import '../../widgets/fund_widgets/fund_distribution_chart.dart';
+import '../../widgets/fund_widgets/fund_loading_shimmer.dart';
 import '../../services/fund_api_service.dart';
 
 class FundDetailScreen extends StatefulWidget {
@@ -98,15 +100,17 @@ class _FundDetailScreenState extends State<FundDetailScreen>
           children: [
             _buildTabBar(),
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildOverviewTab(),
-                  _buildPerformanceTab(),
-                  _buildRiskTab(),
-                  _buildDistributionTab(),
-                ],
-              ),
+              child: _isLoading
+                  ? const FundDetailShimmer()
+                  : TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildOverviewTab(),
+                        _buildPerformanceTab(),
+                        _buildRiskTab(),
+                        _buildDistributionTab(),
+                      ],
+                    ),
             ),
           ],
         ),
@@ -150,6 +154,14 @@ class _FundDetailScreenState extends State<FundDetailScreen>
       elevation: 0,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       foregroundColor: textPrimary,
+      actions: [
+        IconButton(
+          icon: Icon(Icons.share, color: accentColor),
+          onPressed: () {
+            // Share functionality
+          },
+        ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           fundCode,

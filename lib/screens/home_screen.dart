@@ -1,4 +1,5 @@
-// lib/screens/home_screen.dart - Tamamlanmış
+// home_screen.dart - CurvedNavigationBar güncellenmiş versiyonu
+// lib/screens/home_screen.dart - Fund navigation eklenmiş
 import 'package:flutter/material.dart';
 import 'portfolio_screen.dart';
 import '../theme/app_theme.dart';
@@ -11,6 +12,7 @@ import 'screener_screen.dart';
 import 'chart_screen.dart';
 import 'stock_reels_screen.dart';
 import 'backtesting_screen.dart';
+import 'fund_screens/fund_main_screen.dart';
 
 /// ====================================================================
 ///  FeatureCard
@@ -109,6 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ChartScreen(),
     BacktestingScreen(),
     StockReelsScreen(),
+    FundMainScreen(), // Fund screen eklendi
     PortfolioScreen(),
   ];
 
@@ -127,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 /// ====================================================================
-///  CurvedNavigationBar - Güncellendi
+///  CurvedNavigationBar - Fonds eklendi
 /// ====================================================================
 class CurvedNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -212,7 +215,7 @@ class CurvedNavigationBar extends StatelessWidget {
             ),
           ),
 
-          // menü - Güncellendi (Funds eklendi)
+          // menü - Fund screen eklendi
           Positioned(
             bottom: 0,
             left: 0,
@@ -230,7 +233,7 @@ class CurvedNavigationBar extends StatelessWidget {
                       context, 3, Icons.analytics_rounded, 'Backtest'),
                   _buildNavItem(context, 4, Icons.slideshow_rounded, 'Reels'),
                   _buildNavItem(context, 5, Icons.account_balance,
-                      'Funds'), // Funds eklendi
+                      'Funds'), // Fund eklendi
                   _buildNavItem(
                       context, 6, Icons.account_balance_wallet, 'Portfolio'),
                 ],
@@ -271,7 +274,7 @@ class CurvedNavigationBar extends StatelessWidget {
 }
 
 /// ====================================================================
-///  HomeContent - Güncellendi
+///  HomeContent
 /// ====================================================================
 class HomeContent extends StatefulWidget {
   const HomeContent({Key? key}) : super(key: key);

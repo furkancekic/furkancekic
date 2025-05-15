@@ -1,7 +1,10 @@
+// lib/widgets/app_drawer.dart - Fund navigation eklendi
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../screens/theme_settings_screen.dart';
 import '../screens/portfolio_screen.dart';
+import '../screens/fund_screens/fund_main_screen.dart';
+import '../screens/fund_screens/fund_market_overview_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({Key? key}) : super(key: key);
@@ -71,7 +74,7 @@ class AppDrawer extends StatelessWidget {
             title: Text('Ana Sayfa', style: TextStyle(color: textPrimary)),
             onTap: () {
               Navigator.pop(context);
-              // Ana sayfa navigasyonu
+              Navigator.pushReplacementNamed(context, '/');
             },
           ),
           ListTile(
@@ -79,16 +82,16 @@ class AppDrawer extends StatelessWidget {
             title: Text('Grafik Ekranı', style: TextStyle(color: textPrimary)),
             onTap: () {
               Navigator.pop(context);
-              // Grafik ekranı navigasyonu
+              Navigator.pushNamed(context, '/chart');
             },
           ),
           ListTile(
-            leading: Icon(Icons.science, color: accentColor),
+            leading: Icon(Icons.analytics, color: accentColor),
             title:
                 Text('Backtest Ekranı', style: TextStyle(color: textPrimary)),
             onTap: () {
               Navigator.pop(context);
-              // Backtest ekranı navigasyonu
+              Navigator.pushNamed(context, '/backtest');
             },
           ),
           ListTile(
@@ -96,7 +99,37 @@ class AppDrawer extends StatelessWidget {
             title: Text('Stock Reel', style: TextStyle(color: textPrimary)),
             onTap: () {
               Navigator.pop(context);
-              // Stock Reel ekranı navigasyonu
+              Navigator.pushNamed(context, '/reels');
+            },
+          ),
+          // Fund related menu items
+          const Divider(),
+          ListTile(
+            leading: Icon(Icons.account_balance, color: accentColor),
+            title:
+                Text('Yatırım Fonları', style: TextStyle(color: textPrimary)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FundMainScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.analytics_outlined, color: accentColor),
+            title:
+                Text('Fon Pazar Analizi', style: TextStyle(color: textPrimary)),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FundMarketOverviewScreen(),
+                ),
+              );
             },
           ),
           ListTile(
@@ -112,7 +145,6 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
-          const Divider(),
           const Divider(),
           ListTile(
             leading: Icon(Icons.color_lens, color: accentColor),

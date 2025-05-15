@@ -1,4 +1,4 @@
-// lib/main.dart - Düzeltilmiş Navigation
+// main.dart - Güncellenen navigation ile
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +11,10 @@ import 'screens/stock_reels_screen.dart';
 import 'screens/backtesting_screen.dart';
 import 'screens/theme_settings_screen.dart';
 import 'screens/benchmark_comparison_screen.dart';
+import 'screens/fund_screens/fund_main_screen.dart';
+import 'screens/fund_screens/fund_detail_screen.dart';
+import 'screens/fund_screens/fund_category_screen.dart';
+import 'screens/fund_screens/fund_market_overview_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,7 +52,7 @@ class MyApp extends StatelessWidget {
       title: 'Modern Finance',
       theme: themeProvider.theme,
       debugShowCheckedModeBanner: false,
-      // Ana sayfa olarak HomeScreen'i kullan, ayrı bir MainNavigator'a gerek yok
+      // Ana sayfa olarak HomeScreen'i kullan
       home: const HomeScreen(),
       routes: {
         '/chart': (context) => const ChartScreen(),
@@ -57,6 +61,26 @@ class MyApp extends StatelessWidget {
         '/reels': (context) => const StockReelsScreen(),
         '/theme': (context) => const ThemeSettingsScreen(),
         '/benchmark': (context) => const BenchmarkComparisonScreen(),
+        // Fund routes
+        '/funds': (context) => const FundMainScreen(),
+        '/fund_market_overview': (context) => const FundMarketOverviewScreen(),
+      },
+      onGenerateRoute: (settings) {
+        // Handle dynamic routes with arguments
+        switch (settings.name) {
+          case '/fund_detail':
+            final fund = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => FundDetailScreen(fund: fund),
+            );
+          case '/fund_category':
+            final category = settings.arguments as String;
+            return MaterialPageRoute(
+              builder: (context) => FundCategoryScreen(category: category),
+            );
+          default:
+            return null;
+        }
       },
     );
   }
