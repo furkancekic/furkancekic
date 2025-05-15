@@ -14,11 +14,12 @@ class FundApiService {
   static Future<Map<String, dynamic>> getFundsWithPagination(
       Map<String, dynamic> params) async {
     try {
-      final uri = Uri.parse('$baseUrl/funds').replace(queryParameters: 
-          params.map((key, value) => MapEntry(key, value.toString())));
-      
+      final uri = Uri.parse('$baseUrl/funds').replace(
+          queryParameters:
+              params.map((key, value) => MapEntry(key, value.toString())));
+
       _logger.info('Fetching funds with pagination: $uri');
-      
+
       final response = await http.get(uri).timeout(timeoutDuration);
 
       if (response.statusCode == 200) {
@@ -52,12 +53,13 @@ class FundApiService {
   static Future<Map<String, dynamic>> getFundsByCategoryWithPagination(
       String category, Map<String, dynamic> params) async {
     try {
-      final queryParams = params.map((key, value) => MapEntry(key, value.toString()));
+      final queryParams =
+          params.map((key, value) => MapEntry(key, value.toString()));
       final uri = Uri.parse('$baseUrl/funds/category/$category')
           .replace(queryParameters: queryParams);
-      
+
       _logger.info('Fetching funds by category: $category');
-      
+
       final response = await http.get(uri).timeout(timeoutDuration);
 
       if (response.statusCode == 200) {
@@ -95,7 +97,8 @@ class FundApiService {
       final uri = Uri.parse('$baseUrl/funds/$fundCode/historical')
           .replace(queryParameters: {'timeframe': timeframe});
 
-      _logger.info('Fetching historical data for $fundCode, timeframe: $timeframe');
+      _logger.info(
+          'Fetching historical data for $fundCode, timeframe: $timeframe');
 
       final response = await http.get(uri).timeout(timeoutDuration);
 
@@ -105,7 +108,7 @@ class FundApiService {
         if (data['status'] == 'success') {
           // Ensure historical data is properly formatted
           final historicalData = data['historical'] as List<dynamic>? ?? [];
-          
+
           // Format and validate each data point
           final formattedData = <Map<String, dynamic>>[];
           for (final item in historicalData) {
@@ -113,17 +116,17 @@ class FundApiService {
               try {
                 final dateStr = item['date']?.toString();
                 final priceStr = item['price']?.toString();
-                
+
                 if (dateStr != null && priceStr != null) {
                   // Parse and validate date
                   final date = DateTime.tryParse(dateStr);
-                  
+
                   // Parse and validate price
                   double? price;
                   if (priceStr.isNotEmpty) {
                     price = double.tryParse(priceStr);
                   }
-                  
+
                   if (date != null && price != null && price > 0) {
                     formattedData.add({
                       'date': date.toIso8601String(),
@@ -138,7 +141,8 @@ class FundApiService {
             }
           }
 
-          _logger.info('Successfully fetched ${formattedData.length} historical data points');
+          _logger.info(
+              'Successfully fetched ${formattedData.length} historical data points');
 
           return {
             'status': 'success',
@@ -162,10 +166,11 @@ class FundApiService {
   }
 
   /// Get fund risk metrics
-  static Future<Map<String, dynamic>> getFundRiskMetrics(String fundCode) async {
+  static Future<Map<String, dynamic>> getFundRiskMetrics(
+      String fundCode) async {
     try {
       final uri = Uri.parse('$baseUrl/funds/$fundCode/risk-metrics');
-      
+
       _logger.info('Fetching risk metrics for $fundCode');
 
       final response = await http.get(uri).timeout(timeoutDuration);
@@ -175,7 +180,7 @@ class FundApiService {
 
         if (data['status'] == 'success') {
           final metrics = data['metrics'] as Map<String, dynamic>? ?? {};
-          
+
           // Ensure all metrics are present with default values
           final defaultMetrics = {
             'sharpeRatio': 0.0,
@@ -199,7 +204,8 @@ class FundApiService {
                 if (key == 'riskLevel') {
                   processedMetrics[key] = int.tryParse(value.toString()) ?? 0;
                 } else {
-                  processedMetrics[key] = double.tryParse(value.toString()) ?? defaultValue;
+                  processedMetrics[key] =
+                      double.tryParse(value.toString()) ?? defaultValue;
                 }
               } catch (e) {
                 processedMetrics[key] = defaultValue;
@@ -268,10 +274,12 @@ class FundApiService {
 
         if (data['status'] == 'success') {
           final simulation = data['simulation'] as Map<String, dynamic>? ?? {};
-          
+
           // Validate and process simulation data
-          if (simulation.containsKey('scenarios') && simulation.containsKey('periods')) {
-            _logger.info('Successfully fetched Monte Carlo simulation for $fundCode');
+          if (simulation.containsKey('scenarios') &&
+              simulation.containsKey('periods')) {
+            _logger.info(
+                'Successfully fetched Monte Carlo simulation for $fundCode');
             return {
               'status': 'success',
               'fund_code': fundCode,
@@ -299,7 +307,7 @@ class FundApiService {
   static Map<String, dynamic> _generateFallbackMonteCarlo(
       String fundCode, int periods, int simulations) {
     final scenarios = <String, List<double>>{};
-    
+
     // Generate simple scenario data
     scenarios['pessimistic'] = List.generate(periods, (i) => -15.0 + (i * 2.0));
     scenarios['expected'] = List.generate(periods, (i) => -5.0 + (i * 3.0));
@@ -334,10 +342,13 @@ class FundApiService {
   static Future<Map<String, dynamic>> getFundDetails(String fundCode,
       {bool includeHistorical = false}) async {
     try {
-      final params = includeHistorical ? {'include_historical': 'true'} : <String, String>{};
+      final params = includeHistorical
+          ? {'include_historical': 'true'}
+          : <String, String>{};
       final uri = Uri.parse('$baseUrl/funds/$fundCode');
-      final finalUri = params.isNotEmpty ? uri.replace(queryParameters: params) : uri;
-      
+      final finalUri =
+          params.isNotEmpty ? uri.replace(queryParameters: params) : uri;
+
       _logger.info('Fetching fund details for $fundCode');
 
       final response = await http.get(finalUri).timeout(timeoutDuration);
@@ -364,8 +375,9 @@ class FundApiService {
   /// Filter funds
   static Future<List<Fund>> filterFunds(Map<String, dynamic> filters) async {
     try {
-      final uri = Uri.parse('$baseUrl/funds/filter')
-          .replace(queryParameters: filters.map((key, value) => MapEntry(key, value.toString())));
+      final uri = Uri.parse('$baseUrl/funds/filter').replace(
+          queryParameters:
+              filters.map((key, value) => MapEntry(key, value.toString())));
 
       final response = await http.get(uri).timeout(timeoutDuration);
 
@@ -388,7 +400,8 @@ class FundApiService {
   }
 
   /// Compare funds
-  static Future<Map<String, dynamic>> compareFunds(List<String> fundCodes) async {
+  static Future<Map<String, dynamic>> compareFunds(
+      List<String> fundCodes) async {
     try {
       final fundsParam = fundCodes.join(',');
       final uri = Uri.parse('$baseUrl/funds/compare')
@@ -440,11 +453,77 @@ class FundApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> getCategoryStatistics(
+      String category) async {
+    try {
+      final uri = Uri.parse('$baseUrl/funds/category/$category/statistics');
+
+      _logger.info('Fetching category statistics for $category');
+
+      final response = await http.get(uri).timeout(timeoutDuration);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == 'success') {
+          return {
+            'total_funds': data['total_funds'] ?? 0,
+            'total_market_value': data['total_market_value']?.toDouble() ?? 0.0,
+            'average_return': data['average_return']?.toDouble() ?? 0.0,
+            'total_investors': data['total_investors'] ?? 0,
+          };
+        } else {
+          throw Exception(data['message'] ?? 'Unknown error');
+        }
+      } else {
+        throw Exception('HTTP error: ${response.statusCode}');
+      }
+    } catch (e) {
+      _logger.severe('Error fetching category statistics: $e');
+      throw Exception('Failed to fetch category statistics: $e');
+    }
+  }
+
+  /// Get detailed category performance including top 5 funds
+  static Future<Map<String, dynamic>> getCategoryPerformanceDetails() async {
+    try {
+      final uri = Uri.parse('$baseUrl/funds/category-performance-details');
+
+      _logger.info('Fetching detailed category performance');
+
+      final response = await http.get(uri).timeout(timeoutDuration);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == 'success') {
+          return {
+            'category_performance': data['category_performance'] ?? {},
+            'top_performing_categories':
+                data['top_performing_categories'] ?? [],
+            'bottom_performing_categories':
+                data['bottom_performing_categories'] ?? [],
+          };
+        } else {
+          throw Exception(data['message'] ?? 'Unknown error');
+        }
+      } else {
+        throw Exception('HTTP error: ${response.statusCode}');
+      }
+    } catch (e) {
+      _logger.severe('Error fetching detailed category performance: $e');
+      throw Exception('Failed to fetch detailed category performance: $e');
+    }
+  }
+
   /// Get market overview
   static Future<Map<String, dynamic>> getMarketOverview() async {
     try {
-      _logger.info('Fetching market overview from: $baseUrl/funds/market-overview');
-      final response = await http.get(Uri.parse('$baseUrl/funds/market-overview')).timeout(timeoutDuration);
+      _logger.info(
+          'Fetching market overview from: $baseUrl/funds/market-overview');
+      final response = await http
+          .get(Uri.parse('$baseUrl/funds/market-overview'))
+          .timeout(timeoutDuration);
 
       _logger.info('Response status: ${response.statusCode}');
 
@@ -452,28 +531,40 @@ class FundApiService {
         final data = json.decode(response.body);
 
         if (data['status'] == 'success') {
-          final marketOverview = data['market_overview'] as Map<String, dynamic>? ?? {};
+          final marketOverview =
+              data['market_overview'] as Map<String, dynamic>? ?? {};
 
           // Null check and default values
           return {
             'total_funds': marketOverview['total_funds'] ?? 0,
-            'total_market_value': marketOverview['total_market_value']?.toDouble() ?? 0.0,
+            'total_market_value':
+                marketOverview['total_market_value']?.toDouble() ?? 0.0,
             'total_investors': marketOverview['total_investors'] ?? 0,
-            'average_return': marketOverview['average_return']?.toDouble() ?? 0.0,
-            'category_distribution': marketOverview['category_distribution'] ?? <String, dynamic>{},
-            'risk_distribution': marketOverview['risk_distribution'] ?? <String, dynamic>{},
-            'tefas_distribution': marketOverview['tefas_distribution'] ?? <String, dynamic>{},
-            'market_share_distribution': marketOverview['market_share_distribution'] ?? <String, dynamic>{},
-            'category_performance': marketOverview['category_performance'] ?? <String, dynamic>{},
-            'top_performing_categories': marketOverview['top_performing_categories'] ?? <List>[],
-            'bottom_performing_categories': marketOverview['bottom_performing_categories'] ?? <List>[],
-            'performance_metrics': marketOverview['performance_metrics'] ?? <String, dynamic>{
-              'positive_returns': 0,
-              'negative_returns': 0,
-              'neutral_returns': 0,
-              'best_return': 0.0,
-              'worst_return': 0.0,
-            }
+            'average_return':
+                marketOverview['average_return']?.toDouble() ?? 0.0,
+            'category_distribution':
+                marketOverview['category_distribution'] ?? <String, dynamic>{},
+            'risk_distribution':
+                marketOverview['risk_distribution'] ?? <String, dynamic>{},
+            'tefas_distribution':
+                marketOverview['tefas_distribution'] ?? <String, dynamic>{},
+            'market_share_distribution':
+                marketOverview['market_share_distribution'] ??
+                    <String, dynamic>{},
+            'category_performance':
+                marketOverview['category_performance'] ?? <String, dynamic>{},
+            'top_performing_categories':
+                marketOverview['top_performing_categories'] ?? <List>[],
+            'bottom_performing_categories':
+                marketOverview['bottom_performing_categories'] ?? <List>[],
+            'performance_metrics': marketOverview['performance_metrics'] ??
+                <String, dynamic>{
+                  'positive_returns': 0,
+                  'negative_returns': 0,
+                  'neutral_returns': 0,
+                  'best_return': 0.0,
+                  'worst_return': 0.0,
+                }
           };
         } else {
           throw Exception(data['message'] ?? 'Unknown error');
@@ -528,11 +619,12 @@ class FundApiService {
   }
 
   /// Get fund historical summary (lightweight version)
-  static Future<Map<String, dynamic>> getFundHistoricalSummary(String fundCode) async {
+  static Future<Map<String, dynamic>> getFundHistoricalSummary(
+      String fundCode) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/funds/$fundCode/historical-summary')
-      ).timeout(timeoutDuration);
+      final response = await http
+          .get(Uri.parse('$baseUrl/funds/$fundCode/historical-summary'))
+          .timeout(timeoutDuration);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -554,7 +646,8 @@ class FundApiService {
   /// Health check
   static Future<bool> isApiAvailable() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/health')).timeout(timeoutDuration);
+      final response =
+          await http.get(Uri.parse('$baseUrl/health')).timeout(timeoutDuration);
       return response.statusCode == 200;
     } catch (e) {
       _logger.warning('API is not available: $e');

@@ -1,4 +1,4 @@
-// lib/screens/fund_screens/fund_main_screen.dart
+// lib/screens/fund_screens/fund_main_screen.dart - Updated with Market Overview tab
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -16,20 +16,29 @@ class FundMainScreen extends StatefulWidget {
 class _FundMainScreenState extends State<FundMainScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  final List<String> _categories = [
-    'Tümü',
-    'Hisse Senedi Fonu',
-    'Serbest Fon',
-    'Para Piyasası Fonu',
-    'Karma Fon',
-    'Tahvil Fonu',
-    'Altın Fonu',
+  final List<Map<String, dynamic>> _tabs = [
+    {'name': 'Tümü', 'type': 'all'},
+    {'name': 'Pazar Özeti', 'type': 'overview'},
+    {
+      'name': 'Hisse Senedi',
+      'type': 'category',
+      'category': 'Hisse Senedi Fonu'
+    },
+    {'name': 'Serbest', 'type': 'category', 'category': 'Serbest Fon'},
+    {
+      'name': 'Para Piyasası',
+      'type': 'category',
+      'category': 'Para Piyasası Fonu'
+    },
+    {'name': 'Karma', 'type': 'category', 'category': 'Karma Fon'},
+    {'name': 'Tahvil', 'type': 'category', 'category': 'Tahvil Fonu'},
+    {'name': 'Altın', 'type': 'category', 'category': 'Altın Fonu'},
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _categories.length, vsync: this);
+    _tabController = TabController(length: _tabs.length, vsync: this);
   }
 
   @override
@@ -43,21 +52,25 @@ class _FundMainScreenState extends State<FundMainScreen>
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
-    final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
 
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           _buildAppBar(textPrimary, accentColor),
-          _buildTabBar(accentColor, cardColor),
+          _buildTabBar(accentColor),
         ],
         body: TabBarView(
           controller: _tabController,
-          children: _categories.map((category) {
-            if (category == 'Tümü') {
-              return const FundListScreen();
-            } else {
-              return FundCategoryScreen(category: category);
+          children: _tabs.map((tab) {
+            switch (tab['type']) {
+              case 'all':
+                return const FundListScreen();
+              case 'overview':
+                return const FundMarketOverviewScreen();
+              case 'category':
+                return FundCategoryScreen(category: tab['category']);
+              default:
+                return const FundListScreen();
             }
           }).toList(),
         ),
@@ -117,18 +130,6 @@ class _FundMainScreenState extends State<FundMainScreen>
                   ),
                 ],
               ),
-              IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const FundMarketOverviewScreen(),
-                    ),
-                  );
-                },
-                icon: Icon(Icons.analytics, color: accentColor, size: 28),
-                tooltip: 'Pazar Genel Bakış',
-              ),
             ],
           ),
         ),
@@ -136,7 +137,7 @@ class _FundMainScreenState extends State<FundMainScreen>
     );
   }
 
-  Widget _buildTabBar(Color accentColor, Color cardColor) {
+  Widget _buildTabBar(Color accentColor) {
     return SliverPersistentHeader(
       pinned: true,
       delegate: _SliverTabBarDelegate(
@@ -154,8 +155,7 @@ class _FundMainScreenState extends State<FundMainScreen>
             color: accentColor.withOpacity(0.1),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          tabs: _categories.map((category) {
-            final shortName = _getShortCategoryName(category);
+          tabs: _tabs.map((tab) {
             return Tab(
               child: Container(
                 padding:
@@ -163,25 +163,13 @@ class _FundMainScreenState extends State<FundMainScreen>
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(shortName),
+                child: Text(tab['name']),
               ),
             );
           }).toList(),
         ),
       ),
     );
-  }
-
-  String _getShortCategoryName(String category) {
-    final mappings = {
-      'Hisse Senedi Fonu': 'Hisse',
-      'Serbest Fon': 'Serbest',
-      'Para Piyasası Fonu': 'Para Piyasası',
-      'Karma Fon': 'Karma',
-      'Tahvil Fonu': 'Tahvil',
-      'Altın Fonu': 'Altın',
-    };
-    return mappings[category] ?? category;
   }
 }
 

@@ -1,6 +1,5 @@
-// lib/screens/fund_screens/fund_category_screen.dart - Optimized version
-import 'dart:async'; // Import Timer
-
+// lib/screens/fund_screens/fund_category_screen.dart - Fixed with correct statistics and sorting
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -26,14 +25,18 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  // Current displayed funds (with pagination)
   List<Fund> _funds = [];
   bool _isLoading = false;
   bool _hasMore = true;
   int _currentPage = 0;
   int _totalCount = 0;
   String _error = '';
-  String _sortBy = 'kayit_tarihi'; // Default sort
-  // bool _isAscending = false; // Removed: Unused, sort direction is part of _sortBy key
+  String _sortBy = 'kayit_tarihi_desc';
+
+  // Category statistics (for ALL funds in category)
+  Map<String, dynamic> _categoryStats = {};
+  bool _isLoadingStats = false;
 
   Timer? _debounceTimer;
   static const int _fundsPerPage = 25;
@@ -65,8 +68,16 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
       'label': 'Yatırımcı Sayısı ↑',
       'icon': Icons.person
     },
-    // Consider adding 'kayit_tarihi_desc' or similar if you want a visual default
-    // {'key': 'kayit_tarihi_desc', 'label': 'Kayıt Tarihi ↓', 'icon': Icons.calendar_today},
+    {
+      'key': 'kayit_tarihi_desc',
+      'label': 'Kayıt Tarihi ↓',
+      'icon': Icons.calendar_today
+    },
+    {
+      'key': 'kayit_tarihi_asc',
+      'label': 'Kayıt Tarihi ↑',
+      'icon': Icons.calendar_today_outlined
+    },
   ];
 
   @override
@@ -75,15 +86,14 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
     _loadFunds(refresh: true);
+    _loadCategoryStats();
   }
 
   @override
   void dispose() {
-    _searchController
-        .removeListener(_onSearchChanged); // Good practice to remove listener
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
-    _scrollController
-        .removeListener(_onScroll); // Good practice to remove listener
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
@@ -93,7 +103,6 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       if (mounted) {
-        // Check if widget is still in tree
         _loadFunds(refresh: true);
       }
     });
@@ -108,15 +117,33 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
     }
   }
 
-  Future<void> _loadFunds({bool refresh = false}) async {
-    if (_isLoading && !refresh)
-      return; // Prevent multiple simultaneous loads unless it's a refresh
+  Future<void> _loadCategoryStats() async {
+    setState(() {
+      _isLoadingStats = true;
+    });
 
-    // If it's a refresh, cancel any ongoing non-refresh load by setting _isLoading to false first
-    // This is a bit tricky. The primary guard is `if (_isLoading) return;` at the top.
-    // For simplicity, let's assume the current logic with the top guard is sufficient.
-    // If a refresh is triggered while a paged load is happening, the refresh will wait.
-    // If a paged load is triggered while a refresh is happening, it will wait.
+    try {
+      // Load ALL funds in category to calculate correct statistics
+      final response =
+          await FundApiService.getCategoryStatistics(widget.category);
+
+      if (mounted) {
+        setState(() {
+          _categoryStats = response;
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingStats = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadFunds({bool refresh = false}) async {
+    if (_isLoading && !refresh) return;
 
     setState(() {
       _isLoading = true;
@@ -136,24 +163,11 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
         if (_searchController.text.isNotEmpty) 'search': _searchController.text,
       };
 
-      // Ensure FundApiService.getFundsByCategoryWithPagination is correctly typed
-      // Assuming it returns Map<String, dynamic> with 'funds' (List<dynamic>) and 'total' (int)
       final response = await FundApiService.getFundsByCategoryWithPagination(
           widget.category, params);
 
-      // Assuming response['funds'] is List<dynamic> that needs mapping to List<Fund>
-      // If FundApiService already returns List<Fund>, this mapping is not needed.
-      // Based on the original code: final newFunds = response['funds'] as List<Fund>;
-      // This implies the service or JSON parsing already handles Fund object creation.
-      final newFunds = (response['funds'] as List).map((fundData) {
-        if (fundData is Fund) return fundData;
-        // If fundData is Map<String, dynamic>, ensure Fund.fromJson exists and is used
-        // For now, assuming the original cast `as List<Fund>` means it's already correct.
-        return Fund.fromJson(
-            fundData as Map<String, dynamic>); // Or however Fund is constructed
-      }).toList();
-
-      final total = response['total'] as int;
+      final List<Fund> newFunds = response['funds'] as List<Fund>;
+      final int total = response['total'] as int;
 
       if (mounted) {
         setState(() {
@@ -173,7 +187,7 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
         setState(() {
           _error = "Bir hata oluştu: ${e.toString()}";
           _isLoading = false;
-          _hasMore = false; // Stop further loading attempts on error
+          _hasMore = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -208,13 +222,11 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
                   fontWeight: FontWeight.bold,
                   fontSize: 18),
             ),
-            if (_totalCount > 0 ||
-                _funds
-                    .isNotEmpty) // Show count even if totalCount is not yet loaded but funds are
+            if (_totalCount > 0 || _funds.isNotEmpty)
               Text(
                 _isLoading && _funds.isEmpty
                     ? 'Yükleniyor...'
-                    : '${_funds.length} / $_totalCount fon',
+                    : '${_funds.length} / $_totalCount fon görüntüleniyor',
                 style: TextStyle(color: textSecondary, fontSize: 12),
               ),
           ],
@@ -227,7 +239,6 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
             icon: Icon(Icons.sort, color: accentColor),
             onSelected: (value) {
               if (_sortBy != value) {
-                // Only reload if sort option changed
                 setState(() {
                   _sortBy = value;
                 });
@@ -269,11 +280,10 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
             child: SearchField(
               controller: _searchController,
               hintText: 'Kategori içinde ara...',
-              // onChanged: (value) => _loadFunds(refresh: true), // Removed: Handled by _searchController listener with debounce
             ),
           ),
 
-          // Stats
+          // Category Statistics - Shows stats for ALL funds in category
           _buildCategoryStats(),
 
           // Fund List
@@ -291,38 +301,54 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
     final textSecondary =
         themeExtension?.textSecondary ?? AppTheme.textSecondary;
 
-    // Show stats only if funds are loaded and not in initial loading shimmer state for the list
-    if (_funds.isEmpty || (_isLoading && _funds.isEmpty))
-      return const SizedBox.shrink();
+    if (_isLoadingStats) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: List.generate(
+            4,
+            (index) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: ShimmerLoading(
+                  width: double.infinity,
+                  height: 60,
+                  borderRadius: 12,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
-    // Calculate statistics based on currently loaded funds
-    final double totalValue =
-        _funds.fold<double>(0.0, (sum, fund) => sum + fund.totalValue);
-    final double averageReturn = _funds.isNotEmpty
-        ? _funds.fold<double>(0.0, (sum, fund) => sum + fund.dailyReturnValue) /
-            _funds.length
-        : 0.0;
-    final int totalInvestors =
-        _funds.fold<int>(0, (sum, fund) => sum + fund.investorCount);
+    if (_categoryStats.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final totalFunds = _categoryStats['total_funds'] ?? 0;
+    final totalValue = _categoryStats['total_market_value'] ?? 0.0;
+    final averageReturn = _categoryStats['average_return'] ?? 0.0;
+    final totalInvestors = _categoryStats['total_investors'] ?? 0;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.spaceAround, // Distribute space evenly
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           Expanded(
             child: _buildStatCard(
-              'Yüklenen',
-              _funds.length.toString(),
+              'Toplam Fon',
+              totalFunds.toString(),
               textPrimary,
               textSecondary,
             ),
           ),
-          const SizedBox(width: 8), // Reduced spacing for smaller screens
+          const SizedBox(width: 8),
           Expanded(
             child: _buildStatCard(
-              'Toplam Değer (Yüklenen)', // Clarify that this is for loaded funds
+              'Toplam Değer',
               _formatCurrency(totalValue),
               textPrimary,
               textSecondary,
@@ -331,7 +357,7 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: _buildStatCard(
-              'Ort. Getiri (Yüklenen)',
+              'Ort. Getiri',
               '${averageReturn >= 0 ? '+' : ''}${averageReturn.toStringAsFixed(2)}%',
               textPrimary,
               textSecondary,
@@ -340,7 +366,7 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: _buildStatCard(
-              'Yatırımcı (Yüklenen)',
+              'Toplam Yatırımcı',
               _formatNumber(totalInvestors),
               textPrimary,
               textSecondary,
@@ -354,31 +380,29 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
   Widget _buildStatCard(
       String title, String value, Color textPrimary, Color textSecondary) {
     return FuturisticCard(
-      // Assuming FuturisticCard is a custom widget
-      padding: const EdgeInsets.symmetric(
-          vertical: 8, horizontal: 6), // Adjusted padding
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // Take minimum space
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             value,
             style: TextStyle(
-              fontSize: 13, // Slightly smaller for condensed view
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: textPrimary,
             ),
             textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis, // Handle overflow
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 2), // Reduced height
+          const SizedBox(height: 2),
           Text(
             title,
             style: TextStyle(
-              fontSize: 9, // Slightly smaller for condensed view
+              fontSize: 9,
               color: textSecondary,
             ),
             textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis, // Handle overflow
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -393,7 +417,6 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
     }
 
     if (_error.isNotEmpty && _funds.isEmpty) {
-      // Show error only if no funds are displayed
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -423,8 +446,7 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
                       themeExtension?.accentColor ?? AppTheme.accentColor,
-                  foregroundColor:
-                      Colors.white, // Or appropriate contrast color
+                  foregroundColor: Colors.white,
                 ),
               ),
             ],
@@ -434,7 +456,6 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
     }
 
     if (_funds.isEmpty && !_isLoading) {
-      // Not loading, and no funds (e.g. no results)
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -473,7 +494,6 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         itemBuilder: (context, index) {
           if (index >= _funds.length) {
-            // This is the loader for pagination
             return _isLoading
                 ? Container(
                     padding: const EdgeInsets.all(16),
@@ -489,25 +509,19 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
                       ),
                     ),
                   )
-                : const SizedBox
-                    .shrink(); // Should not happen if _hasMore is false
+                : const SizedBox.shrink();
           }
 
           final fund = _funds[index];
-          // Assuming FundCard takes Map<String, dynamic>
-          // If FundCard takes Fund object: FundCard(fund: fund, ...)
           return Padding(
-            padding:
-                const EdgeInsets.only(bottom: 12.0), // Spacing between cards
+            padding: const EdgeInsets.only(bottom: 12.0),
             child: FundCard(
-              fund: fund.toJson(), // Ensure Fund model has toJson()
+              fund: fund.toJson(),
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => FundDetailScreen(
-                        fund:
-                            fund.toJson()), // Ensure FundDetailScreen takes Map
+                    builder: (context) => FundDetailScreen(fund: fund.toJson()),
                   ),
                 );
               },
