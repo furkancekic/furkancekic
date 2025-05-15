@@ -1,4 +1,4 @@
-// services/fund_api_service.dart
+// services/fund_api_service.dart - Updated with pagination support
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../src/config.dart';
@@ -9,8 +9,9 @@ class FundApiService {
   static final _logger = AppLogger('FundApiService');
   static const String baseUrl = Config.baseUrl;
 
-  /// Get all funds with pagination and filters
-  static Future<List<Fund>> getFunds(Map<String, dynamic> params) async {
+  /// Get funds with pagination support
+  static Future<Map<String, dynamic>> getFundsWithPagination(
+      Map<String, dynamic> params) async {
     try {
       final uri = Uri.parse('$baseUrl/funds').replace(queryParameters: params);
       final response = await http.get(uri);
@@ -20,7 +21,14 @@ class FundApiService {
 
         if (data['status'] == 'success') {
           final fundsJson = data['funds'] as List;
-          return fundsJson.map((json) => Fund.fromJson(json)).toList();
+          final funds = fundsJson.map((json) => Fund.fromJson(json)).toList();
+
+          return {
+            'funds': funds,
+            'total': data['total'] ?? funds.length,
+            'page': data['page'] ?? 0,
+            'limit': data['limit'] ?? 25,
+          };
         } else {
           throw Exception(data['message'] ?? 'Unknown error');
         }
@@ -28,15 +36,92 @@ class FundApiService {
         throw Exception('Http error: ${response.statusCode}');
       }
     } catch (e) {
-      _logger.severe('Error fetching funds: $e');
+      _logger.severe('Error fetching funds with pagination: $e');
       throw Exception('Failed to fetch funds: $e');
     }
   }
 
-  /// Get fund details by code
-  static Future<Map<String, dynamic>> getFundDetails(String fundCode) async {
+  /// Get funds by category with pagination
+  static Future<Map<String, dynamic>> getFundsByCategoryWithPagination(
+      String category, Map<String, dynamic> params) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/funds/$fundCode'));
+      final response = await http.get(
+          Uri.parse('$baseUrl/funds/category/$category')
+              .replace(queryParameters: params));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == 'success') {
+          final fundsJson = data['funds'] as List;
+          final funds = fundsJson.map((json) => Fund.fromJson(json)).toList();
+
+          return {
+            'funds': funds,
+            'total': data['total'] ?? funds.length,
+            'page': data['page'] ?? 0,
+            'limit': data['limit'] ?? 25,
+            'category': category,
+          };
+        } else {
+          throw Exception(data['message'] ?? 'Unknown error');
+        }
+      } else {
+        throw Exception('Http error: ${response.statusCode}');
+      }
+    } catch (e) {
+      _logger.severe('Error fetching funds by category with pagination: $e');
+      throw Exception('Failed to fetch funds by category: $e');
+    }
+  }
+
+  /// Get fund historical summary (lightweight version)
+  static Future<Map<String, dynamic>> getFundHistoricalSummary(
+      String fundCode) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/funds/$fundCode/historical-summary'));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == 'success') {
+          return data['summary'];
+        } else {
+          throw Exception(data['message'] ?? 'Unknown error');
+        }
+      } else {
+        throw Exception('Http error: ${response.statusCode}');
+      }
+    } catch (e) {
+      _logger.severe('Error fetching historical summary for $fundCode: $e');
+      throw Exception('Failed to fetch historical summary: $e');
+    }
+  }
+
+  /// Original getFunds method updated to use pagination
+  static Future<List<Fund>> getFunds(Map<String, dynamic> params) async {
+    final result = await getFundsWithPagination(params);
+    return result['funds'] as List<Fund>;
+  }
+
+  /// Updated getFundsByCategory to use pagination
+  static Future<List<Fund>> getFundsByCategory(String category) async {
+    final result =
+        await getFundsByCategoryWithPagination(category, {'limit': '100'});
+    return result['funds'] as List<Fund>;
+  }
+
+  // ... rest of the existing methods remain the same ...
+
+  /// Get fund details by code (optimized - no historical by default)
+  static Future<Map<String, dynamic>> getFundDetails(String fundCode,
+      {bool includeHistorical = false}) async {
+    try {
+      final params = includeHistorical ? {'include_historical': 'true'} : null;
+      final uri = Uri.parse('$baseUrl/funds/$fundCode');
+      final response = await http
+          .get(params != null ? uri.replace(queryParameters: params) : uri);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -57,31 +142,7 @@ class FundApiService {
     }
   }
 
-  /// Get funds by category
-  static Future<List<Fund>> getFundsByCategory(String category) async {
-    try {
-      final response =
-          await http.get(Uri.parse('$baseUrl/funds/category/$category'));
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['status'] == 'success') {
-          final fundsJson = data['funds'] as List;
-          return fundsJson.map((json) => Fund.fromJson(json)).toList();
-        } else {
-          throw Exception(data['message'] ?? 'Unknown error');
-        }
-      } else {
-        throw Exception('Http error: ${response.statusCode}');
-      }
-    } catch (e) {
-      _logger.severe('Error fetching funds by category $category: $e');
-      throw Exception('Failed to fetch funds by category: $e');
-    }
-  }
-
-  /// Get historical data for a fund
+  // Keep all other existing methods...
   static Future<Map<String, dynamic>> getFundHistorical(
     String fundCode, {
     String timeframe = 'all',
@@ -109,7 +170,6 @@ class FundApiService {
     }
   }
 
-  /// Filter funds
   static Future<List<Fund>> filterFunds(Map<String, dynamic> filters) async {
     try {
       final uri =
@@ -135,7 +195,6 @@ class FundApiService {
     }
   }
 
-  /// Compare funds
   static Future<Map<String, dynamic>> compareFunds(
       List<String> fundCodes) async {
     try {
@@ -162,7 +221,6 @@ class FundApiService {
     }
   }
 
-  /// Get fund risk metrics
   static Future<Map<String, dynamic>> getFundRiskMetrics(
       String fundCode) async {
     try {
@@ -186,7 +244,6 @@ class FundApiService {
     }
   }
 
-  /// Get Monte Carlo simulation
   static Future<Map<String, dynamic>> getMonteCarlo(
     String fundCode, {
     int periods = 12,
@@ -218,10 +275,8 @@ class FundApiService {
     }
   }
 
-  /// Get fund categories for filter
   static Future<List<String>> getFundCategories() async {
     try {
-      // This could be a separate endpoint, but for now we'll return static categories
       return [
         'Hisse Senedi Fonu',
         'Serbest Fon',
@@ -240,7 +295,6 @@ class FundApiService {
     }
   }
 
-  /// Search funds
   static Future<List<Fund>> searchFunds(String query) async {
     try {
       if (query.isEmpty) return [];
@@ -253,7 +307,6 @@ class FundApiService {
     }
   }
 
-  /// Get top performing funds
   static Future<List<Fund>> getTopPerformingFunds({int limit = 10}) async {
     try {
       final params = {
@@ -267,13 +320,10 @@ class FundApiService {
     }
   }
 
-  /// Get fund market overview data
   static Future<Map<String, dynamic>> getMarketOverview() async {
     try {
-      // This endpoint might not exist yet, so we'll simulate it
       final allFunds = await getFunds({'limit': '100'});
 
-      // Calculate market statistics
       final totalFunds = allFunds.length;
       final totalMarketValue =
           allFunds.fold<double>(0.0, (sum, fund) => sum + fund.totalValue);
@@ -303,4 +353,3 @@ class FundApiService {
     }
   }
 }
-
