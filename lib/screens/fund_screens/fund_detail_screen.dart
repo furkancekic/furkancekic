@@ -1,4 +1,4 @@
-// lib/screens/fund_screens/fund_detail_screen.dart - Düzeltilmiş importlar ile
+// lib/screens/fund_screens/fund_detail_screen.dart - Single page version
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_theme.dart';
@@ -17,9 +17,7 @@ class FundDetailScreen extends StatefulWidget {
   State<FundDetailScreen> createState() => _FundDetailScreenState();
 }
 
-class _FundDetailScreenState extends State<FundDetailScreen>
-    with TickerProviderStateMixin {
-  late TabController _tabController;
+class _FundDetailScreenState extends State<FundDetailScreen> {
   String _selectedTimeframe = '1M';
   List<Map<String, dynamic>> _historicalData = [];
   Map<String, dynamic>? _riskMetrics;
@@ -27,24 +25,11 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   bool _isLoading = false;
 
   final List<String> _timeframes = ['1W', '1M', '3M', '6M', '1Y', 'All'];
-  final List<String> _tabLabels = [
-    'Genel Bakış',
-    'Performans',
-    'Risk',
-    'Dağılım'
-  ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
     _loadFundData();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadFundData() async {
@@ -96,24 +81,34 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           _buildAppBar(),
         ],
-        body: Column(
-          children: [
-            _buildTabBar(),
-            Expanded(
-              child: _isLoading
-                  ? const FundDetailShimmer()
-                  : TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildOverviewTab(),
-                        _buildPerformanceTab(),
-                        _buildRiskTab(),
-                        _buildDistributionTab(),
-                      ],
-                    ),
-            ),
-          ],
-        ),
+        body: _isLoading
+            ? const FundDetailShimmer()
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. Quick Stats (Genel bakıştaki metrikler en üstte)
+                    _buildQuickStats(),
+                    const SizedBox(height: 24),
+
+                    // 2. Performance Section (Grafik)
+                    _buildPerformanceSection(),
+                    const SizedBox(height: 24),
+
+                    // 3. Distribution Section (Dağılım)
+                    _buildDistributionSection(),
+                    const SizedBox(height: 24),
+
+                    // 4. Risk Section (Risk)
+                    _buildRiskSection(),
+                    const SizedBox(height: 24),
+
+                    // 5. Overview Section (Genel Bakış - en altta)
+                    _buildOverviewSection(),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -121,13 +116,10 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   Widget _buildAppBar() {
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary =
-        themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
-    final positiveColor =
-        themeExtension?.positiveColor ?? AppTheme.positiveColor;
-    final negativeColor =
-        themeExtension?.negativeColor ?? AppTheme.negativeColor;
+    final positiveColor = themeExtension?.positiveColor ?? AppTheme.positiveColor;
+    final negativeColor = themeExtension?.negativeColor ?? AppTheme.negativeColor;
 
     final fundCode = widget.fund['kod'] ?? '';
     final fundName = widget.fund['fon_adi'] ?? '';
@@ -135,8 +127,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     final category = widget.fund['kategori'] ?? '';
 
     // Parse daily return
-    final returnStr =
-        dailyReturn.toString().replaceAll('%', '').replaceAll(',', '.');
+    final returnStr = dailyReturn.toString().replaceAll('%', '').replaceAll(',', '.');
     double returnValue = 0.0;
     try {
       returnValue = double.parse(returnStr);
@@ -175,11 +166,10 @@ class _FundDetailScreenState extends State<FundDetailScreen>
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: themeExtension?.gradientBackgroundColors ??
-                  [
-                    Theme.of(context).scaffoldBackgroundColor,
-                    Theme.of(context).scaffoldBackgroundColor,
-                  ],
+              colors: themeExtension?.gradientBackgroundColors ?? [
+                Theme.of(context).scaffoldBackgroundColor,
+                Theme.of(context).scaffoldBackgroundColor,
+              ],
             ),
           ),
           padding: const EdgeInsets.fromLTRB(16, 60, 16, 16),
@@ -213,8 +203,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: returnColor.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
@@ -223,9 +212,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          isPositive
-                              ? Icons.arrow_upward
-                              : Icons.arrow_downward,
+                          isPositive ? Icons.arrow_upward : Icons.arrow_downward,
                           color: returnColor,
                           size: 20,
                         ),
@@ -261,143 +248,89 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     );
   }
 
-  Widget _buildTabBar() {
-    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
-    final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
-    final textSecondary =
-        themeExtension?.textSecondary ?? AppTheme.textSecondary;
-
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: TabBar(
-        controller: _tabController,
-        indicatorColor: accentColor,
-        labelColor: accentColor,
-        unselectedLabelColor: textSecondary,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-        tabs: _tabLabels.map((label) => Tab(text: label)).toList(),
-      ),
-    );
-  }
-
-  Widget _buildOverviewTab() {
+  // GÜNCELLEME: Quick Stats en üste çıktı
+  Widget _buildQuickStats() {
     final fund = widget.fund;
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
+    final cardColorLight = themeExtension?.cardColorLight ?? AppTheme.cardColorLight;
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary =
-        themeExtension?.textSecondary ?? AppTheme.textSecondary;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Quick Stats
-          _buildQuickStats(),
-          const SizedBox(height: 24),
-
-          // Fund Profile
-          FuturisticCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Fon Bilgileri',
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (fund['fund_profile'] != null) ...[
-                  ...(fund['fund_profile'] as Map<String, dynamic>)
-                      .entries
-                      .where((entry) =>
-                          entry.value != null &&
-                          entry.value.toString().isNotEmpty)
-                      .map((entry) =>
-                          _buildProfileItem(entry.key, entry.value.toString())),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // TEFAS Status
-          if (fund['tefas'] != null)
-            FuturisticCard(
-              child: Row(
-                children: [
-                  Icon(
-                    fund['tefas'].toString().contains('işlem görüyor')
-                        ? Icons.check_circle
-                        : Icons.cancel,
-                    color: fund['tefas'].toString().contains('işlem görüyor')
-                        ? themeExtension?.positiveColor ??
-                            AppTheme.positiveColor
-                        : themeExtension?.negativeColor ??
-                            AppTheme.negativeColor,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      fund['tefas'],
-                      style: TextStyle(
-                        color: textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickStats() {
-    final fund = widget.fund;
+    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
+    
     final totalValue = fund['fon_toplam_deger'] ?? 0.0;
     final investorCount = fund['yatirimci_sayisi'] ?? 0;
     final marketShare = fund['pazar_payi'] ?? '0%';
     final categoryRank = fund['kategori_drecece'] ?? '';
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: _buildStatCard(
-            'Toplam Değer',
-            _formatCurrency(totalValue),
-            Icons.account_balance,
+        Text(
+          'Fon Özeti',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Yatırımcı',
-            _formatNumber(investorCount),
-            Icons.people,
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardColorLight.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: accentColor.withOpacity(0.1),
+              width: 1,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Pazar Payı',
-            marketShare,
-            Icons.pie_chart,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Sıralama',
-            categoryRank,
-            Icons.emoji_events,
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'Toplam Değer',
+                  _formatCurrency(totalValue),
+                  Icons.account_balance,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 60,
+                color: textSecondary.withOpacity(0.2),
+              ),
+              Expanded(
+                child: _buildStatCard(
+                  'Yatırımcı',
+                  _formatNumber(investorCount),
+                  Icons.people,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 60,
+                color: textSecondary.withOpacity(0.2),
+              ),
+              Expanded(
+                child: _buildStatCard(
+                  'Pazar Payı',
+                  marketShare,
+                  Icons.pie_chart,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 60,
+                color: textSecondary.withOpacity(0.2),
+              ),
+              Expanded(
+                child: _buildStatCard(
+                  'Sıralama',
+                  categoryRank,
+                  Icons.emoji_events,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -406,104 +339,63 @@ class _FundDetailScreenState extends State<FundDetailScreen>
 
   Widget _buildStatCard(String title, String value, IconData icon) {
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
-    final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary =
-        themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
 
-    return FuturisticCard(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        children: [
-          Icon(icon, color: accentColor, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              color: textSecondary,
-              fontSize: 10,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileItem(String key, String value) {
-    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
-    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary =
-        themeExtension?.textSecondary ?? AppTheme.textSecondary;
-
-    // Format key name
-    String formattedKey = key;
-    if (key.contains('Kodu')) formattedKey = 'Kod';
-    if (key.contains('Risk')) formattedKey = 'Risk Seviyesi';
-    if (key.contains('Platform')) formattedKey = 'Platform Durumu';
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              formattedKey,
-              style: TextStyle(
-                color: textSecondary,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: TextStyle(
-                color: textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPerformanceTab() {
     return Column(
       children: [
+        Icon(icon, color: accentColor, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          title,
+          style: TextStyle(
+            color: textSecondary,
+            fontSize: 10,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPerformanceSection() {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Performans',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
         // Timeframe Selector
         Container(
-          height: 60,
-          padding: const EdgeInsets.all(16),
+          height: 50,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: _timeframes.length,
             itemBuilder: (context, index) {
               final timeframe = _timeframes[index];
               final isSelected = timeframe == _selectedTimeframe;
-              final themeExtension =
-                  Theme.of(context).extension<AppThemeExtension>();
-              final accentColor =
-                  themeExtension?.accentColor ?? AppTheme.accentColor;
+              final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
               final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
-              final textPrimary =
-                  themeExtension?.textPrimary ?? AppTheme.textPrimary;
 
               return GestureDetector(
                 onTap: () {
@@ -513,8 +405,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                   _loadFundData();
                 },
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
                     color: isSelected ? accentColor : cardColor,
@@ -527,8 +418,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                     timeframe,
                     style: TextStyle(
                       color: isSelected ? Colors.white : textPrimary,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -536,39 +426,90 @@ class _FundDetailScreenState extends State<FundDetailScreen>
             },
           ),
         ),
-
+        const SizedBox(height: 16),
         // Performance Chart
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: FuturisticCard(
-                    child: FundPerformanceChart(
-                      data: _historicalData,
-                      timeframe: _selectedTimeframe,
-                    ),
-                  ),
-                ),
+        FuturisticCard(
+          child: FundPerformanceChart(
+            data: _historicalData,
+            timeframe: _selectedTimeframe,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildRiskTab() {
-    if (_riskMetrics == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
+  Widget _buildDistributionSection() {
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary =
-        themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final distributions = widget.fund['fund_distributions'] as Map<String, dynamic>?;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
+    if (distributions == null || distributions.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Portföy Dağılımı',
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          FuturisticCard(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Text(
+                  'Dağılım bilgisi mevcut değil',
+                  style: TextStyle(
+                    color: themeExtension?.textSecondary ?? AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Portföy Dağılımı',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        FuturisticCard(
+          child: FundDistributionChart(distributions: distributions),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRiskSection() {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Risk Analizi',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_riskMetrics != null) ...[
           // Risk Metrics Grid
           GridView.count(
             shrinkWrap: true,
@@ -578,8 +519,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
             children: [
-              _buildRiskMetricCard(
-                  'Sharpe Oranı', _riskMetrics!['sharpeRatio']),
+              _buildRiskMetricCard('Sharpe Oranı', _riskMetrics!['sharpeRatio']),
               _buildRiskMetricCard('Beta', _riskMetrics!['beta']),
               _buildRiskMetricCard('Alpha', _riskMetrics!['alpha']),
               _buildRiskMetricCard('R²', _riskMetrics!['rSquared']),
@@ -587,9 +527,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
               _buildRiskMetricCard('Volatilite', _riskMetrics!['volatility']),
             ],
           ),
-
           const SizedBox(height: 24),
-
           // Monte Carlo Simulation
           if (_monteCarloResult != null) ...[
             FuturisticCard(
@@ -600,7 +538,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                     'Monte Carlo Simülasyonu',
                     style: TextStyle(
                       color: textPrimary,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -610,16 +548,27 @@ class _FundDetailScreenState extends State<FundDetailScreen>
               ),
             ),
           ],
+        ] else ...[
+          FuturisticCard(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Text(
+                  'Risk verileri yükleniyor...',
+                  style: TextStyle(color: textSecondary),
+                ),
+              ),
+            ),
+          ),
         ],
-      ),
+      ],
     );
   }
 
   Widget _buildRiskMetricCard(String title, dynamic value) {
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary =
-        themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
 
     String displayValue = value?.toString() ?? '0';
@@ -656,25 +605,19 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   Widget _buildMonteCarloChart() {
     final scenarios = _monteCarloResult!['scenarios'];
     final periods = _monteCarloResult!['periods'];
-
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
-    final positiveColor =
-        themeExtension?.positiveColor ?? AppTheme.positiveColor;
-    final negativeColor =
-        themeExtension?.negativeColor ?? AppTheme.negativeColor;
+    final positiveColor = themeExtension?.positiveColor ?? AppTheme.positiveColor;
+    final negativeColor = themeExtension?.negativeColor ?? AppTheme.negativeColor;
 
     List<FlSpot> optimisticSpots = [];
     List<FlSpot> expectedSpots = [];
     List<FlSpot> pessimisticSpots = [];
 
     for (int i = 0; i < periods; i++) {
-      optimisticSpots
-          .add(FlSpot(i.toDouble(), scenarios['optimistic'][i].toDouble()));
-      expectedSpots
-          .add(FlSpot(i.toDouble(), scenarios['expected'][i].toDouble()));
-      pessimisticSpots
-          .add(FlSpot(i.toDouble(), scenarios['pessimistic'][i].toDouble()));
+      optimisticSpots.add(FlSpot(i.toDouble(), scenarios['optimistic'][i].toDouble()));
+      expectedSpots.add(FlSpot(i.toDouble(), scenarios['expected'][i].toDouble()));
+      pessimisticSpots.add(FlSpot(i.toDouble(), scenarios['pessimistic'][i].toDouble()));
     }
 
     return SizedBox(
@@ -683,8 +626,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         LineChartData(
           gridData: const FlGridData(show: false),
           titlesData: FlTitlesData(
-            leftTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
@@ -692,18 +634,15 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                   return Text(
                     '${value.toInt()}M',
                     style: TextStyle(
-                      color: themeExtension?.textSecondary ??
-                          AppTheme.textSecondary,
+                      color: themeExtension?.textSecondary ?? AppTheme.textSecondary,
                       fontSize: 12,
                     ),
                   );
                 },
               ),
             ),
-            topTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles:
-                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           borderData: FlBorderData(show: false),
           lineBarsData: [
@@ -734,20 +673,118 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     );
   }
 
-  Widget _buildDistributionTab() {
-    final distributions =
-        widget.fund['fund_distributions'] as Map<String, dynamic>?;
+  Widget _buildOverviewSection() {
+    final fund = widget.fund;
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
 
-    if (distributions == null || distributions.isEmpty) {
-      return const Center(
-        child: Text('Dağılım bilgisi mevcut değil'),
-      );
-    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Genel Bakış',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Fund Profile
+        FuturisticCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Fon Bilgileri',
+                style: TextStyle(
+                  color: textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (fund['fund_profile'] != null) ...[
+                ...(fund['fund_profile'] as Map<String, dynamic>)
+                    .entries
+                    .where((entry) => entry.value != null && entry.value.toString().isNotEmpty)
+                    .map((entry) => _buildProfileItem(entry.key, entry.value.toString())),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // TEFAS Status
+        if (fund['tefas'] != null)
+          FuturisticCard(
+            child: Row(
+              children: [
+                Icon(
+                  fund['tefas'].toString().contains('işlem görüyor')
+                      ? Icons.check_circle
+                      : Icons.cancel,
+                  color: fund['tefas'].toString().contains('işlem görüyor')
+                      ? themeExtension?.positiveColor ?? AppTheme.positiveColor
+                      : themeExtension?.negativeColor ?? AppTheme.negativeColor,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    fund['tefas'],
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildProfileItem(String key, String value) {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
+
+    // Format key name
+    String formattedKey = key;
+    if (key.contains('Kodu')) formattedKey = 'Kod';
+    if (key.contains('Risk')) formattedKey = 'Risk Seviyesi';
+    if (key.contains('Platform')) formattedKey = 'Platform Durumu';
 
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: FuturisticCard(
-        child: FundDistributionChart(distributions: distributions),
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              formattedKey,
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

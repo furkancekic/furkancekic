@@ -17,6 +17,8 @@ class FundCard extends StatelessWidget {
     // Theme colors
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
+    final cardColorLight =
+        themeExtension?.cardColorLight ?? AppTheme.cardColorLight;
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
     final textSecondary =
         themeExtension?.textSecondary ?? AppTheme.textSecondary;
@@ -60,8 +62,7 @@ class FundCard extends StatelessWidget {
               color: cardColor,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color:
-                    themeExtension?.cardColorLight ?? AppTheme.cardColorLight,
+                color: cardColorLight,
                 width: 1,
               ),
               boxShadow: [
@@ -153,34 +154,58 @@ class FundCard extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // Metrics Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildMetricColumn(
-                          'Toplam Değer',
-                          _formatCurrency(totalValue),
-                          textSecondary,
-                          textPrimary,
-                        ),
+                  // GÜNCELLEME: Metrics Row - Kutu şeklinde vurgulu
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cardColorLight.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: accentColor.withOpacity(0.1),
+                        width: 1,
                       ),
-                      Expanded(
-                        child: _buildMetricColumn(
-                          'Yatırımcı',
-                          _formatNumber(investorCount),
-                          textSecondary,
-                          textPrimary,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricColumn(
+                            'Toplam Değer',
+                            _formatCurrency(totalValue),
+                            textSecondary,
+                            textPrimary,
+                            Icons.account_balance,
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: _buildMetricColumn(
-                          'Pazar Payı',
-                          marketShare,
-                          textSecondary,
-                          textPrimary,
+                        Container(
+                          width: 1,
+                          height: 40,
+                          color: textSecondary.withOpacity(0.2),
                         ),
-                      ),
-                    ],
+                        Expanded(
+                          child: _buildMetricColumn(
+                            'Yatırımcı',
+                            _formatNumber(investorCount),
+                            textSecondary,
+                            textPrimary,
+                            Icons.people,
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 40,
+                          color: textSecondary.withOpacity(0.2),
+                        ),
+                        Expanded(
+                          child: _buildMetricColumn(
+                            'Pazar Payı',
+                            marketShare,
+                            textSecondary,
+                            textPrimary,
+                            Icons.pie_chart,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 12),
@@ -239,26 +264,30 @@ class FundCard extends StatelessWidget {
     String value,
     Color labelColor,
     Color valueColor,
+    IconData icon,
   ) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Icon(icon, color: valueColor, size: 16),
+        const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(
             color: labelColor,
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: FontWeight.w500,
           ),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
             color: valueColor,
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );

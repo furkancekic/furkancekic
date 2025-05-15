@@ -320,36 +320,94 @@ class FundApiService {
     }
   }
 
+// lib/services/fund_api_service.dart - Market Overview with null safety
   static Future<Map<String, dynamic>> getMarketOverview() async {
     try {
-      final allFunds = await getFunds({'limit': '100'});
+      print(
+          'Fetching market overview from: $baseUrl/funds/market-overview'); // Debug log
+      final response =
+          await http.get(Uri.parse('$baseUrl/funds/market-overview'));
 
-      final totalFunds = allFunds.length;
-      final totalMarketValue =
-          allFunds.fold<double>(0.0, (sum, fund) => sum + fund.totalValue);
+      print('Response status: ${response.statusCode}'); // Debug log
+      print('Response body: ${response.body}'); // Debug log
 
-      final averageReturn = allFunds.isEmpty
-          ? 0.0
-          : allFunds.fold<double>(
-                  0.0, (sum, fund) => sum + fund.dailyReturnValue) /
-              allFunds.length;
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
 
-      final categories = <String, int>{};
-      for (final fund in allFunds) {
-        final category = fund.category;
-        categories[category] = (categories[category] ?? 0) + 1;
+        if (data['status'] == 'success') {
+          final marketOverview =
+              data['market_overview'] as Map<String, dynamic>? ?? {};
+
+          // Null check and default values
+          return {
+            'total_funds': marketOverview['total_funds'] ?? 0,
+            'total_market_value':
+                marketOverview['total_market_value']?.toDouble() ?? 0.0,
+            'total_investors': marketOverview['total_investors'] ?? 0,
+            'average_return':
+                marketOverview['average_return']?.toDouble() ?? 0.0,
+            'category_distribution':
+                marketOverview['category_distribution'] ?? <String, dynamic>{},
+            'risk_distribution':
+                marketOverview['risk_distribution'] ?? <String, dynamic>{},
+            'tefas_distribution':
+                marketOverview['tefas_distribution'] ?? <String, dynamic>{},
+            'market_share_distribution':
+                marketOverview['market_share_distribution'] ??
+                    <String, dynamic>{},
+            'category_performance':
+                marketOverview['category_performance'] ?? <String, dynamic>{},
+            'top_performing_categories':
+                marketOverview['top_performing_categories'] ?? <List>[],
+            'bottom_performing_categories':
+                marketOverview['bottom_performing_categories'] ?? <List>[],
+            'performance_metrics': marketOverview['performance_metrics'] ??
+                <String, dynamic>{
+                  'positive_returns': 0,
+                  'negative_returns': 0,
+                  'neutral_returns': 0,
+                  'best_return': 0.0,
+                  'worst_return': 0.0,
+                }
+          };
+        } else {
+          throw Exception(data['message'] ?? 'Unknown error');
+        }
+      } else {
+        throw Exception('Http error: ${response.statusCode}');
       }
-
-      return {
-        'total_funds': totalFunds,
-        'total_market_value': totalMarketValue,
-        'average_return': averageReturn,
-        'categories': categories,
-        'top_funds': allFunds.take(5).toList(),
-      };
     } catch (e) {
       _logger.severe('Error fetching market overview: $e');
-      throw Exception('Failed to fetch market overview: $e');
+      print('Error in getMarketOverview: $e'); // Debug log
+      // Return comprehensive fallback data
+      return {
+        'total_funds': 0,
+        'total_market_value': 0.0,
+        'total_investors': 0,
+        'average_return': 0.0,
+        'category_distribution': <String, dynamic>{
+          'Veri Yükleniyor': 1,
+        },
+        'risk_distribution': <String, dynamic>{
+          'Veri Yükleniyor': 1,
+        },
+        'tefas_distribution': <String, dynamic>{
+          'Veri Yükleniyor': 1,
+        },
+        'market_share_distribution': <String, dynamic>{
+          'Veri Yükleniyor': 1,
+        },
+        'category_performance': <String, dynamic>{},
+        'top_performing_categories': <List>[],
+        'bottom_performing_categories': <List>[],
+        'performance_metrics': <String, dynamic>{
+          'positive_returns': 0,
+          'negative_returns': 0,
+          'neutral_returns': 0,
+          'best_return': 0.0,
+          'worst_return': 0.0,
+        }
+      };
     }
   }
 }

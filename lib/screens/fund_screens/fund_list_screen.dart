@@ -1,6 +1,5 @@
-// lib/screens/fund_screens/fund_list_screen.dart - Optimized with pagination and lazy loading
-import 'dart:async'; // Import Timer
-
+// lib/screens/fund_screens/fund_list_screen.dart - Fixed version
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -69,7 +68,7 @@ class _FundListScreenState extends State<FundListScreen> {
   void _onSearchChanged() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      if (mounted) { // Check if widget is still in the tree
+      if (mounted) {
         _loadFunds(refresh: true);
       }
     });
@@ -96,11 +95,12 @@ class _FundListScreenState extends State<FundListScreen> {
         if (_searchController.text.isNotEmpty) 'search': _searchController.text,
       };
 
+      // DÜZELTME: getFunds yerine getFundsWithPagination kullan
       final response = await FundApiService.getFundsWithPagination(params);
 
-      final List<dynamic> fundsData = response['funds'] as List<dynamic>;
-      final newFunds = fundsData.map((data) => Fund.fromJson(data as Map<String, dynamic>)).toList();
-      final total = response['total'] as int;
+      // Response List<Fund> değil Map<String, dynamic> döndürüyor
+      final List<Fund> newFunds = response['funds'] as List<Fund>;
+      final int total = response['total'] as int;
 
       if (mounted) {
         setState(() {
@@ -158,7 +158,7 @@ class _FundListScreenState extends State<FundListScreen> {
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppThemeExtension>();
     final textPrimary = ext?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary = ext?.textSecondary ?? AppTheme.textSecondary; // Defined here
+    final textSecondary = ext?.textSecondary ?? AppTheme.textSecondary;
     final accent = ext?.accentColor ?? AppTheme.accentColor;
     final cardColor = ext?.cardColor ?? AppTheme.cardColor;
     final negativeColor = ext?.negativeColor ?? AppTheme.negativeColor;
@@ -169,7 +169,7 @@ class _FundListScreenState extends State<FundListScreen> {
         child: Column(
           children: [
             _buildHeader(textPrimary, accent),
-            _buildSearchAndFilter(accent, cardColor, textSecondary), // Pass textSecondary
+            _buildSearchAndFilter(accent, cardColor, textSecondary),
             if (_funds.isNotEmpty || _isLoading)
               _buildQuickStats(textPrimary, textSecondary),
             Expanded(
@@ -202,7 +202,9 @@ class _FundListScreenState extends State<FundListScreen> {
                 ),
                 if (_totalCount > 0 || _funds.isNotEmpty)
                   Text(
-                    _isLoading && _funds.isEmpty ? 'Yükleniyor...' : '${_funds.length} / $_totalCount fon bulundu',
+                    _isLoading && _funds.isEmpty
+                        ? 'Yükleniyor...'
+                        : '${_funds.length} / $_totalCount fon bulundu',
                     style: TextStyle(
                       fontSize: 12,
                       color: textPrimary.withOpacity(0.7),
@@ -228,9 +230,10 @@ class _FundListScreenState extends State<FundListScreen> {
     );
   }
 
-  // Added textSecondary as a parameter
-  Widget _buildSearchAndFilter(Color accent, Color cardColor, Color textSecondary) {
-    final hasActiveFilters = _currentFilters.entries.any((e) => e.value != null && e.value.toString().isNotEmpty);
+  Widget _buildSearchAndFilter(
+      Color accent, Color cardColor, Color textSecondary) {
+    final hasActiveFilters = _currentFilters.entries
+        .any((e) => e.value != null && e.value.toString().isNotEmpty);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -254,7 +257,9 @@ class _FundListScreenState extends State<FundListScreen> {
                   color: cardColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: hasActiveFilters ? accent : Colors.grey.withOpacity(0.3),
+                    color: hasActiveFilters
+                        ? accent
+                        : Colors.grey.withOpacity(0.3),
                     width: hasActiveFilters ? 1.5 : 1.0,
                   ),
                 ),
@@ -263,8 +268,9 @@ class _FundListScreenState extends State<FundListScreen> {
                   children: [
                     Icon(
                       Icons.filter_list_rounded,
-                      // Use the passed textSecondary
-                      color: hasActiveFilters ? accent : textSecondary.withOpacity(0.8),
+                      color: hasActiveFilters
+                          ? accent
+                          : textSecondary.withOpacity(0.8),
                       size: 24,
                     ),
                     if (hasActiveFilters)
@@ -274,11 +280,14 @@ class _FundListScreenState extends State<FundListScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
-                            color: accent,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 1)
-                          ),
-                          constraints: const BoxConstraints(minWidth: 8, minHeight: 8),
+                              color: accent,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color:
+                                      Theme.of(context).scaffoldBackgroundColor,
+                                  width: 1)),
+                          constraints:
+                              const BoxConstraints(minWidth: 8, minHeight: 8),
                         ),
                       ),
                   ],
@@ -293,7 +302,8 @@ class _FundListScreenState extends State<FundListScreen> {
 
   Widget _buildQuickStats(Color textPrimary, Color textSecondary) {
     final avgReturn = _calculateAverageReturn();
-    final String formattedAvgReturn = '${avgReturn >= 0 ? '+' : ''}${avgReturn.toStringAsFixed(2)}%';
+    final String formattedAvgReturn =
+        '${avgReturn >= 0 ? '+' : ''}${avgReturn.toStringAsFixed(2)}%';
 
     if (_funds.isEmpty && !_isLoading) return const SizedBox.shrink();
 
@@ -379,7 +389,8 @@ class _FundListScreenState extends State<FundListScreen> {
     );
   }
 
-  Widget _buildFundList(Color textSecondary, Color negativeColor, Color accentColor) {
+  Widget _buildFundList(
+      Color textSecondary, Color negativeColor, Color accentColor) {
     if (_funds.isEmpty && _isLoading) {
       return const FundLoadingShimmer(itemCount: 8);
     }
@@ -395,13 +406,17 @@ class _FundListScreenState extends State<FundListScreen> {
               const SizedBox(height: 16),
               Text(
                 'Fonlar Yüklenemedi',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textSecondary.withOpacity(0.8)),
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: textSecondary.withOpacity(0.8)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 _error,
-                style: TextStyle(color: textSecondary.withOpacity(0.6), fontSize: 12),
+                style: TextStyle(
+                    color: textSecondary.withOpacity(0.6), fontSize: 12),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -412,8 +427,8 @@ class _FundListScreenState extends State<FundListScreen> {
                 style: ElevatedButton.styleFrom(
                     backgroundColor: accentColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)
-                ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12)),
               ),
             ],
           ),
@@ -428,19 +443,22 @@ class _FundListScreenState extends State<FundListScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.search_off_rounded, size: 64, color: textSecondary.withOpacity(0.5)),
+              Icon(Icons.search_off_rounded,
+                  size: 64, color: textSecondary.withOpacity(0.5)),
               const SizedBox(height: 16),
               Text(
                 _searchController.text.isNotEmpty || _currentFilters.isNotEmpty
                     ? 'Filtrelerinize uygun fon bulunamadı.'
                     : 'Gösterilecek fon bulunmuyor.',
-                style: TextStyle(color: textSecondary.withOpacity(0.8), fontSize: 16),
+                style: TextStyle(
+                    color: textSecondary.withOpacity(0.8), fontSize: 16),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 'Arama veya filtre kriterlerinizi değiştirmeyi deneyin.',
-                style: TextStyle(color: textSecondary.withOpacity(0.6), fontSize: 12),
+                style: TextStyle(
+                    color: textSecondary.withOpacity(0.6), fontSize: 12),
                 textAlign: TextAlign.center,
               ),
             ],
