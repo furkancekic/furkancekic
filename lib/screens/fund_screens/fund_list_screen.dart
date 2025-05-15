@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
 import '../../services/fund_api_service.dart';
-import '../models/fund.dart';
-import '../widgets/fund_card.dart';
-import '../widgets/fund_filter_sheet.dart';
+import '../../models/fund.dart';
+import '../../widgets/fund_widgets/fund_card.dart';
+import '../../widgets/fund_widgets/fund_filter_sheet.dart';
 import 'fund_detail_screen.dart';
 import 'fund_market_overview_screen.dart';
 
