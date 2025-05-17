@@ -86,13 +86,6 @@ class _FundMainScreenState extends State<FundMainScreen>
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          'Yatırım Fonları',
-          style: TextStyle(
-            color: textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

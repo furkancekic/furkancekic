@@ -1,4 +1,4 @@
-// lib/screens/fund_screens/fund_detail_screen.dart - Geliştirilmiş versiyon
+// lib/screens/fund_screens/fund_detail_screen.dart - Tek sayfa versiyonu
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_theme.dart';
@@ -19,8 +19,8 @@ class FundDetailScreen extends StatefulWidget {
 
 class _FundDetailScreenState extends State<FundDetailScreen>
     with TickerProviderStateMixin {
-  late TabController _tabController;
   final _logger = AppLogger('FundDetailScreen');
+  final ScrollController _scrollController = ScrollController();
 
   // Data variables
   String _selectedTimeframe = '1M';
@@ -37,7 +37,6 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
@@ -56,8 +55,8 @@ class _FundDetailScreenState extends State<FundDetailScreen>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _animationController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -103,12 +102,10 @@ class _FundDetailScreenState extends State<FundDetailScreen>
       if (!mounted) return;
 
       setState(() {
-        // Parse historical data
+        // Parse historical data with improved date handling
         final historicalResponse = futures[0] as Map<String, dynamic>;
-        _historicalData = (historicalResponse['historical'] as List<dynamic>?)
-                ?.map((item) => Map<String, dynamic>.from(item))
-                .toList() ??
-            [];
+        _historicalData = _parseAndSortHistoricalData(
+            (historicalResponse['historical'] as List<dynamic>?) ?? []);
 
         _logger.info('Loaded ${_historicalData.length} historical data points');
 
@@ -134,6 +131,62 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     }
   }
 
+  List<Map<String, dynamic>> _parseAndSortHistoricalData(
+      List<dynamic> rawData) {
+    final List<Map<String, dynamic>> parsedData = [];
+
+    for (final item in rawData) {
+      if (item is Map<String, dynamic>) {
+        try {
+          final dateStr = item['date']?.toString();
+          final priceStr = item['price']?.toString();
+
+          if (dateStr != null && priceStr != null) {
+            // Parse date with better handling
+            DateTime? date;
+            try {
+              date = DateTime.parse(dateStr);
+
+              // Check if date is in the future (likely a parsing error)
+              if (date.isAfter(DateTime.now())) {
+                _logger.warning('Future date detected: $dateStr, skipping');
+                continue;
+              }
+            } catch (e) {
+              _logger.warning('Error parsing date: $dateStr');
+              continue;
+            }
+
+            // Parse price
+            double? price;
+            if (priceStr.isNotEmpty) {
+              price = double.tryParse(priceStr);
+            }
+
+            if (date != null && price != null && price > 0) {
+              parsedData.add({
+                'date': date.toIso8601String(),
+                'price': price,
+              });
+            }
+          }
+        } catch (e) {
+          _logger.warning('Error parsing historical data point: $e');
+          continue;
+        }
+      }
+    }
+
+    // Sort by date in ascending order
+    parsedData.sort((a, b) {
+      final dateA = DateTime.parse(a['date']);
+      final dateB = DateTime.parse(b['date']);
+      return dateA.compareTo(dateB);
+    });
+
+    return parsedData;
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
@@ -142,27 +195,38 @@ class _FundDetailScreenState extends State<FundDetailScreen>
 
     return Scaffold(
       body: NestedScrollView(
+        controller: _scrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           _buildAppBar(),
         ],
-        body: Column(
-          children: [
-            _buildTabBar(),
-            Expanded(
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildOverviewTab(),
-                    _buildPerformanceTab(),
-                    _buildRiskTab(),
-                    _buildDistributionTab(),
-                  ],
-                ),
-              ),
+        body: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Performance Chart Section
+                _buildPerformanceSection(),
+                const SizedBox(height: 24),
+
+                // Fund Summary Section
+                _buildQuickStats(),
+                const SizedBox(height: 24),
+
+                // Distribution Section
+                _buildDistributionSection(),
+                const SizedBox(height: 24),
+
+                // Risk Metrics Section
+                _buildRiskSection(),
+                const SizedBox(height: 24),
+
+                // General Fund Information Section
+                _buildGeneralInfoSection(),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -322,270 +386,34 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     );
   }
 
-  Widget _buildTabBar() {
+  Widget _buildPerformanceSection() {
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
-    final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
-    final textSecondary =
-        themeExtension?.textSecondary ?? AppTheme.textSecondary;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TabBar(
-        controller: _tabController,
-        isScrollable: true,
-        indicatorColor: accentColor,
-        indicatorWeight: 3,
-        labelColor: accentColor,
-        unselectedLabelColor: textSecondary,
-        labelStyle: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
-        ),
-        unselectedLabelStyle: const TextStyle(fontSize: 14),
-        tabs: const [
-          Tab(icon: Icon(Icons.dashboard), text: 'Genel'),
-          Tab(icon: Icon(Icons.trending_up), text: 'Performans'),
-          Tab(icon: Icon(Icons.security), text: 'Risk'),
-          Tab(icon: Icon(Icons.pie_chart), text: 'Dağılım'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOverviewTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildQuickStats(),
-          const SizedBox(height: 24),
-          _buildFundProfile(),
-          const SizedBox(height: 24),
-          _buildTefasStatus(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPerformanceTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildTimeframeSelector(),
-          const SizedBox(height: 16),
-          if (_isLoading)
-            _buildLoadingChart()
-          else if (_error.isNotEmpty)
-            _buildErrorCard()
-          else if (_historicalData.isEmpty)
-            _buildNoDataCard()
-          else
-            _buildPerformanceChart(),
-          const SizedBox(height: 24),
-          _buildPerformanceMetrics(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRiskTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_isLoading)
-            _buildLoadingRiskMetrics()
-          else if (_riskMetrics == null)
-            _buildNoRiskDataCard()
-          else
-            _buildRiskMetricsGrid(),
-          const SizedBox(height: 24),
-          if (_monteCarloResult != null) _buildMonteCarloSection(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDistributionTab() {
-    final distributions =
-        widget.fund['fund_distributions'] as Map<String, dynamic>?;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (distributions != null && distributions.isNotEmpty)
-            FundDistributionChart(distributions: distributions)
-          else
-            _buildNoDistributionCard(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickStats() {
-    final fund = widget.fund;
-    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
-    final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
-    final cardColorLight =
-        themeExtension?.cardColorLight ?? AppTheme.cardColorLight;
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary =
-        themeExtension?.textSecondary ?? AppTheme.textSecondary;
-    final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
-
-    final totalValue = fund['fon_toplam_deger'] ?? 0.0;
-    final investorCount = fund['yatirimci_sayisi'] ?? 0;
-    final marketShare = fund['pazar_payi'] ?? '0%';
-    final categoryRank = fund['kategori_drecece'] ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Fon Özeti',
+          'Performans',
           style: TextStyle(
             color: textPrimary,
-            fontSize: 20,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 16),
-        Card(
-          color: cardColor,
-          elevation: 8,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                colors: [
-                  cardColorLight.withOpacity(0.1),
-                  cardColorLight.withOpacity(0.3),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Toplam Değer',
-                        _formatCurrency(totalValue),
-                        Icons.account_balance,
-                        accentColor,
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      height: 80,
-                      color: textSecondary.withOpacity(0.2),
-                    ),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Yatırımcı',
-                        _formatNumber(investorCount),
-                        Icons.people,
-                        Colors.blue,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  height: 1,
-                  width: double.infinity,
-                  color: textSecondary.withOpacity(0.2),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Pazar Payı',
-                        marketShare,
-                        Icons.pie_chart,
-                        Colors.orange,
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      height: 80,
-                      color: textSecondary.withOpacity(0.2),
-                    ),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Kategori Sırası',
-                        categoryRank.isNotEmpty ? categoryRank : 'N/A',
-                        Icons.emoji_events,
-                        Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
-    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
-    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary =
-        themeExtension?.textSecondary ?? AppTheme.textSecondary;
-
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 28),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          value,
-          style: TextStyle(
-            color: textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          title,
-          style: TextStyle(
-            color: textSecondary,
-            fontSize: 12,
-          ),
-          textAlign: TextAlign.center,
-        ),
+        _buildTimeframeSelector(),
+        const SizedBox(height: 16),
+        if (_isLoading)
+          _buildLoadingChart()
+        else if (_error.isNotEmpty)
+          _buildErrorCard()
+        else if (_historicalData.isEmpty)
+          _buildNoDataCard()
+        else
+          _buildPerformanceChart(),
+        const SizedBox(height: 24),
+        _buildPerformanceMetrics(),
       ],
     );
   }
@@ -841,7 +669,146 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     );
   }
 
-  Widget _buildRiskMetricsGrid() {
+  Widget _buildQuickStats() {
+    final fund = widget.fund;
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
+    final cardColorLight =
+        themeExtension?.cardColorLight ?? AppTheme.cardColorLight;
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final textSecondary =
+        themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
+
+    final totalValue = fund['fon_toplam_deger'] ?? 0.0;
+    final investorCount = fund['yatirimci_sayisi'] ?? 0;
+    final marketShare = fund['pazar_payi'] ?? '0%';
+    final categoryRank = fund['kategori_drecece'] ?? '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Fon Özeti',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          color: cardColor,
+          elevation: 8,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  cardColorLight.withOpacity(0.1),
+                  cardColorLight.withOpacity(0.3),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        'Toplam Değer',
+                        _formatCurrency(totalValue),
+                        Icons.account_balance,
+                        accentColor,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 80,
+                      color: textSecondary.withOpacity(0.2),
+                    ),
+                    Expanded(
+                      child: _buildStatCard(
+                        'Yatırımcı',
+                        _formatNumber(investorCount),
+                        Icons.people,
+                        Colors.blue,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  height: 1,
+                  width: double.infinity,
+                  color: textSecondary.withOpacity(0.2),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        'Pazar Payı',
+                        marketShare,
+                        Icons.pie_chart,
+                        Colors.orange,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 80,
+                      color: textSecondary.withOpacity(0.2),
+                    ),
+                    Expanded(
+                      child: _buildStatCard(
+                        'Kategori Sırası',
+                        categoryRank.isNotEmpty ? categoryRank : 'N/A',
+                        Icons.emoji_events,
+                        Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDistributionSection() {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final distributions =
+        widget.fund['fund_distributions'] as Map<String, dynamic>?;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Portföy Dağılımı',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (distributions != null && distributions.isNotEmpty)
+          FundDistributionChart(distributions: distributions)
+        else
+          _buildNoDistributionCard(),
+      ],
+    );
+  }
+
+  Widget _buildRiskSection() {
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
 
@@ -849,35 +816,111 @@ class _FundDetailScreenState extends State<FundDetailScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Risk Metrikleri',
+          'Risk Analizi',
           style: TextStyle(
             color: textPrimary,
-            fontSize: 20,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          childAspectRatio: 1.2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          children: [
-            _buildRiskMetricCard(
-                'Sharpe Oranı', _riskMetrics!['sharpeRatio'], Colors.blue),
-            _buildRiskMetricCard('Beta', _riskMetrics!['beta'], Colors.green),
-            _buildRiskMetricCard(
-                'Alpha', _riskMetrics!['alpha'], Colors.orange),
-            _buildRiskMetricCard(
-                'R²', _riskMetrics!['rSquared'], Colors.purple),
-            _buildRiskMetricCard(
-                'Max Düşüş', '${_riskMetrics!['maxDrawdown']}%', Colors.red),
-            _buildRiskMetricCard(
-                'Volatilite', '${_riskMetrics!['volatility']}%', Colors.teal),
-          ],
+        if (_isLoading)
+          _buildLoadingRiskMetrics()
+        else if (_riskMetrics == null)
+          _buildNoRiskDataCard()
+        else ...[
+          _buildRiskMetricsGrid(),
+          const SizedBox(height: 24),
+          if (_monteCarloResult != null) _buildMonteCarloSection(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildGeneralInfoSection() {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Genel Bilgiler',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
+        const SizedBox(height: 16),
+        _buildFundProfile(),
+        const SizedBox(height: 24),
+        _buildTefasStatus(),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final textSecondary =
+        themeExtension?.textSecondary ?? AppTheme.textSecondary;
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 28),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          value,
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          title,
+          style: TextStyle(
+            color: textSecondary,
+            fontSize: 12,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRiskMetricsGrid() {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      childAspectRatio: 1.2,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      children: [
+        _buildRiskMetricCard(
+            'Sharpe Oranı', _riskMetrics!['sharpeRatio'], Colors.blue),
+        _buildRiskMetricCard('Beta', _riskMetrics!['beta'], Colors.green),
+        _buildRiskMetricCard('Alpha', _riskMetrics!['alpha'], Colors.orange),
+        _buildRiskMetricCard('R²', _riskMetrics!['rSquared'], Colors.purple),
+        _buildRiskMetricCard(
+            'Max Düşüş', '${_riskMetrics!['maxDrawdown']}%', Colors.red),
+        _buildRiskMetricCard(
+            'Volatilite', '${_riskMetrics!['volatility']}%', Colors.teal),
       ],
     );
   }
@@ -975,9 +1018,6 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   }
 
   Widget _buildLoadingRiskMetrics() {
-    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
-    final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
-
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
