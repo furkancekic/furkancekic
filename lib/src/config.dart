@@ -1,5 +1,5 @@
 // lib/src/config.dart
 class Config {
   static const String baseUrl =
-      'https://testimonials-plants-magnet-narrative.trycloudflare.com/api';
+      'https://tim-ventures-operators-canal.trycloudflare.com/api';
 }

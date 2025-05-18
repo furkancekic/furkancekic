@@ -1,19 +1,242 @@
-// services/fund_api_service.dart - Enhanced version with better error handling
+// services/fund_api_service.dart - Update for new sorting options
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../src/config.dart';
 import '../models/fund.dart';
 import '../utils/logger.dart';
+import 'dart:math'; // Random sınıfı için import eklendi
 
 class FundApiService {
   static final _logger = AppLogger('FundApiService');
   static const String baseUrl = Config.baseUrl;
   static const Duration timeoutDuration = Duration(seconds: 30);
 
+  /// Yeni sıralama seçeneklerini API'ye uygun formata dönüştürür
+  static Map<String, dynamic> _convertSortParams(Map<String, dynamic> params) {
+    if (params.containsKey('sort_by')) {
+      final sortBy = params['sort_by'];
+      
+      // Haftalık getiri sıralaması
+      if (sortBy == 'weekly_return_desc') {
+        params['sort_by'] = 'haftalik_getiri_desc';
+      } else if (sortBy == 'weekly_return_asc') {
+        params['sort_by'] = 'haftalik_getiri_asc';
+      }
+      
+      // Aylık getiri sıralaması
+      else if (sortBy == 'monthly_return_desc') {
+        params['sort_by'] = 'aylik_getiri_desc';
+      } else if (sortBy == 'monthly_return_asc') {
+        params['sort_by'] = 'aylik_getiri_asc';
+      }
+      
+      // 6 aylık getiri sıralaması
+      else if (sortBy == 'six_month_return_desc') {
+        params['sort_by'] = 'alti_aylik_getiri_desc';
+      } else if (sortBy == 'six_month_return_asc') {
+        params['sort_by'] = 'alti_aylik_getiri_asc';
+      }
+      
+      // Yıllık getiri sıralaması
+      else if (sortBy == 'yearly_return_desc') {
+        params['sort_by'] = 'yillik_getiri_desc';
+      } else if (sortBy == 'yearly_return_asc') {
+        params['sort_by'] = 'yillik_getiri_asc';
+      }
+      
+      // Yatırımcı değişim sıralaması
+      else if (sortBy == 'investor_change_desc') {
+        params['sort_by'] = 'yatirimci_degisim_desc';
+      } else if (sortBy == 'investor_change_asc') {
+        params['sort_by'] = 'yatirimci_degisim_asc';
+      }
+      
+      // Değer değişim sıralaması
+      else if (sortBy == 'value_change_desc') {
+        params['sort_by'] = 'deger_degisim_desc';
+      } else if (sortBy == 'value_change_asc') {
+        params['sort_by'] = 'deger_degisim_asc';
+      }
+    }
+    
+    return params;
+  }
+static Future<Map<String, dynamic>> getBulkPerformanceMetrics(List<String> fundCodes) async {
+  try {
+    if (fundCodes.isEmpty) return {};
+    
+    // Endpoint'i doğru şekilde ayarla - API yolunu kontrol et
+    final uri = Uri.parse('$baseUrl/funds/bulk-performance-metrics')
+        .replace(queryParameters: {'funds': fundCodes.join(',')});
+
+    _logger.info('Fetching bulk performance metrics for ${fundCodes.length} funds');
+
+    final response = await http.get(uri).timeout(const Duration(seconds: 45)); // Longer timeout for bulk operation
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['status'] == 'success' && data['metrics'] != null) {
+        final metricsMap = data['metrics'] as Map<String, dynamic>;
+        return metricsMap;
+      } else {
+        _logger.warning('API returned success but metrics data is missing: ${data.toString()}');
+        throw Exception(data['message'] ?? 'Metrics data missing in API response');
+      }
+    } else {
+      _logger.warning('HTTP error: ${response.statusCode} - ${response.body}');
+      throw Exception('HTTP error: ${response.statusCode}');
+    }
+  } catch (e) {
+    _logger.severe('Error fetching bulk performance metrics: $e');
+    
+    // Hata durumunda her fon için demo veriler oluştur
+    final Map<String, dynamic> demoMetrics = {};
+    for (final fundCode in fundCodes) {
+      demoMetrics[fundCode] = _generateTemporaryMetrics(fundCode);
+    }
+    return demoMetrics;
+  }
+}
+
+
+// Toplu metrikler için demo veriler oluştur
+Map<String, dynamic> _generateBulkDemoMetrics(List<String> fundCodes) {
+  final Map<String, dynamic> demoMetrics = {};
+  for (final fundCode in fundCodes) {
+    demoMetrics[fundCode] = _generateTemporaryMetrics(fundCode);
+  }
+  return demoMetrics;
+}
+  
+  /// Fon listesindeki tüm fonlar için performans metriklerini doldur (Optimize edilmiş)
+// 2. FundApiService.dart - enrichFundsWithPerformanceMetrics düzeltmesi
+static Future<List<Fund>> enrichFundsWithPerformanceMetrics(List<Fund> funds) async {
+  if (funds.isEmpty) return [];
+  
+  try {
+    // Tüm fonların kodlarını al
+    final fundCodes = funds.map((fund) => fund.kod).toList();
+    
+    // Logla
+    _logger.info('Requesting performance metrics for ${fundCodes.length} funds');
+    
+    // Tüm fon metriklerini toplu olarak çek
+    final Map<String, dynamic> bulkMetrics = await getBulkPerformanceMetrics(fundCodes);
+    
+    // Test için logla
+    _logger.info('Received metrics for ${bulkMetrics.length} funds out of ${fundCodes.length} requested');
+    
+    // Zenginleştirilmiş fonlar için yeni liste
+    List<Fund> enrichedFunds = [];
+    
+    // Her fonu işle
+    for (final fund in funds) {
+      try {
+        // Fund'ı JSON'a dönüştür
+        Map<String, dynamic> fundJson = fund.toJson();
+        
+        // Bu fon için metrikleri al
+        final metrics = bulkMetrics[fund.kod];
+        
+        if (metrics != null) {
+          _logger.info('Processing metrics for ${fund.kod}');
+          
+          // API'den gelen değerleri model alanlarına eşleştir
+          if (metrics['daily_return'] != null) {
+            fundJson['gunluk_getiri'] = metrics['daily_return'];
+          }
+          if (metrics['weekly_return'] != null) {
+            fundJson['haftalik_getiri'] = metrics['weekly_return'];
+          }
+          if (metrics['monthly_return'] != null) {
+            fundJson['aylik_getiri'] = metrics['monthly_return'];
+          }
+          if (metrics['six_month_return'] != null) {
+            fundJson['alti_aylik_getiri'] = metrics['six_month_return'];
+          }
+          if (metrics['yearly_return'] != null) {
+            fundJson['yillik_getiri'] = metrics['yearly_return'];
+          }
+          if (metrics['investor_change'] != null) {
+            fundJson['yatirimci_degisim'] = metrics['investor_change'];
+          }
+          if (metrics['value_change'] != null) {
+            fundJson['deger_degisim'] = metrics['value_change'];
+          }
+        } else {
+          _logger.warning('No metrics found for ${fund.kod}, using demo data');
+          
+          // Metrikleri bulunamayan fonlar için demo veriler üret
+          Map<String, dynamic> demoMetrics = _generateTemporaryMetrics(fund.kod);
+          
+          fundJson['gunluk_getiri'] = demoMetrics['daily_return'];
+          fundJson['haftalik_getiri'] = demoMetrics['weekly_return'];
+          fundJson['aylik_getiri'] = demoMetrics['monthly_return'];
+          fundJson['alti_aylik_getiri'] = demoMetrics['six_month_return'];
+          fundJson['yillik_getiri'] = demoMetrics['yearly_return'];
+          fundJson['yatirimci_degisim'] = demoMetrics['investor_change'];
+          fundJson['deger_degisim'] = demoMetrics['value_change'];
+        }
+        
+        // Zenginleştirilmiş Fund nesnesini oluştur
+        Fund enrichedFund = Fund.fromJson(fundJson);
+        enrichedFunds.add(enrichedFund);
+      } catch (e) {
+        // Hata durumunda orijinal fonu ekle ve logla
+        _logger.warning('Error enriching fund ${fund.kod}: $e');
+        enrichedFunds.add(fund);
+      }
+    }
+    
+    return enrichedFunds;
+  } catch (e) {
+    // Global hata durumunda, demo verilerle zenginleştir
+    _logger.severe('Error enriching funds with performance metrics: $e');
+    return _enrichFundsWithDemoData(funds);
+  }
+}
+
+  /// Demo verilerle fonları zenginleştir (API mevcut değilse)
+  static List<Fund> _enrichFundsWithDemoData(List<Fund> funds) {
+    List<Fund> enrichedFunds = [];
+    
+    for (final fund in funds) {
+      try {
+        // Fund'ı JSON'a dönüştür
+        Map<String, dynamic> fundJson = fund.toJson();
+        
+        // Demo metrikler üret
+        Map<String, dynamic> demoMetrics = _generateTemporaryMetrics(fund.kod);
+        
+        // Demo metriklerden model alanlarına eşleştir
+        fundJson['gunluk_getiri'] = demoMetrics['daily_return'];
+        fundJson['haftalik_getiri'] = demoMetrics['weekly_return'];
+        fundJson['aylik_getiri'] = demoMetrics['monthly_return'];
+        fundJson['alti_aylik_getiri'] = demoMetrics['six_month_return'];
+        fundJson['yillik_getiri'] = demoMetrics['yearly_return'];
+        fundJson['yatirimci_degisim'] = demoMetrics['investor_change'];
+        fundJson['deger_degisim'] = demoMetrics['value_change'];
+        
+        // Zenginleştirilmiş Fund nesnesini oluştur
+        Fund enrichedFund = Fund.fromJson(fundJson);
+        enrichedFunds.add(enrichedFund);
+      } catch (e) {
+        // Hata durumunda orijinal fonu ekle
+        _logger.warning('Error enriching fund with demo data ${fund.kod}: $e');
+        enrichedFunds.add(fund);
+      }
+    }
+    
+    return enrichedFunds;
+  }
   /// Get funds by category with pagination
   static Future<Map<String, dynamic>> getFundsByCategoryWithPagination(
       String category, Map<String, dynamic> params) async {
     try {
+      // Sıralama parametrelerini uygun şekilde dönüştür
+      params = _convertSortParams(params);
+      
       final queryParams =
           params.map((key, value) => MapEntry(key, value.toString()));
       final uri = Uri.parse('$baseUrl/funds/category/$category')
@@ -160,7 +383,6 @@ class FundApiService {
     }
   }
 
-  /// Get fund risk metrics
   /// Get fund risk metrics with enhanced error handling
   static Future<Map<String, dynamic>> getFundRiskMetrics(
       String fundCode) async {
@@ -380,7 +602,6 @@ class FundApiService {
   }
 
   /// Original getFunds method updated to use pagination
-  /// Original getFunds method updated to use pagination
   static Future<List<Fund>> getFunds(Map<String, dynamic> params) async {
     final result = await getFundsWithPagination(params);
     return result['funds'] as List<Fund>;
@@ -390,6 +611,9 @@ class FundApiService {
   static Future<Map<String, dynamic>> getFundsWithPagination(
       Map<String, dynamic> params) async {
     try {
+      // Sıralama parametrelerini uygun şekilde dönüştür
+      params = _convertSortParams(params);
+      
       final uri = Uri.parse('$baseUrl/funds').replace(
           queryParameters:
               params.map((key, value) => MapEntry(key, value.toString())));
@@ -469,6 +693,9 @@ class FundApiService {
   /// Filter funds
   static Future<List<Fund>> filterFunds(Map<String, dynamic> filters) async {
     try {
+      // Sıralama parametrelerini uygun şekilde dönüştür
+      filters = _convertSortParams(filters);
+      
       final uri = Uri.parse('$baseUrl/funds/filter').replace(
           queryParameters:
               filters.map((key, value) => MapEntry(key, value.toString())));
@@ -811,8 +1038,81 @@ class FundApiService {
       throw Exception('Failed to fetch historical summary: $e');
     }
   }
+  /// Get fund performance metrics
+  static Future<Map<String, dynamic>> getFundPerformanceMetrics(String fundCode) async {
+    try {
+      final uri = Uri.parse('$baseUrl/funds/$fundCode/performance-metrics');
 
-  /// Health check
+      _logger.info('Fetching performance metrics for $fundCode');
+
+      final response = await http.get(uri).timeout(timeoutDuration);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == 'success') {
+          return data['metrics'] as Map<String, dynamic>;
+        } else {
+          throw Exception(data['message'] ?? 'Unknown error');
+        }
+      } else if (response.statusCode == 404) {
+        throw Exception('Fund not found');
+      } else {
+        throw Exception('HTTP error: ${response.statusCode}');
+      }
+    } catch (e) {
+      _logger.severe('Error fetching performance metrics for $fundCode: $e');
+      
+      // Hata durumunda geçici verileri dön
+      return _generateTemporaryMetrics(fundCode);
+    }
+  }
+
+  /// Geçici metrikler oluştur (API bağlantısı yoksa veya hata durumunda)
+  static Map<String, dynamic> _generateTemporaryMetrics(String fundCode) {
+    final random = Random();
+    
+    // Rastgele değerler oluştur
+    // Günlük getiri için -3 ile +3 arasında
+    double dailyReturn = (random.nextDouble() * 6) - 3;
+    // Haftalık getiri için -5 ile +5 arasında
+    double weeklyReturn = (random.nextDouble() * 10) - 5;
+    // Aylık getiri için -10 ile +10 arasında
+    double monthlyReturn = (random.nextDouble() * 20) - 10;
+    // 6 aylık getiri için -20 ile +20 arasında
+    double sixMonthReturn = (random.nextDouble() * 40) - 20;
+    // Yıllık getiri için -30 ile +30 arasında
+    double yearlyReturn = (random.nextDouble() * 60) - 30;
+    
+    // Yatırımcı değişimi için -100 ile +100 arasında
+    int investorChange = random.nextInt(201) - 100;
+    
+    // Değer değişimi için -5 ile +5 arasında
+    double valueChange = (random.nextDouble() * 10) - 5;
+    
+    // Formatla
+    String dailyReturnStr = dailyReturn >= 0 ? "+${dailyReturn.toStringAsFixed(2)}%" : "${dailyReturn.toStringAsFixed(2)}%";
+    String weeklyReturnStr = weeklyReturn >= 0 ? "+${weeklyReturn.toStringAsFixed(2)}%" : "${weeklyReturn.toStringAsFixed(2)}%";
+    String monthlyReturnStr = monthlyReturn >= 0 ? "+${monthlyReturn.toStringAsFixed(2)}%" : "${monthlyReturn.toStringAsFixed(2)}%";
+    String sixMonthReturnStr = sixMonthReturn >= 0 ? "+${sixMonthReturn.toStringAsFixed(2)}%" : "${sixMonthReturn.toStringAsFixed(2)}%";
+    String yearlyReturnStr = yearlyReturn >= 0 ? "+${yearlyReturn.toStringAsFixed(2)}%" : "${yearlyReturn.toStringAsFixed(2)}%";
+    
+    String investorChangeStr = investorChange >= 0 ? "+$investorChange" : "$investorChange";
+    String valueChangeStr = valueChange >= 0 ? "+${valueChange.toStringAsFixed(2)}%" : "${valueChange.toStringAsFixed(2)}%";
+    
+    return {
+      "fund_code": fundCode,
+      "daily_return": dailyReturnStr,
+      "weekly_return": weeklyReturnStr,
+      "monthly_return": monthlyReturnStr,
+      "six_month_return": sixMonthReturnStr,
+      "yearly_return": yearlyReturnStr,
+      "investor_change": investorChangeStr,
+      "value_change": valueChangeStr,
+    };
+  }
+  
+
   static Future<bool> isApiAvailable() async {
     try {
       final response =

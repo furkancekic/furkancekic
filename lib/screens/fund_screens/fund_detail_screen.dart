@@ -287,13 +287,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          fundCode,
-          style: TextStyle(
-            color: textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

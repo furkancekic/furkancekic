@@ -17,6 +17,12 @@ class Fund {
   final Map<String, dynamic>? fundDistributions;
   final Map<String, dynamic>? fundProfile;
   final dynamic flow;
+  final String? haftalikGetiri;
+  final String? aylikGetiri;
+  final String? altiAylikGetiri;
+  final String? yillikGetiri;
+  final String? yatirimciDegisim;
+  final String? degerDegisim;
 
   Fund({
     this.id,
@@ -36,6 +42,12 @@ class Fund {
     this.fundDistributions,
     this.fundProfile,
     this.flow,
+    this.haftalikGetiri,
+    this.aylikGetiri,
+    this.altiAylikGetiri,
+    this.yillikGetiri,
+    this.yatirimciDegisim,
+    this.degerDegisim,
   });
 
   factory Fund.fromJson(Map<String, dynamic> json) {
@@ -63,6 +75,12 @@ class Fund {
       fundDistributions: json['fund_distributions'],
       fundProfile: json['fund_profile'],
       flow: json['flow'],
+      haftalikGetiri: json['haftalik_getiri'] ?? '0%',
+      aylikGetiri: json['aylik_getiri'] ?? '0%',
+      altiAylikGetiri: json['alti_aylik_getiri'] ?? '0%',
+      yillikGetiri: json['yillik_getiri'] ?? '0%',
+      yatirimciDegisim: json['yatirimci_degisim'] ?? '0',
+      degerDegisim: json['deger_degisim'] ?? '0%',
     );
   }
 
@@ -86,6 +104,12 @@ class Fund {
       if (fundDistributions != null) 'fund_distributions': fundDistributions,
       if (fundProfile != null) 'fund_profile': fundProfile,
       if (flow != null) 'flow': flow,
+      if (haftalikGetiri != null) 'haftalik_getiri': haftalikGetiri,
+      if (aylikGetiri != null) 'aylik_getiri': aylikGetiri,
+      if (altiAylikGetiri != null) 'alti_aylik_getiri': altiAylikGetiri,
+      if (yillikGetiri != null) 'yillik_getiri': yillikGetiri,
+      if (yatirimciDegisim != null) 'yatirimci_degisim': yatirimciDegisim,
+      if (degerDegisim != null) 'deger_degisim': degerDegisim,
     };
   }
 
@@ -152,7 +176,85 @@ class Fund {
       return 0;
     }
   }
+  double get weeklyReturnValue {
+    if (haftalikGetiri == null) return 0.0;
+    try {
+      final cleanReturn = haftalikGetiri!
+          .replaceAll('%', '')
+          .replaceAll(',', '.');
+      return double.parse(cleanReturn);
+    } catch (e) {
+      return 0.0;
+    }
+  }
+  
+  double get monthlyReturnValue {
+    if (aylikGetiri == null) return 0.0;
+    try {
+      final cleanReturn = aylikGetiri!
+          .replaceAll('%', '')
+          .replaceAll(',', '.');
+      return double.parse(cleanReturn);
+    } catch (e) {
+      return 0.0;
+    }
+  }
+  
+  double get sixMonthReturnValue {
+    if (altiAylikGetiri == null) return 0.0;
+    try {
+      final cleanReturn = altiAylikGetiri!
+          .replaceAll('%', '')
+          .replaceAll(',', '.');
+      return double.parse(cleanReturn);
+    } catch (e) {
+      return 0.0;
+    }
+  }
+  
+  double get yearlyReturnValue {
+    if (yillikGetiri == null) return 0.0;
+    try {
+      final cleanReturn = yillikGetiri!
+          .replaceAll('%', '')
+          .replaceAll(',', '.');
+      return double.parse(cleanReturn);
+    } catch (e) {
+      return 0.0;
+    }
+  }
+  
+  int get investorChangeValue {
+    if (yatirimciDegisim == null) return 0;
+    try {
+      final cleanChange = yatirimciDegisim!.replaceAll('+', '');
+      return int.parse(cleanChange);
+    } catch (e) {
+      return 0;
+    }
+  }
+  
+  double get valueChangeValue {
+    if (degerDegisim == null) return 0.0;
+    try {
+      final cleanChange = degerDegisim!
+          .replaceAll('%', '')
+          .replaceAll(',', '.')
+          .replaceAll('+', '');
+      return double.parse(cleanChange);
+    } catch (e) {
+      return 0.0;
+    }
+  }
+  
+  bool get isWeeklyPositive => weeklyReturnValue >= 0;
+  bool get isMonthlyPositive => monthlyReturnValue >= 0;
+  bool get isSixMonthPositive => sixMonthReturnValue >= 0;
+  bool get isYearlyPositive => yearlyReturnValue >= 0;
+  bool get isInvestorChangePositive => investorChangeValue >= 0;
+  bool get isValueChangePositive => valueChangeValue >= 0;
 }
+
 
 class HistoricalData {
   final DateTime date;

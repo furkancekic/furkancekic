@@ -1,4 +1,4 @@
-// lib/widgets/fund_widgets/fund_card.dart
+// lib/widgets/fund_widgets/fund_card.dart - Güncellenen kısım
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../common_widgets.dart';
@@ -32,19 +32,51 @@ class FundCard extends StatelessWidget {
     final dailyReturn = fund['gunluk_getiri'] ?? '0%';
     final totalValue = fund['fon_toplam_deger'];
     final investorCount = fund['yatirimci_sayisi'];
-    final marketShare = fund['pazar_payi'] ?? '0%';
+    
+    // Yeni veriler
+    final weeklyReturn = fund['haftalik_getiri'] ?? '0%';
+    final monthlyReturn = fund['aylik_getiri'] ?? '0%';
+    final sixMonthReturn = fund['alti_aylik_getiri'] ?? '0%';
+    final yearlyReturn = fund['yillik_getiri'] ?? '0%';
+    final investorChange = fund['yatirimci_degisim'] ?? '0';
+    final valueChange = fund['deger_degisim'] ?? '0%';
 
-    // Parse daily return
-    final returnStr =
-        dailyReturn.toString().replaceAll('%', '').replaceAll(',', '.');
+    // Parse return values
+    final returnStr = dailyReturn.toString().replaceAll('%', '').replaceAll(',', '.');
+    final weeklyReturnStr = weeklyReturn.toString().replaceAll('%', '').replaceAll(',', '.');
+    final monthlyReturnStr = monthlyReturn.toString().replaceAll('%', '').replaceAll(',', '.');
+    final sixMonthReturnStr = sixMonthReturn.toString().replaceAll('%', '').replaceAll(',', '.');
+    final yearlyReturnStr = yearlyReturn.toString().replaceAll('%', '').replaceAll(',', '.');
+    final valueChangeStr = valueChange.toString().replaceAll('%', '').replaceAll(',', '.');
+    
     double returnValue = 0.0;
+    double weeklyReturnValue = 0.0;
+    double monthlyReturnValue = 0.0;
+    double sixMonthReturnValue = 0.0;
+    double yearlyReturnValue = 0.0;
+    double valueChangeValue = 0.0;
+    int investorChangeValue = 0;
+    
     try {
       returnValue = double.parse(returnStr);
+      weeklyReturnValue = double.parse(weeklyReturnStr);
+      monthlyReturnValue = double.parse(monthlyReturnStr);
+      sixMonthReturnValue = double.parse(sixMonthReturnStr);
+      yearlyReturnValue = double.parse(yearlyReturnStr);
+      valueChangeValue = double.parse(valueChangeStr);
+      investorChangeValue = int.parse(investorChange.toString().replaceAll('+', ''));
     } catch (e) {
-      returnValue = 0.0;
+      // Parse hatası durumunda varsayılan değerleri kullan
     }
 
     final isPositive = returnValue >= 0;
+    final isWeeklyPositive = weeklyReturnValue >= 0;
+    final isMonthlyPositive = monthlyReturnValue >= 0;
+    final isSixMonthPositive = sixMonthReturnValue >= 0;
+    final isYearlyPositive = yearlyReturnValue >= 0;
+    final isValueChangePositive = valueChangeValue >= 0;
+    final isInvestorChangePositive = investorChangeValue >= 0;
+
     final returnColor = isPositive ? positiveColor : negativeColor;
 
     return FuturisticCard(
@@ -126,7 +158,66 @@ class FundCard extends StatelessWidget {
             ),
           ],
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+
+          // Getiri tablosu
+  Container(
+    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+    decoration: BoxDecoration(
+      color: textSecondary.withOpacity(0.05),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: textSecondary.withOpacity(0.1), width: 0.5),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Performans',
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              'Getiri & Değişim',
+              style: TextStyle(
+                color: accentColor,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          alignment: WrapAlignment.center,
+          children: [
+            _buildReturnItem('Günlük', dailyReturn, isPositive, textPrimary),
+            _buildReturnItem('Haftalık', weeklyReturn, isWeeklyPositive, textPrimary),
+            _buildReturnItem('Aylık', monthlyReturn, isMonthlyPositive, textPrimary),
+            _buildReturnItem('6 Aylık', sixMonthReturn, isSixMonthPositive, textPrimary),
+            _buildReturnItem('Yıllık', yearlyReturn, isYearlyPositive, textPrimary),
+            _buildReturnItem('Büyüklük Değişimi', valueChange, isValueChangePositive, textPrimary),
+            _buildReturnItem(
+              'Yatırımcı Sayısı Değişimi', 
+              investorChangeValue > 0 ? "+$investorChangeValue" : "$investorChangeValue", 
+              isInvestorChangePositive, 
+              textPrimary,
+            ),
+          ],
+        ),
+      ],
+    ),
+  ),
+
+
+          const SizedBox(height: 12),
 
           // Stats Row
           Row(
@@ -150,22 +241,78 @@ class FundCard extends StatelessWidget {
                   textSecondary,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  'Pazar Payı',
-                  marketShare.toString(),
-                  Icons.pie_chart,
-                  textPrimary,
-                  textSecondary,
-                ),
-              ),
             ],
           ),
         ],
       ),
     );
   }
+
+Widget _buildReturnItem(String label, String value, bool isPositive, Color textColor, {bool showPlusSign = false}) {
+  Color displayColor = isPositive ? Colors.green.shade700 : Colors.red.shade700;
+  String displayValue = value;
+  
+  if (showPlusSign && isPositive && !value.startsWith('+')) {
+    displayValue = '+$value';
+  }
+  
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+    decoration: BoxDecoration(
+      color: displayColor.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(6),
+      border: Border.all(color: displayColor.withOpacity(0.3), width: 0.5),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: textColor.withOpacity(0.8),
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Artış/Azalış ikonu yerine daha modern bir gösterim
+            Icon(
+              isPositive 
+                ? Icons.trending_up_rounded  // Modern artış ikonu
+                : Icons.trending_down_rounded, // Modern azalış ikonu
+              color: displayColor,
+              size: 12,
+            ),
+            const SizedBox(width: 2),
+            Flexible(
+              child: Text(
+                displayValue,
+                style: TextStyle(
+                  color: displayColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+
 
   Widget _buildStatCard(
     String title,

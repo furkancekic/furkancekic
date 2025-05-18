@@ -1,4 +1,4 @@
-// lib/screens/fund_screens/fund_list_screen.dart - Fixed version
+// lib/screens/fund_screens/fund_list_screen.dart - Updated version
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
@@ -18,9 +18,10 @@ class FundListScreen extends StatefulWidget {
   State<FundListScreen> createState() => _FundListScreenState();
 }
 
-class _FundListScreenState extends State<FundListScreen> {
+class _FundListScreenState extends State<FundListScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  late TabController _tabController;
 
   // State variables
   List<Fund> _funds = [];
@@ -41,6 +42,7 @@ class _FundListScreenState extends State<FundListScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChanged);
     _loadFunds(refresh: true);
@@ -52,6 +54,7 @@ class _FundListScreenState extends State<FundListScreen> {
     _searchController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _tabController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
   }
@@ -74,67 +77,70 @@ class _FundListScreenState extends State<FundListScreen> {
     });
   }
 
-  Future<void> _loadFunds({bool refresh = false}) async {
-    if (_isLoading && !refresh) return;
+// FundListScreen _loadFunds metodundaki optimizasyon
+Future<void> _loadFunds({bool refresh = false}) async {
+  if (_isLoading && !refresh) return;
 
-    setState(() {
-      _isLoading = true;
-      _error = '';
-      if (refresh) {
-        _currentPage = 0;
-        _funds.clear();
-        _hasMore = true;
-      }
-    });
+  setState(() {
+    _isLoading = true;
+    _error = '';
+    if (refresh) {
+      _currentPage = 0;
+      _funds.clear();
+      _hasMore = true;
+    }
+  });
 
-    try {
-      final params = <String, dynamic>{
-        'page': _currentPage.toString(),
-        'limit': _fundsPerPage.toString(),
-        ..._currentFilters,
-        if (_searchController.text.isNotEmpty) 'search': _searchController.text,
-      };
+  try {
+    final params = <String, dynamic>{
+      'page': _currentPage.toString(),
+      'limit': _fundsPerPage.toString(),
+      ..._currentFilters,
+      if (_searchController.text.isNotEmpty) 'search': _searchController.text,
+    };
 
-      // DÜZELTME: getFunds yerine getFundsWithPagination kullan
-      final response = await FundApiService.getFundsWithPagination(params);
+    final response = await FundApiService.getFundsWithPagination(params);
+    final List<Fund> newFunds = response['funds'] as List<Fund>;
+    final int total = response['total'] as int;
 
-      // Response List<Fund> değil Map<String, dynamic> döndürüyor
-      final List<Fund> newFunds = response['funds'] as List<Fund>;
-      final int total = response['total'] as int;
+    // API hazır değilse, demo verileri kullan
+    // List<Fund> enrichedFunds = DemoDataGenerator.enrichFundsWithDemoData(newFunds);
+    
+    // Ya da optimize edilmiş API çağrısı ile zenginleştir
+    List<Fund> enrichedFunds = await FundApiService.enrichFundsWithPerformanceMetrics(newFunds);
 
-      if (mounted) {
-        setState(() {
-          if (refresh) {
-            _funds = newFunds;
-          } else {
-            _funds.addAll(newFunds);
-          }
-          _totalCount = total;
-          _hasMore = newFunds.length == _fundsPerPage;
-          _currentPage++;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _error = "Bir hata oluştu: ${e.toString()}";
-          _hasMore = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Fonlar yüklenemedi: $_error'),
-            action: SnackBarAction(
-              label: 'Tekrar Dene',
-              onPressed: () => _loadFunds(refresh: true),
-            ),
+    if (mounted) {
+      setState(() {
+        if (refresh) {
+          _funds = enrichedFunds;
+        } else {
+          _funds.addAll(enrichedFunds);
+        }
+        _totalCount = total;
+        _hasMore = enrichedFunds.length == _fundsPerPage;
+        _currentPage++;
+        _isLoading = false;
+      });
+    }
+  } catch (e) {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _error = "Bir hata oluştu: ${e.toString()}";
+        _hasMore = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Fonlar yüklenemedi: $_error'),
+          action: SnackBarAction(
+            label: 'Tekrar Dene',
+            onPressed: () => _loadFunds(refresh: true),
           ),
-        );
-      }
+        ),
+      );
     }
   }
-
+}
   void _showFilterSheet() {
     showModalBottomSheet(
       context: context,
@@ -162,6 +168,7 @@ class _FundListScreenState extends State<FundListScreen> {
     final accent = ext?.accentColor ?? AppTheme.accentColor;
     final cardColor = ext?.cardColor ?? AppTheme.cardColor;
     final negativeColor = ext?.negativeColor ?? AppTheme.negativeColor;
+    final positiveColor = ext?.positiveColor ?? AppTheme.positiveColor;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -171,7 +178,9 @@ class _FundListScreenState extends State<FundListScreen> {
             _buildHeader(textPrimary, accent),
             _buildSearchAndFilter(accent, cardColor, textSecondary),
             if (_funds.isNotEmpty || _isLoading)
-              _buildQuickStats(textPrimary, textSecondary),
+              _buildTabBar(accent, textPrimary),
+            if (_funds.isNotEmpty || _isLoading)
+              _buildStatsTabView(textPrimary, textSecondary, accent, positiveColor, negativeColor),
             Expanded(
               child: _buildFundList(textSecondary, negativeColor, accent),
             ),
@@ -300,55 +309,133 @@ class _FundListScreenState extends State<FundListScreen> {
     );
   }
 
-  Widget _buildQuickStats(Color textPrimary, Color textSecondary) {
-    final avgReturn = _calculateAverageReturn();
-    final String formattedAvgReturn =
-        '${avgReturn >= 0 ? '+' : ''}${avgReturn.toStringAsFixed(2)}%';
-
-    if (_funds.isEmpty && !_isLoading) return const SizedBox.shrink();
-
+  Widget _buildTabBar(Color accent, Color textPrimary) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: TabBar(
+        controller: _tabController,
+        labelColor: accent,
+        unselectedLabelColor: textPrimary.withOpacity(0.6),
+        indicatorColor: accent,
+        indicatorWeight: 3,
+        indicatorSize: TabBarIndicatorSize.tab,
+        tabs: const [
+          Tab(text: 'Genel İstatistikler'),
+          Tab(text: 'Dönemsel Getiriler'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsTabView(Color textPrimary, Color textSecondary, Color accent, Color positiveColor, Color negativeColor) {
+    return SizedBox(
+      height: 120,
+      child: TabBarView(
+        controller: _tabController,
         children: [
-          Expanded(
-            child: _buildStatCard(
-              'Yüklendi',
-              _funds.length.toString(),
-              Icons.file_download_done_outlined,
-              textPrimary,
-              textSecondary,
+          // İlk Tab: Genel İstatistikler
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    'Yüklendi',
+                    _funds.length.toString(),
+                    Icons.file_download_done_outlined,
+                    textPrimary,
+                    textSecondary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildStatCard(
+                    'Toplam (Filtre)',
+                    _totalCount.toString(),
+                    Icons.inventory_2_outlined,
+                    textPrimary,
+                    textSecondary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildStatCard(
+                    'Ort. Günlük',
+                    _funds.isNotEmpty ? _formatPercent(_calculateAverageReturn()) : "-",
+                    Icons.trending_up_rounded,
+                    textPrimary,
+                    textSecondary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildStatCard(
+                    'Kategori',
+                    _funds.isNotEmpty ? _getUniqueCategories().toString() : "-",
+                    Icons.category_outlined,
+                    textPrimary,
+                    textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildStatCard(
-              'Toplam (Filtre)',
-              _totalCount.toString(),
-              Icons.inventory_2_outlined,
-              textPrimary,
-              textSecondary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildStatCard(
-              'Ort. Günlük Getiri',
-              _funds.isNotEmpty ? formattedAvgReturn : "-",
-              Icons.trending_up_rounded,
-              textPrimary,
-              textSecondary,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildStatCard(
-              'Farklı Kategori',
-              _funds.isNotEmpty ? _getUniqueCategories().toString() : "-",
-              Icons.category_outlined,
-              textPrimary,
-              textSecondary,
+          
+          // İkinci Tab: Dönemsel Getiriler
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Expanded(
+                  child: _buildReturnCard(
+                    'Haftalık Ort.',
+                    _calculateAverageWeeklyReturn(),
+                    Icons.date_range_outlined,
+                    textPrimary,
+                    textSecondary,
+                    positiveColor,
+                    negativeColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildReturnCard(
+                    'Aylık Ort.',
+                    _calculateAverageMonthlyReturn(),
+                    Icons.calendar_month_outlined,
+                    textPrimary,
+                    textSecondary,
+                    positiveColor,
+                    negativeColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildReturnCard(
+                    '6 Aylık Ort.',
+                    _calculateAverageSixMonthReturn(),
+                    Icons.calendar_today_outlined,
+                    textPrimary,
+                    textSecondary,
+                    positiveColor,
+                    negativeColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildReturnCard(
+                    'Yıllık Ort.',
+                    _calculateAverageYearlyReturn(),
+                    Icons.calendar_view_month_outlined,
+                    textPrimary,
+                    textSecondary,
+                    positiveColor,
+                    negativeColor,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -371,6 +458,44 @@ class _FundListScreenState extends State<FundListScreen> {
               fontSize: 14,
               fontWeight: FontWeight.bold,
               color: textPrimary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              color: textSecondary,
+            ),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReturnCard(
+      String title, double value, IconData icon,
+      Color textPrimary, Color textSecondary, Color positiveColor, Color negativeColor) {
+    final isPositive = value >= 0;
+    final returnColor = isPositive ? positiveColor : negativeColor;
+    final displayValue = _formatPercent(value);
+    
+    return FuturisticCard(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: textSecondary, size: 20),
+          const SizedBox(height: 4),
+          Text(
+            displayValue,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: returnColor,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -524,6 +649,67 @@ class _FundListScreenState extends State<FundListScreen> {
       }
     }
     return validCount > 0 ? totalReturn / validCount : 0.0;
+  }
+
+  double _calculateAverageWeeklyReturn() {
+    if (_funds.isEmpty) return 0.0;
+    double totalReturn = 0.0;
+    int validCount = 0;
+    for (final fund in _funds) {
+      final returnValue = fund.weeklyReturnValue;
+      if (!returnValue.isNaN) {
+        totalReturn += returnValue;
+        validCount++;
+      }
+    }
+    return validCount > 0 ? totalReturn / validCount : 0.0;
+  }
+
+  double _calculateAverageMonthlyReturn() {
+    if (_funds.isEmpty) return 0.0;
+    double totalReturn = 0.0;
+    int validCount = 0;
+    for (final fund in _funds) {
+      final returnValue = fund.monthlyReturnValue;
+      if (!returnValue.isNaN) {
+        totalReturn += returnValue;
+        validCount++;
+      }
+    }
+    return validCount > 0 ? totalReturn / validCount : 0.0;
+  }
+
+  double _calculateAverageSixMonthReturn() {
+    if (_funds.isEmpty) return 0.0;
+    double totalReturn = 0.0;
+    int validCount = 0;
+    for (final fund in _funds) {
+      final returnValue = fund.sixMonthReturnValue;
+      if (!returnValue.isNaN) {
+        totalReturn += returnValue;
+        validCount++;
+      }
+    }
+    return validCount > 0 ? totalReturn / validCount : 0.0;
+  }
+
+  double _calculateAverageYearlyReturn() {
+    if (_funds.isEmpty) return 0.0;
+    double totalReturn = 0.0;
+    int validCount = 0;
+    for (final fund in _funds) {
+      final returnValue = fund.yearlyReturnValue;
+      if (!returnValue.isNaN) {
+        totalReturn += returnValue;
+        validCount++;
+      }
+    }
+    return validCount > 0 ? totalReturn / validCount : 0.0;
+  }
+
+  String _formatPercent(double value) {
+    String prefix = value >= 0 ? '+' : '';
+    return '$prefix${value.toStringAsFixed(2)}%';
   }
 
   int _getUniqueCategories() {

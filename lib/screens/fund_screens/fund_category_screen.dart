@@ -142,65 +142,69 @@ class _FundCategoryScreenState extends State<FundCategoryScreen> {
     }
   }
 
-  Future<void> _loadFunds({bool refresh = false}) async {
-    if (_isLoading && !refresh) return;
+Future<void> _loadFunds({bool refresh = false}) async {
+  if (_isLoading && !refresh) return;
 
-    setState(() {
-      _isLoading = true;
-      _error = '';
-      if (refresh) {
-        _currentPage = 0;
-        _funds.clear();
-        _hasMore = true;
-      }
-    });
+  setState(() {
+    _isLoading = true;
+    _error = '';
+    if (refresh) {
+      _currentPage = 0;
+      _funds.clear();
+      _hasMore = true;
+    }
+  });
 
-    try {
-      final params = <String, dynamic>{
-        'page': _currentPage.toString(),
-        'limit': _fundsPerPage.toString(),
-        'sort_by': _sortBy,
-        if (_searchController.text.isNotEmpty) 'search': _searchController.text,
-      };
+  try {
+    final params = <String, dynamic>{
+      'page': _currentPage.toString(),
+      'limit': _fundsPerPage.toString(),
+      'sort_by': _sortBy,
+      if (_searchController.text.isNotEmpty) 'search': _searchController.text,
+    };
 
-      final response = await FundApiService.getFundsByCategoryWithPagination(
-          widget.category, params);
+    final response = await FundApiService.getFundsByCategoryWithPagination(
+        widget.category, params);
 
-      final List<Fund> newFunds = response['funds'] as List<Fund>;
-      final int total = response['total'] as int;
+    final List<Fund> newFunds = response['funds'] as List<Fund>;
+    final int total = response['total'] as int;
 
-      if (mounted) {
-        setState(() {
-          if (refresh) {
-            _funds = newFunds;
-          } else {
-            _funds.addAll(newFunds);
-          }
-          _totalCount = total;
-          _hasMore = newFunds.length == _fundsPerPage;
-          _currentPage++;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = "Bir hata oluştu: ${e.toString()}";
-          _isLoading = false;
-          _hasMore = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Fonlar yüklenemedi: $_error'),
-            action: SnackBarAction(
-              label: 'Tekrar Dene',
-              onPressed: () => _loadFunds(refresh: true),
-            ),
+    // Fonları performans metrikleriyle zenginleştir
+    List<Fund> enrichedFunds = await FundApiService.enrichFundsWithPerformanceMetrics(newFunds);
+
+    if (mounted) {
+      setState(() {
+        if (refresh) {
+          _funds = enrichedFunds;
+        } else {
+          _funds.addAll(enrichedFunds);
+        }
+        _totalCount = total;
+        _hasMore = enrichedFunds.length == _fundsPerPage;
+        _currentPage++;
+        _isLoading = false;
+      });
+    }
+  } catch (e) {
+    if (mounted) {
+      setState(() {
+        _error = "Bir hata oluştu: ${e.toString()}";
+        _isLoading = false;
+        _hasMore = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Fonlar yüklenemedi: $_error'),
+          action: SnackBarAction(
+            label: 'Tekrar Dene',
+            onPressed: () => _loadFunds(refresh: true),
           ),
-        );
-      }
+        ),
+      );
     }
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

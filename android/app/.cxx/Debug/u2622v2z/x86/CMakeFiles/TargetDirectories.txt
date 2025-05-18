@@ -1,0 +1,2 @@
+C:/Users/cekic/Downloads/furkancekic/android/app/.cxx/Debug/u2622v2z/x86/CMakeFiles/edit_cache.dir
+C:/Users/cekic/Downloads/furkancekic/android/app/.cxx/Debug/u2622v2z/x86/CMakeFiles/rebuild_cache.dir
