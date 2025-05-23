@@ -384,119 +384,84 @@ static Future<List<Fund>> enrichFundsWithPerformanceMetrics(List<Fund> funds) as
   }
 
   /// Get fund risk metrics with enhanced error handling
-  static Future<Map<String, dynamic>> getFundRiskMetrics(
-      String fundCode) async {
+   static Future<Map<String, dynamic>> getFundRiskMetrics(String fundCode) async {
     try {
       final uri = Uri.parse('$baseUrl/funds/$fundCode/risk-metrics');
-
       _logger.info('Fetching risk metrics for $fundCode');
-
       final response = await http.get(uri).timeout(timeoutDuration);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-
-        if (data['status'] == 'success') {
-          final metrics = data['metrics'] as Map<String, dynamic>? ?? {};
-
-          // Enhanced metrics processing with validation
-          final processedMetrics = _processRiskMetrics(metrics);
-
-          _logger.info('Successfully fetched risk metrics for $fundCode');
-
+        if (data['status'] == 'success' && data['metrics'] != null) { // metrics null kontrolü eklendi
+          final metrics = data['metrics'] as Map<String, dynamic>;
+          // _processRiskMetrics artık Python API'sinden gelenlere göre işlem yapacak,
+          // bu yüzden Flutter tarafında kapsamlı bir process'e gerek kalmayabilir
+          // veya sadece null/tip kontrolleri yapılabilir.
+          // Şimdilik doğrudan API'den geleni alalım, FundDetailScreen'de null check yaparız.
+          _logger.info('Successfully fetched risk metrics for $fundCode: $metrics');
           return {
             'status': 'success',
             'fund_code': fundCode,
-            'metrics': processedMetrics,
+            'metrics': metrics, // Doğrudan API'den gelen metriği döndür
           };
         } else {
-          throw Exception(data['message'] ?? 'Unknown error');
+          _logger.warning('Risk metrics API error or metrics missing: ${data['message'] ?? 'Unknown error'}');
+          // Hata durumunda veya metrikler eksikse, varsayılan boş bir metrik seti döndür
+          return {
+            'status': 'error', // Durumu error olarak işaretle
+            'fund_code': fundCode,
+            'message': data['message'] ?? 'Metrics data missing or API error',
+            'metrics': getDefaultRiskMetrics(), // Hata durumunda varsayılanları döndür
+          };
         }
       } else if (response.statusCode == 404) {
+        _logger.warning('Fund not found for risk metrics: $fundCode');
         throw Exception('Fund not found');
       } else {
+        _logger.warning('HTTP error fetching risk metrics: ${response.statusCode} - ${response.body}');
         throw Exception('HTTP error: ${response.statusCode}');
       }
     } catch (e) {
       _logger.severe('Error fetching risk metrics for $fundCode: $e');
-      // Return realistic default metrics instead of throwing
+      // Hata durumunda varsayılan metrikleri ve error durumu döndür
       return {
-        'status': 'success',
+        'status': 'error',
         'fund_code': fundCode,
-        'metrics': _getDefaultRiskMetrics(),
+        'message': 'Failed to fetch risk metrics: $e',
+        'metrics': getDefaultRiskMetrics(),
       };
     }
   }
 
-  /// Process and validate risk metrics
-  static Map<String, dynamic> _processRiskMetrics(
-      Map<String, dynamic> metrics) {
-    final defaultMetrics = _getDefaultRiskMetrics();
-    final processedMetrics = <String, dynamic>{};
 
-    defaultMetrics.forEach((key, defaultValue) {
-      final value = metrics[key];
-      if (value != null) {
-        try {
-          if (key == 'riskLevel') {
-            final intValue = int.tryParse(value.toString()) ?? 0;
-            // Validate risk level is between 1-7
-            processedMetrics[key] = intValue.clamp(1, 7);
-          } else {
-            final doubleValue =
-                double.tryParse(value.toString()) ?? defaultValue;
 
-            // Apply reasonable bounds for each metric
-            switch (key) {
-              case 'sharpeRatio':
-                processedMetrics[key] = doubleValue.clamp(-3.0, 5.0);
-                break;
-              case 'beta':
-                processedMetrics[key] = doubleValue.clamp(0.0, 3.0);
-                break;
-              case 'alpha':
-                processedMetrics[key] = doubleValue.clamp(-50.0, 50.0);
-                break;
-              case 'rSquared':
-                processedMetrics[key] = doubleValue.clamp(0.0, 1.0);
-                break;
-              case 'maxDrawdown':
-                processedMetrics[key] = doubleValue.clamp(-100.0, 0.0);
-                break;
-              case 'volatility':
-              case 'stdDev':
-                processedMetrics[key] = doubleValue.clamp(0.0, 100.0);
-                break;
-              default:
-                processedMetrics[key] = doubleValue;
-            }
-          }
-        } catch (e) {
-          processedMetrics[key] = defaultValue;
-        }
-      } else {
-        processedMetrics[key] = defaultValue;
-      }
-    });
-
-    return processedMetrics;
+  static Map<String, dynamic> _processRiskMetrics(Map<String, dynamic> rawMetrics) {
+    _logger.info("Processing raw risk metrics: $rawMetrics"); // Gelen ham veriyi logla
+    return Map<String, dynamic>.from(rawMetrics); // Ham veriyi doğrudan döndür
   }
+
 
   /// Get realistic default risk metrics
-  static Map<String, dynamic> _getDefaultRiskMetrics() {
+  static Map<String, dynamic> getDefaultRiskMetrics() {
     return {
-      'sharpeRatio': 1.2,
-      'beta': 1.0,
-      'alpha': 1.5,
-      'rSquared': 0.75,
-      'maxDrawdown': -12.5,
-      'stdDev': 15.0,
-      'volatility': 18.5,
-      'sortinoRatio': 1.5,
-      'treynorRatio': 1.1,
-      'riskLevel': 3,
+      // Çıkarılanlar: sharpeRatio, beta, alpha, rSquared, sortinoRatio, treynorRatio, stdDev
+      'maxDrawdown': null, // veya 0.0
+      'volatility': null, // veya 0.0
+      'riskLevel': 0, // veya null
+      'calculation_period_days': 0, // veya null
+      'data_points_used': 0, // veya null
+      'annualizedAverageReturn': null, // veya 0.0
+      'positiveDaysPercent': null, // veya 0.0
+      'negativeDaysPercent': null, // veya 0.0
+      'bestDailyReturn': null, // veya 0.0
+      'worstDailyReturn': null, // veya 0.0
+      'calmarRatio': null, // veya 0.0
+      'skewness': null, // veya 0.0
+      'excessKurtosis': null, // veya 0.0
+      'historicalVaR95_1day': null // veya 0.0
     };
   }
+
 
   /// Get Monte Carlo simulation with enhanced error handling
   static Future<Map<String, dynamic>> getMonteCarlo(
@@ -1069,46 +1034,34 @@ static Future<List<Fund>> enrichFundsWithPerformanceMetrics(List<Fund> funds) as
   }
 
   /// Geçici metrikler oluştur (API bağlantısı yoksa veya hata durumunda)
-  static Map<String, dynamic> _generateTemporaryMetrics(String fundCode) {
+   static Map<String, dynamic> _generateTemporaryMetrics(String fundCode) {
     final random = Random();
-    
-    // Rastgele değerler oluştur
-    // Günlük getiri için -3 ile +3 arasında
+    // Bu fonksiyonun çıktısı artık /funds/kod/performance-metrics değil,
+    // /funds/bulk-performance-metrics'in her bir fon için döndürdüğü yapıya benzemeli.
+    // Python API'sindeki enrichFundsWithPerformanceMetrics artık /bulk-performance-metrics kullandığı için
+    // bu demo veriler de o yapıya uygun olmalı.
+    // Python'daki bulk-performance-metrics endpoint'i şu alanları içeriyordu:
+    // daily_return, weekly_return, monthly_return, six_month_return, yearly_return, investor_change, value_change
+    // Bu, risk metriklerinden farklı. Bu fonksiyonun amacı farklı.
+    // Dolayısıyla, risk metrikleri için olan getDefaultRiskMetrics() ile karıştırılmamalı.
+    // Mevcut haliyle kalabilir, çünkü bu fonksiyon *dönemsel getiri* demoları üretiyor.
     double dailyReturn = (random.nextDouble() * 6) - 3;
-    // Haftalık getiri için -5 ile +5 arasında
     double weeklyReturn = (random.nextDouble() * 10) - 5;
-    // Aylık getiri için -10 ile +10 arasında
-    double monthlyReturn = (random.nextDouble() * 20) - 10;
-    // 6 aylık getiri için -20 ile +20 arasında
-    double sixMonthReturn = (random.nextDouble() * 40) - 20;
-    // Yıllık getiri için -30 ile +30 arasında
-    double yearlyReturn = (random.nextDouble() * 60) - 30;
-    
-    // Yatırımcı değişimi için -100 ile +100 arasında
-    int investorChange = random.nextInt(201) - 100;
-    
-    // Değer değişimi için -5 ile +5 arasında
-    double valueChange = (random.nextDouble() * 10) - 5;
-    
-    // Formatla
-    String dailyReturnStr = dailyReturn >= 0 ? "+${dailyReturn.toStringAsFixed(2)}%" : "${dailyReturn.toStringAsFixed(2)}%";
-    String weeklyReturnStr = weeklyReturn >= 0 ? "+${weeklyReturn.toStringAsFixed(2)}%" : "${weeklyReturn.toStringAsFixed(2)}%";
-    String monthlyReturnStr = monthlyReturn >= 0 ? "+${monthlyReturn.toStringAsFixed(2)}%" : "${monthlyReturn.toStringAsFixed(2)}%";
-    String sixMonthReturnStr = sixMonthReturn >= 0 ? "+${sixMonthReturn.toStringAsFixed(2)}%" : "${sixMonthReturn.toStringAsFixed(2)}%";
-    String yearlyReturnStr = yearlyReturn >= 0 ? "+${yearlyReturn.toStringAsFixed(2)}%" : "${yearlyReturn.toStringAsFixed(2)}%";
-    
-    String investorChangeStr = investorChange >= 0 ? "+$investorChange" : "$investorChange";
-    String valueChangeStr = valueChange >= 0 ? "+${valueChange.toStringAsFixed(2)}%" : "${valueChange.toStringAsFixed(2)}%";
-    
+    // ... (diğer rastgele değerler) ...
     return {
       "fund_code": fundCode,
-      "daily_return": dailyReturnStr,
-      "weekly_return": weeklyReturnStr,
-      "monthly_return": monthlyReturnStr,
-      "six_month_return": sixMonthReturnStr,
-      "yearly_return": yearlyReturnStr,
-      "investor_change": investorChangeStr,
-      "value_change": valueChangeStr,
+      // Bu alanlar Python /performance-metrics veya /bulk-performance-metrics'ten gelenler
+      "daily_return": "${dailyReturn >= 0 ? '+' : ''}${dailyReturn.toStringAsFixed(2)}%",
+      "weekly_return": "${weeklyReturn >= 0 ? '+' : ''}${weeklyReturn.toStringAsFixed(2)}%",
+      "monthly_return": "${(random.nextDouble() * 20 - 10).toStringAsFixed(2)}%",
+      "six_month_return": "${(random.nextDouble() * 40 - 20).toStringAsFixed(2)}%",
+      "yearly_return": "${(random.nextDouble() * 60 - 30).toStringAsFixed(2)}%",
+      "investor_change": (random.nextInt(201) - 100).toString(),
+      "value_change": "${((random.nextDouble() * 10) - 5).toStringAsFixed(2)}%",
+      // Python API'sindeki /risk-metrics artık bu metrikleri içermiyor.
+      // Bu fonksiyonun amacı, EĞER enrichFundsWithPerformanceMetrics API'den veri alamazsa
+      // Fund objesini doldurmak için *dönemsel getiri* ve *değişim* verileri üretmek.
+      // Risk metrikleri için ayrı bir demo/fallback var: getDefaultRiskMetrics
     };
   }
   

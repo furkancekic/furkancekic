@@ -1,4 +1,3 @@
-// lib/screens/fund_screens/fund_detail_screen.dart - Tek sayfa versiyonu
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_theme.dart';
@@ -25,6 +24,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   // Data variables
   String _selectedTimeframe = '1M';
   List<Map<String, dynamic>> _historicalData = [];
+  List<Map<String, dynamic>> _investorData = []; // Yatırımcı sayısı verileri
   Map<String, dynamic>? _riskMetrics;
   Map<String, dynamic>? _monteCarloResult;
   bool _isLoading = false;
@@ -62,73 +62,145 @@ class _FundDetailScreenState extends State<FundDetailScreen>
 
   Future<void> _loadFundData() async {
     if (!mounted) return;
-
-    setState(() {
-      _isLoading = true;
-      _error = '';
-    });
+    setState(() { _isLoading = true; _error = ''; });
 
     try {
-      final fundCode = widget.fund['kod'];
+      final fundCode = widget.fund['kod']?.toString();
       if (fundCode == null || fundCode.isEmpty) {
         throw Exception('Fund code is missing');
       }
-
       _logger.info('Loading data for fund: $fundCode');
 
-      // Load all data concurrently
       final futures = await Future.wait([
-        FundApiService.getFundHistorical(
-          fundCode,
-          timeframe: _selectedTimeframe,
-        ).catchError((e) {
-          _logger.warning('Error loading historical data: $e');
-          return {'historical': <Map<String, dynamic>>[]};
+        FundApiService.getFundHistorical(fundCode, timeframe: _selectedTimeframe)
+            .catchError((e) {
+          _logger.warning('Error loading historical data for $fundCode: $e');
+          return <String, dynamic>{'status': 'error', 'historical': <Map<String, dynamic>>[]}; // Map tipi ekledik
         }),
-        FundApiService.getFundRiskMetrics(fundCode).catchError((e) {
-          _logger.warning('Error loading risk metrics: $e');
-          return {'metrics': <String, dynamic>{}};
+        FundApiService.getFundRiskMetrics(fundCode)
+            .catchError((e) {
+          _logger.warning('Error loading risk metrics for $fundCode: $e');
+          return <String, dynamic>{'status': 'error', 'metrics': FundApiService.getDefaultRiskMetrics()};
         }),
-        FundApiService.getMonteCarlo(
-          fundCode,
-          periods: 12,
-          simulations: 1000,
-        ).catchError((e) {
-          _logger.warning('Error loading Monte Carlo: $e');
-          return {'simulation': <String, dynamic>{}};
+        FundApiService.getMonteCarlo(fundCode, periods: 12, simulations: 1000)
+            .catchError((e) {
+          _logger.warning('Error loading Monte Carlo for $fundCode: $e');
+          return <String, dynamic>{'status': 'error', 'simulation': <String, dynamic>{}}; // Map tipi ekledik
+        }),
+        // Yatırımcı verilerini çekmek için getFundHistorical'a benzer bir fonksiyon eklenebilir
+        // Şimdilik sadece mevcut historical verileri kullanarak demo göstereceğiz
+        _getInvestorHistoricalData(fundCode)
+            .catchError((e) {
+          _logger.warning('Error loading investor data for $fundCode: $e');
+          return <Map<String, dynamic>>[];
         }),
       ]);
 
       if (!mounted) return;
 
       setState(() {
-        // Parse historical data with improved date handling
-        final historicalResponse = futures[0] as Map<String, dynamic>;
-        _historicalData = _parseAndSortHistoricalData(
-            (historicalResponse['historical'] as List<dynamic>?) ?? []);
+        // Her bir API yanıtı için tür dönüşümü 
+        final Map<String, dynamic> historicalResponse = futures[0] as Map<String, dynamic>;
+        if (historicalResponse['status'] != 'error') {
+          _historicalData = _parseAndSortHistoricalData(
+              (historicalResponse['historical'] as List<dynamic>?) ?? []);
+          _logger.info('Loaded ${_historicalData.length} historical data points for $fundCode');
+        } else {
+          _historicalData = [];
+          _logger.warning('Historical data load failed for $fundCode, using empty list.');
+        }
+        
+        final Map<String, dynamic> riskResponse = futures[1] as Map<String, dynamic>;
+        if (riskResponse['status'] == 'success' && riskResponse['metrics'] != null) {
+            _riskMetrics = riskResponse['metrics'] as Map<String, dynamic>?;
+            _logger.info('Loaded risk metrics for $fundCode: $_riskMetrics');
+        } else {
+            _logger.warning('Risk metrics load failed or metrics missing for $fundCode. API response: $riskResponse. Using default metrics.');
+            _riskMetrics = FundApiService.getDefaultRiskMetrics();
+            _error += '\nRisk verileri yüklenemedi.';
+        }
 
-        _logger.info('Loaded ${_historicalData.length} historical data points');
-
-        // Parse risk metrics
-        final riskResponse = futures[1] as Map<String, dynamic>;
-        _riskMetrics = riskResponse['metrics'] as Map<String, dynamic>?;
-
-        // Parse Monte Carlo
-        final monteCarloResponse = futures[2] as Map<String, dynamic>;
-        _monteCarloResult =
-            monteCarloResponse['simulation'] as Map<String, dynamic>?;
+        final Map<String, dynamic> monteCarloResponse = futures[2] as Map<String, dynamic>;
+        if (monteCarloResponse['status'] != 'error') {
+            _monteCarloResult = monteCarloResponse['simulation'] as Map<String, dynamic>?;
+        } else {
+            _monteCarloResult = null;
+            _logger.warning('Monte Carlo data load failed for $fundCode.');
+        }
+        
+        // Yatırımcı verileri için 3. future - Tür belirtmesi
+        _investorData = futures[3] as List<Map<String, dynamic>>;
+        _logger.info('Loaded ${_investorData.length} investor data points for $fundCode');
 
         _isLoading = false;
       });
     } catch (e, stackTrace) {
-      _logger.severe('Error loading fund data: $e', e, stackTrace);
+      _logger.severe('Error loading fund data for ${widget.fund['kod']}: $e', e, stackTrace);
       if (!mounted) return;
-
       setState(() {
         _isLoading = false;
         _error = 'Veri yüklenirken hata oluştu: ${e.toString()}';
+        _riskMetrics = FundApiService.getDefaultRiskMetrics();
       });
     }
+  }
+
+  // Yatırımcı verilerini çekmek için yardımcı fonksiyon
+  // Bu gerçek API'ye bağlı olmadığı için örnek veriler üretir
+  Future<List<Map<String, dynamic>>> _getInvestorHistoricalData(String fundCode) async {
+    // Bu fonksiyon normalde bir API çağrısı yapar, ancak şimdi demo veriler üretiyoruz
+    // Gerçek uygulamada, bu verileri API'den almalısınız
+    
+    // Önce fon detaylarından son yatırımcı sayısını alalım
+    final currentInvestorCount = widget.fund['yatirimci_sayisi'];
+    int lastInvestorCount = 0;
+    
+    if (currentInvestorCount != null) {
+      try {
+        if (currentInvestorCount is int) {
+          lastInvestorCount = currentInvestorCount;
+        } else if (currentInvestorCount is String) {
+          lastInvestorCount = int.parse(currentInvestorCount.replaceAll(',', ''));
+        } else {
+          lastInvestorCount = 1000; // Varsayılan
+        }
+      } catch (e) {
+        lastInvestorCount = 1000; // Hata durumunda varsayılan
+      }
+    } else {
+      lastInvestorCount = 1000; // Veri yoksa varsayılan
+    }
+    
+    // Şimdi, historical verilerine dayalı olarak, yatırımcı sayısı verilerini oluşturalım
+    // Bu, gerçek bir uygulamada API'den gelmesi gereken verinin bir simülasyonudur
+    List<Map<String, dynamic>> investorData = [];
+    
+    // Historical veri yoksa, boş döndür
+    if (_historicalData.isEmpty) {
+      return [];
+    }
+    
+    // Historical verilerin tarih aralığını kullanarak yatırımcı verileri oluştur
+    // Bu örnek için, basit bir rasgele artış/azalış trendi kullanıyoruz
+    for (int i = 0; i < _historicalData.length; i++) {
+      try {
+        final dateStr = _historicalData[i]['date'];
+        if (dateStr != null) {
+          // Gerçekçi bir trend oluştur - her zaman artan değil, dalgalanan
+          double randomFactor = 0.95 + (0.1 * i / _historicalData.length);
+          int investorCount = (lastInvestorCount * randomFactor * (1 + (i * 0.005))).round();
+          
+          investorData.add({
+            'date': dateStr,
+            'investor_count': investorCount,
+          });
+        }
+      } catch (e) {
+        _logger.warning('Error generating investor data for date: $e');
+      }
+    }
+    
+    return investorData;
   }
 
   List<Map<String, dynamic>> _parseAndSortHistoricalData(
@@ -209,12 +281,16 @@ class _FundDetailScreenState extends State<FundDetailScreen>
                 // Performance Chart Section
                 _buildPerformanceSection(),
                 const SizedBox(height: 24),
+                
+                // Yatırımcı Sayısı Grafiği Section - YENİ
+                _buildInvestorCountSection(),
+                const SizedBox(height: 24),
 
-                // Fund Summary Section
+                // Fund Summary Section (Fon Özeti)
                 _buildQuickStats(),
                 const SizedBox(height: 24),
 
-                // Distribution Section
+                // Distribution Section (Portföy Dağılımı)
                 _buildDistributionSection(),
                 const SizedBox(height: 24),
 
@@ -287,7 +363,6 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
-
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -410,6 +485,299 @@ class _FundDetailScreenState extends State<FundDetailScreen>
         _buildPerformanceMetrics(),
       ],
     );
+  }
+
+  // YENİ: Yatırımcı Sayısı Grafik Bölümü
+  Widget _buildInvestorCountSection() {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
+    final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Yatırımcı Sayısı',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_isLoading)
+          _buildLoadingChart()
+        else if (_investorData.isEmpty)
+          _buildNoDataCard(title: 'Yatırımcı verisi mevcut değil')
+        else
+          _buildInvestorCountChart(),
+      ],
+    );
+  }
+
+  // Yatırımcı sayısı grafiği
+  Widget _buildInvestorCountChart() {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final accentColor = themeExtension?.accentColor ?? AppTheme.accentColor;
+    final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
+    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
+
+    return FuturisticCard(
+      child: Container(
+        height: 300,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Yatırımcı Sayısı Grafiği',
+                  style: TextStyle(
+                    color: themeExtension?.textPrimary ?? AppTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.info_outline, color: accentColor, size: 20),
+                  onPressed: () {
+                    // İnfo butonu için işlev
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: LineChart(
+                LineChartData(
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: _generateInvestorSpots(),
+                      isCurved: true,
+                      color: accentColor,
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: accentColor.withOpacity(0.2),
+                      ),
+                    ),
+                  ],
+                  minY: _getMinInvestorCount() * 0.9,
+                  maxY: _getMaxInvestorCount() * 1.1,
+                  titlesData: FlTitlesData(
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 30,
+                        interval: (_investorData.length / 5).roundToDouble().clamp(1, double.infinity),
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index < 0 || index >= _investorData.length) {
+                            return const Text('');
+                          }
+
+                          final dateString = _investorData[index]['date'];
+                          if (dateString == null) return const Text('');
+                          final date = DateTime.tryParse(dateString.toString());
+                          if (date == null) return const Text('');
+
+                          return SideTitleWidget(
+                            axisSide: meta.axisSide,
+                            child: Text(
+                              '${date.day}/${date.month}',
+                              style: TextStyle(
+                                color: textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 50,
+                        getTitlesWidget: (value, meta) {
+                          return SideTitleWidget(
+                            axisSide: meta.axisSide,
+                            child: Text(
+                              _formatInvestorCount(value.toInt()),
+                              style: TextStyle(
+                                color: textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: true,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: textSecondary.withOpacity(0.1),
+                        strokeWidth: 1,
+                      );
+                    },
+                    getDrawingVerticalLine: (value) {
+                      return FlLine(
+                        color: textSecondary.withOpacity(0.1),
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
+                  lineTouchData: LineTouchData(
+                    touchTooltipData: LineTouchTooltipData(
+                      tooltipBgColor: cardColor.withOpacity(0.95),
+                      tooltipRoundedRadius: 8,
+                      getTooltipItems: (touchedSpots) {
+                        return touchedSpots
+                          .map((spot) {
+                            final index = spot.x.toInt();
+                            if (index < 0 || index >= _investorData.length) {
+                              return null;
+                            }
+
+                            final dateString = _investorData[index]['date'];
+                            if (dateString == null) return null;
+                            final date = DateTime.tryParse(dateString.toString());
+                            if (date == null) return null;
+
+                            return LineTooltipItem(
+                              '${date.day}/${date.month}/${date.year}\n${_formatInvestorCount(spot.y.toInt())} yatırımcı',
+                              TextStyle(
+                                color: themeExtension?.textPrimary ?? AppTheme.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            );
+                          })
+                          .where((item) => item != null)
+                          .toList();
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'İlk: ${_investorData.isNotEmpty ? _formatInvestorCount(_investorData.first['investor_count']) : 'N/A'}',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  'Son: ${_investorData.isNotEmpty ? _formatInvestorCount(_investorData.last['investor_count']) : 'N/A'}',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  'Değişim: ${_calculateInvestorChangePercentage()}',
+                  style: TextStyle(
+                    color: _calculateInvestorChange() >= 0 
+                      ? themeExtension?.positiveColor ?? AppTheme.positiveColor
+                      : themeExtension?.negativeColor ?? AppTheme.negativeColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // Yatırımcı grafiği için yardımcı fonksiyonlar
+  List<FlSpot> _generateInvestorSpots() {
+    List<FlSpot> spots = [];
+    
+    for (int i = 0; i < _investorData.length; i++) {
+      final investorCount = _investorData[i]['investor_count'] ?? 0;
+      spots.add(FlSpot(i.toDouble(), investorCount.toDouble()));
+    }
+    
+    return spots;
+  }
+  
+  double _getMinInvestorCount() {
+    if (_investorData.isEmpty) return 0;
+    
+    double min = double.infinity;
+    for (var data in _investorData) {
+      final count = data['investor_count']?.toDouble() ?? 0;
+      if (count < min) min = count;
+    }
+    
+    return min == double.infinity ? 0 : min;
+  }
+  
+  double _getMaxInvestorCount() {
+    if (_investorData.isEmpty) return 1000;
+    
+    double max = 0;
+    for (var data in _investorData) {
+      final count = data['investor_count']?.toDouble() ?? 0;
+      if (count > max) max = count;
+    }
+    
+    return max;
+  }
+  
+  String _formatInvestorCount(int count) {
+    if (count >= 1000000) {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    } else if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    } else {
+      return count.toString();
+    }
+  }
+  
+  int _calculateInvestorChange() {
+    if (_investorData.isEmpty || _investorData.length < 2) return 0;
+    
+    final firstCount = _investorData.first['investor_count'] ?? 0;
+    final lastCount = _investorData.last['investor_count'] ?? 0;
+    
+    return lastCount - firstCount;
+  }
+  
+  String _calculateInvestorChangePercentage() {
+    if (_investorData.isEmpty || _investorData.length < 2) return '0%';
+    
+    final firstCount = _investorData.first['investor_count'] ?? 0;
+    final lastCount = _investorData.last['investor_count'] ?? 0;
+    
+    if (firstCount == 0) return '0%';
+    
+    final change = lastCount - firstCount;
+    final percentage = (change / firstCount) * 100;
+    
+    return '${percentage >= 0 ? '+' : ''}${percentage.toStringAsFixed(2)}%';
   }
 
   Widget _buildTimeframeSelector() {
@@ -557,7 +925,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     );
   }
 
-  Widget _buildNoDataCard() {
+  Widget _buildNoDataCard({String title = 'Bu zaman aralığı için veri mevcut değil'}) {
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
 
@@ -578,7 +946,7 @@ class _FundDetailScreenState extends State<FundDetailScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'Bu zaman aralığı için veri mevcut değil',
+            title,
             style: TextStyle(
               color: themeExtension?.textSecondary ?? AppTheme.textSecondary,
             ),
@@ -806,24 +1174,24 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
 
-    return Column(
+      return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Risk Analizi',
           style: TextStyle(
-            color: textPrimary,
+            color: Theme.of(context).extension<AppThemeExtension>()?.textPrimary ?? AppTheme.textPrimary,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 16),
-        if (_isLoading)
+        if (_isLoading && _riskMetrics == null) // _riskMetrics null ise yükleniyor göster
           _buildLoadingRiskMetrics()
-        else if (_riskMetrics == null)
+        else if (_riskMetrics == null || _riskMetrics!.entries.where((e) => e.value != null).isEmpty) // Tamamen boşsa veya null ise
           _buildNoRiskDataCard()
         else ...[
-          _buildRiskMetricsGrid(),
+          _buildRiskMetricsGrid(), // Bu fonksiyonu yeni metriklere göre güncelleyeceğiz
           const SizedBox(height: 24),
           if (_monteCarloResult != null) _buildMonteCarloSection(),
         ],
@@ -895,74 +1263,116 @@ class _FundDetailScreenState extends State<FundDetailScreen>
   }
 
   Widget _buildRiskMetricsGrid() {
-    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
-    final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
+    final metricsToShow = <Map<String, dynamic>>[
+      {'title': 'Yıllık Volatilite', 'key': 'volatility', 'suffix': '%', 'color': Colors.teal},
+      {'title': 'Max Düşüş', 'key': 'maxDrawdown', 'suffix': '%', 'color': Colors.red},
+      {'title': 'Yıllık Ortalama Getiri', 'key': 'annualizedAverageReturn', 'suffix': '%', 'color': Colors.blue},
+      {'title': 'Calmar Oranı', 'key': 'calmarRatio', 'suffix': '', 'color': Colors.orange},
+      {'title': 'Pozitif Gün %', 'key': 'positiveDaysPercent', 'suffix': '%', 'color': Colors.green},
+      {'title': 'Negatif Gün %', 'key': 'negativeDaysPercent', 'suffix': '%', 'color': Colors.pink},
+      {'title': 'En İyi Günlük Getiri', 'key': 'bestDailyReturn', 'suffix': '%', 'color': Colors.lightGreen},
+      {'title': 'En Kötü Günlük Getiri', 'key': 'worstDailyReturn', 'suffix': '%', 'color': Colors.deepOrange},
+      {'title': 'Çarpıklık (Skewness)', 'key': 'skewness', 'suffix': '', 'color': Colors.purple},
+      {'title': 'Basıklık (Kurtosis)', 'key': 'excessKurtosis', 'suffix': '', 'color': Colors.brown},
+      {'title': 'VaR %95 (1 Gün)', 'key': 'historicalVaR95_1day', 'suffix': '%', 'color': Colors.cyan},
+      {'title': 'Risk Seviyesi', 'key': 'riskLevel', 'suffix': '', 'color': Colors.grey},
+    ];
 
-    return GridView.count(
+    // API'den gelen _riskMetrics içinde değeri null olmayanları filtrele
+    final availableMetrics = metricsToShow.where((metricConfig) {
+      return _riskMetrics![metricConfig['key']] != null;
+    }).toList();
+
+    if (availableMetrics.isEmpty) {
+      return _buildNoRiskDataCard(); // Gösterilecek uygun metrik yoksa
+    }
+    
+    // İkişerli gruplar halinde göster
+    int crossAxisCount = 2;
+    double childAspectRatio = 1.3; // Kartların en-boy oranını ayarla
+
+    return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      childAspectRatio: 1.2,
-      mainAxisSpacing: 16,
-      crossAxisSpacing: 16,
-      children: [
-        _buildRiskMetricCard(
-            'Sharpe Oranı', _riskMetrics!['sharpeRatio'], Colors.blue),
-        _buildRiskMetricCard('Beta', _riskMetrics!['beta'], Colors.green),
-        _buildRiskMetricCard('Alpha', _riskMetrics!['alpha'], Colors.orange),
-        _buildRiskMetricCard('R²', _riskMetrics!['rSquared'], Colors.purple),
-        _buildRiskMetricCard(
-            'Max Düşüş', '${_riskMetrics!['maxDrawdown']}%', Colors.red),
-        _buildRiskMetricCard(
-            'Volatilite', '${_riskMetrics!['volatility']}%', Colors.teal),
-      ],
+      itemCount: availableMetrics.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: childAspectRatio,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+      ),
+      itemBuilder: (context, index) {
+        final metricConfig = availableMetrics[index];
+        final value = _riskMetrics![metricConfig['key']];
+        return _buildRiskMetricCard(
+          metricConfig['title'] as String,
+          value, // Değeri olduğu gibi gönder, _buildRiskMetricCard içinde formatlanacak
+          metricConfig['suffix'] as String,
+          metricConfig['color'] as Color,
+        );
+      },
     );
   }
 
-  Widget _buildRiskMetricCard(String title, dynamic value, Color color) {
+  Widget _buildRiskMetricCard(String title, dynamic value, String suffix, Color color) {
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
-    final textSecondary =
-        themeExtension?.textSecondary ?? AppTheme.textSecondary;
+    final textSecondary = themeExtension?.textSecondary ?? AppTheme.textSecondary;
     final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
 
-    String displayValue = value?.toString() ?? 'N/A';
-    if (value is double) {
-      displayValue = value.toStringAsFixed(2);
+    String displayValue = 'N/A';
+    if (value != null) {
+      if (value is double) {
+        displayValue = value.toStringAsFixed(2) + suffix;
+      } else if (value is int) {
+        displayValue = value.toString() + suffix;
+      } else {
+        displayValue = value.toString() + suffix; // String ise veya bilinmeyen tip
+      }
+    }
+    
+    // "null%" gibi bir çıktı olmaması için kontrol
+    if (value == null && suffix.isNotEmpty) {
+        displayValue = 'N/A';
     }
 
     return Container(
+      padding: const EdgeInsets.all(12), // İçeriye biraz padding ekleyelim
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center, // Ortalamak için
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.analytics, color: color, size: 24),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            displayValue,
-            style: TextStyle(
-              color: color,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
+          Icon(Icons.analytics_outlined, color: color, size: 28),
+          const SizedBox(height: 10),
           Text(
             title,
             style: TextStyle(
               color: textSecondary,
-              fontSize: 12,
+              fontSize: 11, // Başlık fontunu biraz küçülttük
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2, // Başlık iki satıra sığabilir
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            displayValue,
+            style: TextStyle(
+              color: color, // Değerin rengini dinamik yapalım
+              fontSize: 18, // Değer fontunu biraz büyüttük
+              fontWeight: FontWeight.bold,
             ),
             textAlign: TextAlign.center,
           ),
@@ -1473,3 +1883,4 @@ class _FundDetailScreenState extends State<FundDetailScreen>
     }
   }
 }
+
