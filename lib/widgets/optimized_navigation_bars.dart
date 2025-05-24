@@ -122,14 +122,16 @@ class _OptimizedQuantumNavigationBarState
   @override
   Widget build(BuildContext context) {
     final items = [
-      QuantumNavItem(Icons.dashboard_rounded, 'Dashboard'), // Home
-      QuantumNavItem(Icons.filter_alt_rounded, 'Filter'), // Screener
-      QuantumNavItem(Icons.show_chart_rounded, 'Charts'), // Chart
-      QuantumNavItem(Icons.science_rounded, 'Lab'), // Backtest
-      QuantumNavItem(Icons.play_circle_rounded, 'Watch'), // Reels
-      QuantumNavItem(Icons.savings_rounded, 'Funds'), // Funds
+      QuantumNavItem(Icons.dashboard_rounded, 'Dashboard'), // Index 0 (Home)
+      QuantumNavItem(Icons.filter_alt_rounded, 'Filter'), // Index 1 (Screener)
+      QuantumNavItem(Icons.show_chart_rounded, 'Charts'), // Index 2 (Chart)
+      QuantumNavItem(Icons.science_rounded, 'Lab'), // Index 3 (Backtest)
+      QuantumNavItem(Icons.play_circle_rounded, 'Watch'), // Index 4 (Reels)
       QuantumNavItem(
-          Icons.account_balance_wallet_rounded, 'Portfolio'), // Portfolio
+          Icons.school_rounded, 'Learn'), // Index 5 (YENİ - Education)
+      QuantumNavItem(Icons.savings_rounded, 'Funds'), // Index 6 (Funds)
+      QuantumNavItem(Icons.account_balance_wallet_rounded,
+          'Wallet'), // Index 7 (Portfolio)
     ];
 
     return Container(
@@ -345,13 +347,15 @@ class _ParticleNavigationBarState extends State<ParticleNavigationBar>
   @override
   Widget build(BuildContext context) {
     final items = [
-      ParticleNavItem(Icons.home_work_rounded, 'Home'),
-      ParticleNavItem(Icons.manage_search_rounded, 'Search'),
-      ParticleNavItem(Icons.analytics_rounded, 'Analytics'),
-      ParticleNavItem(Icons.biotech_rounded, 'Test'),
-      ParticleNavItem(Icons.movie_filter_rounded, 'Reels'),
-      ParticleNavItem(Icons.monetization_on_rounded, 'Money'),
-      ParticleNavItem(Icons.pie_chart_rounded, 'Portfolio'),
+      ParticleNavItem(Icons.home_work_rounded, 'Home'), // Index 0
+      ParticleNavItem(Icons.manage_search_rounded, 'Search'), // Index 1
+      ParticleNavItem(Icons.analytics_rounded, 'Analytics'), // Index 2
+      ParticleNavItem(Icons.biotech_rounded, 'Test'), // Index 3
+      ParticleNavItem(Icons.movie_filter_rounded, 'Reels'), // Index 4
+      ParticleNavItem(
+          Icons.school_outlined, 'Edu'), // Index 5 (YENİ - Education)
+      ParticleNavItem(Icons.monetization_on_rounded, 'Money'), // Index 6
+      ParticleNavItem(Icons.pie_chart_rounded, 'Port'), // Index 7
     ];
 
     return Container(

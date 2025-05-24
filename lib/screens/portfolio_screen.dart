@@ -1,4 +1,4 @@
-// Updated portfolio_screen.dart without pie charts, with benchmark comparison feature
+// portfolio_screen.dart - Grafik hatası düzeltilmiş versiyon
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
@@ -10,7 +10,7 @@ import 'add_portfolio_screen.dart';
 import '../widgets/mini_chart.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../utils/logger.dart';
-import 'benchmark_comparison_screen.dart'; // Import the new screen
+import 'benchmark_comparison_screen.dart';
 
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({Key? key}) : super(key: key);
@@ -22,13 +22,13 @@ class PortfolioScreen extends StatefulWidget {
 class _PortfolioScreenState extends State<PortfolioScreen> {
   bool _isLoading = true;
   List<Portfolio> _portfolios = [];
-  String _selectedTimeframe = '1M'; // Default to 1 month view
+  String _selectedTimeframe = '1M';
   final List<String> _timeframes = ['1W', '1M', '3M', '6M', '1Y', 'All'];
   final _logger = AppLogger('PortfolioScreen');
-  // Chart related fields
+
   List<PerformancePoint> _totalPerformanceData = [];
   List<PerformancePoint> _selectedPortfolioPerformanceData = [];
-  String? _selectedPortfolioId; // null means showing total portfolio
+  String? _selectedPortfolioId;
   bool _isLoadingChart = true;
 
   @override
@@ -49,7 +49,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
         _isLoading = false;
       });
 
-      // Load performance data after portfolios
       _loadPerformanceData();
     } catch (e) {
       setState(() {
@@ -73,7 +72,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
 
     try {
       if (_selectedPortfolioId == null) {
-        // Load total portfolio performance
         final totalPerformance = await _calculateTotalPortfolioPerformance();
         setState(() {
           _totalPerformanceData = totalPerformance;
@@ -81,7 +79,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
           _isLoadingChart = false;
         });
       } else {
-        // Load specific portfolio performance
         final portfolioPerformance =
             await PortfolioService.getPortfolioPerformance(
           _selectedPortfolioId!,
@@ -115,7 +112,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     } catch (e) {
       _logger.severe('Error calculating total portfolio performance: $e');
 
-      // Fallback to local calculation if API fails
       final allPerformances = <DateTime, double>{};
 
       for (var portfolio in _portfolios) {
@@ -135,7 +131,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
         }
       }
 
-      // Convert to sorted list
       final totalPerformance = allPerformances.entries
           .map((e) => PerformancePoint(date: e.key, value: e.value))
           .toList()
@@ -152,7 +147,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     );
 
     if (result == true) {
-      _loadPortfolios(); // Refresh portfolios
+      _loadPortfolios();
     }
   }
 
@@ -163,7 +158,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
         builder: (context) => PortfolioDetailScreen(portfolio: portfolio),
       ),
     ).then((_) {
-      _loadPortfolios(); // Refresh when returning
+      _loadPortfolios();
     });
   }
 
@@ -210,33 +205,33 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
       );
     }
 
-    // Calculate performance metrics
+    // Performance metrikleri hesapla
     final firstValue = _selectedPortfolioPerformanceData.first.value;
     final lastValue = _selectedPortfolioPerformanceData.last.value;
     final change = lastValue - firstValue;
     final changePercent = firstValue > 0 ? (change / firstValue) * 100 : 0;
     final isPositive = change >= 0;
-    // --- ÇÖZÜM BAŞLANGICI ---
-    // Y ekseni ızgarası ve başlıkları için güvenli bir aralık hesapla
-    double yAxisValueSpan = (lastValue - firstValue).abs();
-    double yAxisInterval;
 
-    if (yAxisValueSpan == 0) {
-      // Eğer tüm veri noktaları aynıysa veya sadece bir veri noktası varsa (düz çizgi),
-      // varsayılan bir aralık kullan. 1.0 genellikle iyi bir başlangıçtır.
-      // Grafikteki değerlere göre daha akıllı bir varsayılan da belirlenebilir.
-      yAxisInterval = 1.0;
-    } else {
-      yAxisInterval =
-          yAxisValueSpan / 5; // Genellikle 5 ızgara çizgisi hedeflenir
+    // Y ekseni için güvenli aralık hesapla
+    final minValue = _selectedPortfolioPerformanceData
+        .map((p) => p.value)
+        .reduce((a, b) => a < b ? a : b);
+    final maxValue = _selectedPortfolioPerformanceData
+        .map((p) => p.value)
+        .reduce((a, b) => a > b ? a : b);
+
+    // Güvenli interval hesaplaması
+    double yAxisInterval = (maxValue - minValue) / 5;
+    if (yAxisInterval <= 0 || yAxisInterval.isNaN || yAxisInterval.isInfinite) {
+      yAxisInterval = 1000; // Varsayılan değer
     }
 
-    // fl_chart için aralığın kesinlikle sıfır olmadığından emin ol (çok küçük pozitif değerler de sorun olabilir)
-    // Ancak asıl hata != 0 olduğu için bu kontrol yeterli.
-    if (yAxisInterval == 0) {
-      yAxisInterval = 1.0; // Son bir güvenlik önlemi
+    // X ekseni için güvenli interval hesaplaması
+    double xAxisInterval = _selectedPortfolioPerformanceData.length / 5;
+    if (xAxisInterval <= 0 || xAxisInterval.isNaN || xAxisInterval.isInfinite) {
+      xAxisInterval = 1;
     }
-    // --- ÇÖZÜM SONU ---
+
     return FuturisticCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,10 +253,8 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                         color: textPrimary,
                       ),
                     ),
-                    // Benchmark Comparison Button
                     TextButton.icon(
                       onPressed: () {
-                        // Navigate to benchmark comparison with current selection
                         if (_selectedPortfolioId != null) {
                           final selectedPortfolio = _portfolios.firstWhere(
                             (p) => p.id == _selectedPortfolioId,
@@ -398,7 +391,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: false,
-                    horizontalInterval: (lastValue - firstValue).abs() / 5,
+                    horizontalInterval: yAxisInterval,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
                         color: textSecondary.withOpacity(0.1),
@@ -417,7 +410,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 32,
-                        interval: _selectedPortfolioPerformanceData.length / 5,
+                        interval: xAxisInterval,
                         getTitlesWidget: (value, meta) {
                           final index = value.toInt();
                           if (index < 0 ||
@@ -445,10 +438,10 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       sideTitles: SideTitles(
                         showTitles: true,
                         reservedSize: 60,
-                        interval: (lastValue - firstValue).abs() / 5,
+                        interval: yAxisInterval,
                         getTitlesWidget: (value, meta) {
                           return Text(
-                            '\$${value.toStringAsFixed(0)}',
+                            '\$${(value / 1000).toStringAsFixed(0)}k',
                             style: TextStyle(
                               color: textSecondary,
                               fontSize: 10,
@@ -488,6 +481,11 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       getTooltipItems: (touchedSpots) {
                         return touchedSpots.map((spot) {
                           final index = spot.x.toInt();
+                          if (index < 0 ||
+                              index >=
+                                  _selectedPortfolioPerformanceData.length) {
+                            return null;
+                          }
                           final date =
                               _selectedPortfolioPerformanceData[index].date;
                           final value = spot.y;
@@ -538,7 +536,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  // New widget to replace the asset allocation pie chart
   Widget _buildBenchmarkComparisonCard() {
     if (_portfolios.isEmpty) return const SizedBox.shrink();
 
@@ -570,8 +567,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Sample benchmark options
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -582,9 +577,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 _buildBenchmarkChip('Gold', Colors.amber),
               ],
             ),
-
             const SizedBox(height: 16),
-
             Center(
               child: ElevatedButton.icon(
                 onPressed: () => _navigateToBenchmarkComparison(),
@@ -626,7 +619,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   Widget _buildPortfolioSummary() {
     if (_portfolios.isEmpty) return const SizedBox.shrink();
 
-    // Calculate total portfolio value
     double totalValue = 0;
     double totalGainLoss = 0;
     double totalInitialValue = 0;
@@ -725,7 +717,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Portfolio name and value
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -787,17 +778,13 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
-
-            // Portfolio mini chart (if available)
             if (portfolio.positions.any((p) =>
                 p.performanceData != null && p.performanceData!.isNotEmpty))
               SizedBox(
                 height: 60,
                 child: Stack(
                   children: [
-                    // Draw charts for each position
                     ...portfolio.positions
                         .where((p) =>
                             p.performanceData != null &&
@@ -806,18 +793,16 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                       final isPositive = position.gainLossPercent != null &&
                           position.gainLossPercent! >= 0;
                       return Opacity(
-                        opacity: 0.5, // Make semi-transparent for layering
+                        opacity: 0.5,
                         child: MiniChart(
                           data: position.performanceData!,
                           isPositive: isPositive,
                           height: 60,
                           width: double.infinity,
-                          showGradient: false, // Disable gradient for layering
+                          showGradient: false,
                         ),
                       );
                     }),
-
-                    // Position labels on the right
                     Positioned(
                       top: 0,
                       right: 0,
@@ -843,10 +828,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                   ],
                 ),
               ),
-
             const SizedBox(height: 8),
-
-            // Button to compare with benchmarks
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -878,8 +860,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 ),
               ],
             ),
-
-            // Last updated date
             Text(
               'Last updated: ${_formatUpdateDate(portfolio.updatedAt)}',
               style: const TextStyle(
@@ -1007,7 +987,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Timeframe selector
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
@@ -1030,7 +1009,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                                     setState(() {
                                       _selectedTimeframe = timeframe;
                                     });
-                                    _loadPerformanceData(); // Reload chart data
+                                    _loadPerformanceData();
                                   }
                                 },
                                 backgroundColor:
@@ -1045,26 +1024,17 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                         ),
                       ),
                     ),
-
-                    // Main content - scrollable
                     Expanded(
                       child: ListView(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         children: [
-                          // Portfolio Performance Chart
                           const SizedBox(height: 8),
                           _buildPerformanceChart(),
                           const SizedBox(height: 24),
-
-                          // Portfolio Summary
                           if (!_isLoading && _portfolios.isNotEmpty)
                             _buildPortfolioSummary(),
-
-                          // Benchmark Comparison Card (replaces pie chart)
                           if (!_isLoading && _portfolios.isNotEmpty)
                             _buildBenchmarkComparisonCard(),
-
-                          // Portfolios List
                           if (_isLoading)
                             Center(
                               child: Padding(
@@ -1079,8 +1049,6 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                                 .map((portfolio) =>
                                     _buildPortfolioCard(portfolio))
                                 .toList(),
-
-                          // Add some bottom padding
                           const SizedBox(height: 100),
                         ],
                       ),

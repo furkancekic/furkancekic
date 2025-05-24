@@ -1,4 +1,4 @@
-// services/portfolio_service.dart
+// services/portfolio_service.dart - Updated addPosition method
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/portfolio.dart';
@@ -67,6 +67,124 @@ class PortfolioService {
       );
       return portfolio;
     }
+  }
+
+  /// Get normalized portfolio performance data (percentage-based, cash-flow adjusted)
+  static Future<PerformanceData> getNormalizedPortfolioPerformance(
+    String portfolioId,
+    String timeframe,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/portfolios/$portfolioId/normalized-performance?timeframe=$timeframe'),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+
+        if (jsonData['status'] == 'success' && jsonData['data'] != null) {
+          return PerformanceData.fromJson(jsonData['data']);
+        } else {
+          throw Exception(jsonData['message'] ??
+              'Failed to load normalized performance data');
+        }
+      } else {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+    } catch (e) {
+      // Return mock normalized data for development
+      return PerformanceData(
+        timeframe: timeframe,
+        data: _generateMockNormalizedPerformancePoints(timeframe),
+      );
+    }
+  }
+
+  /// Get normalized total performance for all portfolios combined
+  static Future<PerformanceData> getNormalizedTotalPortfoliosPerformance(
+      String timeframe) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/portfolios/normalized-total-performance?timeframe=$timeframe'),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+
+        if (jsonData['status'] == 'success' && jsonData['data'] != null) {
+          return PerformanceData.fromJson(jsonData['data']);
+        } else {
+          throw Exception(jsonData['message'] ??
+              'Failed to load normalized total performance data');
+        }
+      } else {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+    } catch (e) {
+      // Return mock normalized data for development
+      return PerformanceData(
+        timeframe: timeframe,
+        data: _generateMockNormalizedPerformancePoints(timeframe),
+      );
+    }
+  }
+
+  /// Generate mock normalized performance points (starts at 100%, shows percentage gains)
+  static List<PerformancePoint> _generateMockNormalizedPerformancePoints(
+      String timeframe) {
+    final int dataPoints = _getDataPointsForTimeframe(timeframe);
+    final now = DateTime.now();
+    final List<PerformancePoint> points = [];
+
+    // Calculate date interval based on timeframe
+    int intervalDays;
+    switch (timeframe) {
+      case '1W':
+        intervalDays = 1;
+        break;
+      case '1M':
+        intervalDays = 2;
+        break;
+      case '3M':
+        intervalDays = 6;
+        break;
+      case '6M':
+        intervalDays = 12;
+        break;
+      case '1Y':
+        intervalDays = 30;
+        break;
+      case 'All':
+        intervalDays = 60;
+        break;
+      default:
+        intervalDays = 2;
+    }
+
+    // Start at 100 (representing 100% or 0% gain)
+    double currentValue = 100.0;
+
+    for (int i = 0; i < dataPoints; i++) {
+      final date =
+          now.subtract(Duration(days: (dataPoints - i) * intervalDays));
+
+      // Generate realistic stock-like returns (small percentage changes)
+      final random = (DateTime.now().millisecondsSinceEpoch + i) % 100;
+      final change = (random - 50) / 200.0; // +/- 0.25% per period roughly
+      currentValue = currentValue * (1 + change);
+
+      // Keep within reasonable bounds (80% to 120% for mock data)
+      currentValue = currentValue.clamp(80.0, 120.0);
+
+      points.add(PerformancePoint(
+        date: date,
+        value: currentValue,
+      ));
+    }
+
+    return points;
   }
 
   /// Create a new portfolio
@@ -247,26 +365,37 @@ class PortfolioService {
     }
   }
 
-  /// Add a new position to a portfolio
+  /// UPDATED: Add a new position to a portfolio with flexible price parameter
   static Future<void> addPosition({
     required String portfolioId,
     required String ticker,
     required double quantity,
-    required double price,
+    double? price, // Now optional - server will fetch historical price if null
     required DateTime date,
     String? notes,
   }) async {
     try {
+      // Prepare request body
+      final Map<String, dynamic> requestBody = {
+        'ticker': ticker,
+        'quantity': quantity,
+        'date': date.toIso8601String(),
+      };
+
+      // Only add price if provided (manual mode)
+      if (price != null) {
+        requestBody['price'] = price;
+      }
+
+      // Add notes if provided
+      if (notes != null && notes.isNotEmpty) {
+        requestBody['notes'] = notes;
+      }
+
       final response = await http.post(
         Uri.parse('$baseUrl/portfolios/$portfolioId/positions'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'ticker': ticker,
-          'quantity': quantity,
-          'price': price,
-          'date': date.toIso8601String(),
-          if (notes != null && notes.isNotEmpty) 'notes': notes,
-        }),
+        body: json.encode(requestBody),
       );
 
       if (response.statusCode == 201) {
@@ -276,11 +405,21 @@ class PortfolioService {
           throw Exception(jsonData['message'] ?? 'Failed to add position');
         }
       } else {
-        throw Exception('Server returned ${response.statusCode}');
+        // Parse error response for better error messages
+        String errorMessage = 'Server returned ${response.statusCode}';
+        try {
+          final errorData = json.decode(response.body);
+          if (errorData['message'] != null) {
+            errorMessage = errorData['message'];
+          }
+        } catch (e) {
+          // Use default error message if parsing fails
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      // For now, pretend it was successful (for development)
-      return;
+      // Re-throw the exception to show the actual error to user
+      throw Exception('Failed to add position: $e');
     }
   }
 

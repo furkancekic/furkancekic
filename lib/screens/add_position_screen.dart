@@ -1,4 +1,5 @@
-// screens/add_position_screen.dart
+// screens/add_position_screen.dart - Enhanced version with debouncing
+import 'dart:async'; // Add this import
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -29,10 +30,21 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
 
   bool _isLoading = false;
   bool _isSubmitting = false;
-  bool _isAutoFetchingPrice = false;
+  bool _isValidatingTicker = false;
+  bool _isFetchingPrice = false;
   bool _isSearching = false;
+  bool _useHistoricalPrice = true;
+
+  // Debouncing variables
+  Timer? _searchDebounceTimer;
+  Timer? _validationDebounceTimer;
+  Timer? _priceDebounceTimer;
+  static const Duration _debounceDuration = Duration(milliseconds: 800); // 800ms delay
+
   List<SearchResult> _searchResults = [];
   DateTime _selectedDate = DateTime.now();
+  TickerValidationResult? _validationResult;
+  PriceForDateResult? _priceResult;
 
   @override
   void initState() {
@@ -41,12 +53,19 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
     _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
 
     // Add listeners
-    _tickerController.addListener(_onTickerChanged);
+    _tickerController.addListener(_onTickerChangedDebounced);
+    _dateController.addListener(_onDateChanged);
   }
 
   @override
   void dispose() {
-    _tickerController.removeListener(_onTickerChanged);
+    // Cancel any pending timers
+    _searchDebounceTimer?.cancel();
+    _validationDebounceTimer?.cancel();
+    _priceDebounceTimer?.cancel();
+    
+    _tickerController.removeListener(_onTickerChangedDebounced);
+    _dateController.removeListener(_onDateChanged);
     _tickerController.dispose();
     _quantityController.dispose();
     _priceController.dispose();
@@ -55,27 +74,68 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
     super.dispose();
   }
 
-  void _onTickerChanged() {
-    // Cancel any price fetching
-    setState(() {
-      _isAutoFetchingPrice = false;
-    });
-
-    // Perform search if ticker contains at least 2 characters
+  void _onTickerChangedDebounced() {
     final query = _tickerController.text.trim();
-    if (query.length >= 2) {
-      _performSearch(query);
-    } else {
+    
+    // Cancel previous timers
+    _searchDebounceTimer?.cancel();
+    _validationDebounceTimer?.cancel();
+    _priceDebounceTimer?.cancel();
+
+    if (query.length < 2) {
       setState(() {
         _searchResults = [];
+        _validationResult = null;
+        _priceResult = null;
+        _isSearching = false;
+        _isValidatingTicker = false;
+        _isFetchingPrice = false;
+      });
+      if (_useHistoricalPrice) {
+        _priceController.clear();
+      }
+      return;
+    }
+
+    // Show loading indicators immediately
+    setState(() {
+      _isSearching = true;
+      _isValidatingTicker = true;
+    });
+
+    // Set up debounced timers
+    _searchDebounceTimer = Timer(_debounceDuration, () {
+      if (mounted) {
+        _performSearch(query);
+      }
+    });
+
+    _validationDebounceTimer = Timer(_debounceDuration, () {
+      if (mounted) {
+        _validateTicker(query);
+      }
+    });
+  }
+
+  void _onDateChanged() {
+    // Cancel previous timer
+    _priceDebounceTimer?.cancel();
+    
+    if (_useHistoricalPrice && _validationResult?.isValid == true) {
+      setState(() {
+        _isFetchingPrice = true;
+      });
+      
+      _priceDebounceTimer = Timer(_debounceDuration, () {
+        if (mounted) {
+          _fetchPriceForDate();
+        }
       });
     }
   }
 
   Future<void> _performSearch(String query) async {
-    setState(() {
-      _isSearching = true;
-    });
+    if (!mounted) return;
 
     try {
       final results = await StockApiService.searchStocks(query);
@@ -95,42 +155,103 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
     }
   }
 
-  void _selectTicker(String ticker, String name) {
-    setState(() {
-      _tickerController.text = ticker;
-      _searchResults = [];
-    });
-    _fetchStockPrice(ticker);
-  }
-
-  Future<void> _fetchStockPrice(String ticker) async {
-    setState(() {
-      _isAutoFetchingPrice = true;
-      _isLoading = true;
-    });
+  Future<void> _validateTicker(String ticker) async {
+    if (ticker.isEmpty || !mounted) return;
 
     try {
-      final stockInfo = await StockApiService.getStockInfo(ticker);
-      if (mounted && _isAutoFetchingPrice) {
+      final result = await StockApiService.validateTicker(ticker);
+      if (mounted) {
         setState(() {
-          _priceController.text = stockInfo.price.toStringAsFixed(2);
-          _isLoading = false;
+          _validationResult = result;
+          _isValidatingTicker = false;
         });
+
+        if (result.isValid && _useHistoricalPrice) {
+          // Start price fetching with a small delay
+          setState(() {
+            _isFetchingPrice = true;
+          });
+          
+          _priceDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+            if (mounted) {
+              _fetchPriceForDate();
+            }
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _validationResult = TickerValidationResult(
+            isValid: false,
+            ticker: ticker,
+            errorMessage: 'Error validating ticker: $e',
+          );
+          _isValidatingTicker = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchPriceForDate() async {
+    if (_validationResult?.isValid != true || !mounted) return;
+
+    try {
+      final result = await StockApiService.getPriceForDate(
+        _validationResult!.ticker,
+        _selectedDate,
+      );
+
+      if (mounted) {
+        setState(() {
+          _priceResult = result;
+          _isFetchingPrice = false;
+        });
+
+        if (result.success && result.price != null) {
+          _priceController.text = result.price!.toStringAsFixed(2);
+        } else {
+          _priceController.clear();
+          if (result.errorMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result.errorMessage!),
+                backgroundColor: AppTheme.warningColor,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isFetchingPrice = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Could not fetch current price. Please enter manually.'),
-            backgroundColor: AppTheme.warningColor,
+          SnackBar(
+            content: Text('Error fetching price: $e'),
+            backgroundColor: AppTheme.negativeColor,
           ),
         );
       }
     }
+  }
+
+  void _selectTicker(String ticker, String name) {
+    // Cancel any pending timers
+    _searchDebounceTimer?.cancel();
+    _validationDebounceTimer?.cancel();
+    _priceDebounceTimer?.cancel();
+
+    setState(() {
+      _tickerController.text = ticker;
+      _searchResults = [];
+      _isSearching = false;
+      _isValidatingTicker = true; // Show loading for validation
+    });
+    
+    // Immediately validate the selected ticker
+    _validateTicker(ticker);
   }
 
   Future<void> _selectDate() async {
@@ -168,16 +289,56 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
       return;
     }
 
+    // Additional validation for ticker
+    if (_validationResult?.isValid != true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid ticker symbol'),
+          backgroundColor: AppTheme.negativeColor,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
 
     try {
+      // Determine price based on mode
+      double? priceToSend;
+
+      if (_useHistoricalPrice) {
+        // In automatic mode, check if we have a fetched price
+        if (_priceResult?.success == true && _priceResult?.price != null) {
+          priceToSend = _priceResult!.price;
+        } else {
+          // If no historical price available, let server handle it (send null)
+          priceToSend = null;
+        }
+      } else {
+        // In manual mode, use the user-entered price
+        if (_priceController.text.trim().isNotEmpty) {
+          priceToSend = double.parse(_priceController.text.trim());
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please enter a purchase price'),
+              backgroundColor: AppTheme.negativeColor,
+            ),
+          );
+          setState(() {
+            _isSubmitting = false;
+          });
+          return;
+        }
+      }
+
       await PortfolioService.addPosition(
         portfolioId: widget.portfolioId,
         ticker: _tickerController.text.trim().toUpperCase(),
         quantity: double.parse(_quantityController.text.trim()),
-        price: double.parse(_priceController.text.trim()),
+        price: priceToSend, // Can be null for historical price mode
         date: _selectedDate,
         notes: _notesController.text.trim(),
       );
@@ -242,8 +403,7 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
           ),
         ),
         child: GestureDetector(
-          onTap: () =>
-              FocusScope.of(context).unfocus(), // Dismiss keyboard on tap
+          onTap: () => FocusScope.of(context).unfocus(),
           child: Stack(
             children: [
               // Main form
@@ -252,7 +412,7 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(16.0),
                   children: [
-                    // Ticker Field
+                    // Stock Information
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -275,10 +435,7 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
                           // Ticker input
                           Text(
                             'Ticker Symbol',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: textPrim,
-                            ),
+                            style: TextStyle(fontSize: 14, color: textPrim),
                           ),
                           const SizedBox(height: 8),
                           TextFormField(
@@ -297,7 +454,7 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
                               hintStyle: TextStyle(
                                 color: AppTheme.textSecondary.withOpacity(0.5),
                               ),
-                              suffixIcon: _isLoading
+                              suffixIcon: _isValidatingTicker
                                   ? SizedBox(
                                       height: 20,
                                       width: 20,
@@ -309,16 +466,24 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
                                         ),
                                       ),
                                     )
-                                  : null,
+                                  : _validationResult?.isValid == true
+                                      ? Icon(Icons.check_circle,
+                                          color: AppTheme.positiveColor)
+                                      : _validationResult?.isValid == false
+                                          ? Icon(Icons.error,
+                                              color: AppTheme.negativeColor)
+                                          : null,
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Ticker symbol is required';
                               }
+                              if (_validationResult?.isValid != true) {
+                                return 'Invalid ticker symbol';
+                              }
                               return null;
                             },
                             onChanged: (value) {
-                              // Autocapitalize
                               final upperValue = value.toUpperCase();
                               if (value != upperValue) {
                                 _tickerController.value = TextEditingValue(
@@ -330,16 +495,59 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
                             },
                           ),
 
+                          // Validation result display
+                          if (_validationResult != null) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: _validationResult!.isValid
+                                    ? AppTheme.positiveColor.withOpacity(0.1)
+                                    : AppTheme.negativeColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: _validationResult!.isValid
+                                      ? AppTheme.positiveColor
+                                      : AppTheme.negativeColor,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _validationResult!.isValid
+                                        ? Icons.check
+                                        : Icons.error,
+                                    color: _validationResult!.isValid
+                                        ? AppTheme.positiveColor
+                                        : AppTheme.negativeColor,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _validationResult!.isValid
+                                          ? '${_validationResult!.name} - ${_validationResult!.exchange}'
+                                          : _validationResult!.errorMessage ??
+                                              'Invalid ticker',
+                                      style: TextStyle(
+                                        color: _validationResult!.isValid
+                                            ? AppTheme.positiveColor
+                                            : AppTheme.negativeColor,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
                           const SizedBox(height: 16),
 
                           // Quantity input
-                          Text(
-                            'Quantity',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: textPrim,
-                            ),
-                          ),
+                          Text('Quantity',
+                              style: TextStyle(fontSize: 14, color: textPrim)),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _quantityController,
@@ -378,64 +586,13 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
                               return null;
                             },
                           ),
-
-                          const SizedBox(height: 16),
-
-                          // Purchase price
-                          Text(
-                            'Purchase Price (per share)',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: textPrim,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _priceController,
-                            style: TextStyle(color: textPrim),
-                            keyboardType: const TextInputType.numberWithOptions(
-                                decimal: true),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                  RegExp(r'^\d+\.?\d{0,2}')),
-                            ],
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor:
-                                  AppTheme.backgroundColor.withOpacity(0.3),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
-                              ),
-                              prefixText: '\$ ',
-                              prefixStyle: TextStyle(color: textPrim),
-                              hintText: 'Enter purchase price',
-                              hintStyle: TextStyle(
-                                color: AppTheme.textSecondary.withOpacity(0.5),
-                              ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Purchase price is required';
-                              }
-                              try {
-                                final price = double.parse(value);
-                                if (price <= 0) {
-                                  return 'Price must be greater than zero';
-                                }
-                              } catch (e) {
-                                return 'Please enter a valid number';
-                              }
-                              return null;
-                            },
-                          ),
                         ],
                       ),
                     ),
 
                     const SizedBox(height: 16),
 
-                    // Transaction details
+                    // Transaction Details
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -456,13 +613,8 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
                           const SizedBox(height: 16),
 
                           // Purchase date
-                          Text(
-                            'Purchase Date',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: textPrim,
-                            ),
-                          ),
+                          Text('Purchase Date',
+                              style: TextStyle(fontSize: 14, color: textPrim)),
                           const SizedBox(height: 8),
                           InkWell(
                             onTap: _selectDate,
@@ -478,10 +630,8 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                     borderSide: BorderSide.none,
                                   ),
-                                  suffixIcon: Icon(
-                                    Icons.calendar_today,
-                                    color: accent,
-                                  ),
+                                  suffixIcon:
+                                      Icon(Icons.calendar_today, color: accent),
                                   hintStyle: TextStyle(
                                     color:
                                         AppTheme.textSecondary.withOpacity(0.5),
@@ -499,14 +649,171 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
 
                           const SizedBox(height: 16),
 
-                          // Notes
+                          // Price mode toggle
+                          Row(
+                            children: [
+                              Text('Price Mode',
+                                  style:
+                                      TextStyle(fontSize: 14, color: textPrim)),
+                              const Spacer(),
+                              Switch(
+                                value: _useHistoricalPrice,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _useHistoricalPrice = value;
+                                    if (value &&
+                                        _validationResult?.isValid == true) {
+                                      _fetchPriceForDate();
+                                    } else {
+                                      _priceController.clear();
+                                      _priceResult = null;
+                                    }
+                                  });
+                                },
+                                activeColor: accent,
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 8),
+
                           Text(
-                            'Notes (Optional)',
+                            _useHistoricalPrice
+                                ? 'Automatic: Fetch historical price for the selected date'
+                                : 'Manual: Enter purchase price manually',
                             style: TextStyle(
-                              fontSize: 14,
-                              color: textPrim,
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                              fontStyle: FontStyle.italic,
                             ),
                           ),
+
+                          const SizedBox(height: 16),
+
+                          // Purchase price
+                          Row(
+                            children: [
+                              Text('Purchase Price (per share)',
+                                  style:
+                                      TextStyle(fontSize: 14, color: textPrim)),
+                              if (_isFetchingPrice) ...[
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                    color: accent,
+                                    strokeWidth: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _priceController,
+                            style: TextStyle(color: textPrim),
+                            keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'^\d+\.?\d{0,2}')),
+                            ],
+                            enabled: !_useHistoricalPrice ||
+                                (_priceResult?.success != true),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor:
+                                  AppTheme.backgroundColor.withOpacity(0.3),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              prefixText: '\$ ',
+                              prefixStyle: TextStyle(color: textPrim),
+                              hintText: _useHistoricalPrice
+                                  ? 'Will be fetched automatically'
+                                  : 'Enter purchase price',
+                              hintStyle: TextStyle(
+                                color: AppTheme.textSecondary.withOpacity(0.5),
+                              ),
+                              suffixIcon: _useHistoricalPrice &&
+                                      _priceResult?.success == true
+                                  ? Icon(Icons.auto_awesome,
+                                      color: AppTheme.positiveColor)
+                                  : null,
+                            ),
+                            validator: (value) {
+                              if (!_useHistoricalPrice) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Purchase price is required';
+                                }
+                                try {
+                                  final price = double.parse(value);
+                                  if (price <= 0) {
+                                    return 'Price must be greater than zero';
+                                  }
+                                } catch (e) {
+                                  return 'Please enter a valid number';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+
+                          // Price result display
+                          if (_priceResult != null) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: _priceResult!.success
+                                    ? AppTheme.positiveColor.withOpacity(0.1)
+                                    : AppTheme.warningColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: _priceResult!.success
+                                      ? AppTheme.positiveColor
+                                      : AppTheme.warningColor,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _priceResult!.success
+                                        ? Icons.check
+                                        : Icons.warning,
+                                    color: _priceResult!.success
+                                        ? AppTheme.positiveColor
+                                        : AppTheme.warningColor,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _priceResult!.success
+                                          ? 'Price fetched: ${_priceResult!.formattedPrice} for ${_priceResult!.date}'
+                                          : _priceResult!.errorMessage ??
+                                              'Could not fetch price',
+                                      style: TextStyle(
+                                        color: _priceResult!.success
+                                            ? AppTheme.positiveColor
+                                            : AppTheme.warningColor,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
+                          const SizedBox(height: 16),
+
+                          // Notes
+                          Text('Notes (Optional)',
+                              style: TextStyle(fontSize: 14, color: textPrim)),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _notesController,
@@ -533,32 +840,7 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
                     const SizedBox(height: 24),
 
                     // Total investment calculator
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppTheme.accentColor.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Total Investment',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          _buildTotalInvestment(),
-                        ],
-                      ),
-                    ),
+                    _buildTotalInvestmentCalculator(),
 
                     const SizedBox(height: 24),
 
@@ -600,7 +882,7 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
               // Search results overlay
               if (_searchResults.isNotEmpty)
                 Positioned(
-                  top: 135, // Adjust based on ticker field position
+                  top: 135,
                   left: 16,
                   right: 16,
                   child: Container(
@@ -632,9 +914,8 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
                           ),
                           subtitle: Text(
                             result.name,
-                            style: const TextStyle(
-                              color: AppTheme.textSecondary,
-                            ),
+                            style:
+                                const TextStyle(color: AppTheme.textSecondary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -645,6 +926,48 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
                     ),
                   ),
                 ),
+
+              // Searching indicator overlay
+              if (_isSearching && _searchResults.isEmpty)
+                Positioned(
+                  top: 135,
+                  left: 16,
+                  right: 16,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: accent,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Searching...',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -652,7 +975,7 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
     );
   }
 
-  Widget _buildTotalInvestment() {
+  Widget _buildTotalInvestmentCalculator() {
     double quantity = 0;
     double price = 0;
 
@@ -665,25 +988,63 @@ class _AddPositionScreenState extends State<AddPositionScreen> {
 
     final totalInvestment = quantity * price;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          '$quantity shares × \$${price.toStringAsFixed(2)} =',
-          style: const TextStyle(
-            fontSize: 16,
-            color: AppTheme.textSecondary,
-          ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.accentColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.accentColor.withOpacity(0.3),
+          width: 1,
         ),
-        Text(
-          '\$${totalInvestment.toStringAsFixed(2)}',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.accentColor,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Total Investment',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$quantity shares × \$${price.toStringAsFixed(2)} =',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              Text(
+                '\$${totalInvestment.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.accentColor,
+                ),
+              ),
+            ],
+          ),
+          if (_useHistoricalPrice &&
+              _priceResult == null &&
+              _validationResult?.isValid == true) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Price will be calculated automatically based on the selected date',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary.withOpacity(0.7),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

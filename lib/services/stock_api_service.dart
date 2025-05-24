@@ -1,4 +1,4 @@
-// services/stock_api_service.dart
+// services/stock_api_service.dart - Updated with new validation and price methods
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../src/config.dart';
@@ -149,6 +149,125 @@ class StockApiService {
     } catch (e) {
       print('Error searching stocks: $e');
       return [];
+    }
+  }
+
+  // UPDATED: Validate ticker symbol with new backend response format
+  static Future<TickerValidationResult> validateTicker(String ticker) async {
+    try {
+      final response = await http.get(
+          Uri.parse('$baseUrl/validate-ticker?ticker=${ticker.toUpperCase()}'));
+
+      logger.info(
+          'Validation API Response for $ticker: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+
+        // Handle your updated backend response format
+        if (jsonData['status'] == 'success' && jsonData['is_valid'] == true) {
+          return TickerValidationResult(
+            isValid: true,
+            ticker: jsonData['ticker'] ?? ticker.toUpperCase(),
+            name: jsonData['name'],
+            exchange: jsonData['exchange'],
+            currentPrice: (jsonData['current_price'] ?? 0.0).toDouble(),
+            currency: jsonData['currency'] ?? 'USD',
+            marketState: jsonData['market_state'] ?? 'Unknown',
+          );
+        } else {
+          // Handle error response or is_valid: false
+          return TickerValidationResult(
+            isValid: false,
+            ticker: ticker.toUpperCase(),
+            errorMessage: jsonData['message'] ?? 'Invalid ticker symbol',
+          );
+        }
+      } else {
+        // Handle HTTP error responses (404, 400, etc.)
+        String errorMessage = 'Invalid ticker symbol';
+        try {
+          final errorData = json.decode(response.body);
+          if (errorData['message'] != null) {
+            errorMessage = errorData['message'];
+          }
+        } catch (e) {
+          // Use default error message if parsing fails
+        }
+
+        return TickerValidationResult(
+          isValid: false,
+          ticker: ticker.toUpperCase(),
+          errorMessage: errorMessage,
+        );
+      }
+    } catch (e) {
+      logger.severe('Error validating ticker $ticker: $e');
+      return TickerValidationResult(
+        isValid: false,
+        ticker: ticker.toUpperCase(),
+        errorMessage: 'Network error: $e',
+      );
+    }
+  }
+
+  // UPDATED: Get price for a specific date with better error handling
+  static Future<PriceForDateResult> getPriceForDate(
+      String ticker, DateTime date) async {
+    try {
+      final response = await http.get(Uri.parse(
+          '$baseUrl/get-price-for-date?ticker=${ticker.toUpperCase()}&date=${date.toIso8601String()}'));
+
+      logger.info(
+          'Price API Response for $ticker on $date: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+
+        if (jsonData['status'] == 'success' && jsonData['price'] != null) {
+          return PriceForDateResult(
+            success: true,
+            ticker: jsonData['ticker'] ?? ticker,
+            price: jsonData['price'].toDouble(),
+            date: jsonData['date'] ?? date.toIso8601String().split('T')[0],
+            formattedPrice: jsonData['formatted_price'] ??
+                '\$${jsonData['price']?.toStringAsFixed(2) ?? '0.00'}',
+          );
+        } else {
+          return PriceForDateResult(
+            success: false,
+            ticker: ticker,
+            date: date.toIso8601String().split('T')[0],
+            errorMessage:
+                jsonData['message'] ?? 'No price data available for this date',
+          );
+        }
+      } else {
+        String errorMessage = 'Failed to fetch price';
+        try {
+          final errorData = json.decode(response.body);
+          if (errorData['message'] != null) {
+            errorMessage = errorData['message'];
+          }
+        } catch (e) {
+          // Use default error message
+        }
+
+        return PriceForDateResult(
+          success: false,
+          ticker: ticker,
+          date: date.toIso8601String().split('T')[0],
+          errorMessage: errorMessage,
+        );
+      }
+    } catch (e) {
+      logger.severe('Error getting price for $ticker on $date: $e');
+      return PriceForDateResult(
+        success: false,
+        ticker: ticker,
+        date: date.toIso8601String().split('T')[0],
+        errorMessage: 'Network error: $e',
+      );
     }
   }
 
@@ -414,6 +533,48 @@ class StockApiService {
           chartData: [225.6, 227.2, 228.9, 230.3, 231.48]),
     ];
   }
+}
+
+// UPDATED: Data model for ticker validation with new fields
+class TickerValidationResult {
+  final bool isValid;
+  final String ticker;
+  final String? name;
+  final String? exchange;
+  final double? currentPrice;
+  final String? currency;
+  final String? marketState;
+  final String? errorMessage;
+
+  TickerValidationResult({
+    required this.isValid,
+    required this.ticker,
+    this.name,
+    this.exchange,
+    this.currentPrice,
+    this.currency,
+    this.marketState,
+    this.errorMessage,
+  });
+}
+
+// UPDATED: Data model for price for date with new fields
+class PriceForDateResult {
+  final bool success;
+  final String ticker;
+  final double? price;
+  final String date;
+  final String? formattedPrice;
+  final String? errorMessage;
+
+  PriceForDateResult({
+    required this.success,
+    required this.ticker,
+    required this.date,
+    this.price,
+    this.formattedPrice,
+    this.errorMessage,
+  });
 }
 
 // Data models

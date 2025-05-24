@@ -18,6 +18,7 @@ import 'chart_screen.dart';
 import 'stock_reels_screen.dart';
 import 'backtesting_screen.dart';
 import 'fund_screens/fund_main_screen.dart';
+import 'education/education_home_screen.dart';
 
 /// ====================================================================
 ///  AdaptiveFeatureCard - Tema stiline göre değişen feature card
@@ -161,6 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
     BacktestingScreen(),
     StockReelsScreen(),
     FundMainScreen(),
+    EducationHomeScreen(),
     PortfolioScreen(),
   ];
 
@@ -280,13 +282,18 @@ class CurvedNavigationBar extends StatelessWidget {
                   _buildNavItem(context, 0, Icons.home_rounded, 'Home'),
                   _buildNavItem(
                       context, 1, Icons.filter_list_rounded, 'Screener'),
-                  const SizedBox(width: 60), // Orta buton için boşluk
+                  const SizedBox(width: 60), // Merkez buton (Index 2)
                   _buildNavItem(
                       context, 3, Icons.analytics_rounded, 'Backtest'),
                   _buildNavItem(context, 4, Icons.slideshow_rounded, 'Reels'),
-                  _buildNavItem(context, 5, Icons.account_balance, 'Funds'),
+                  // DÜZELTİLMİŞ KISIM BAŞLANGICI
+                  _buildNavItem(context, 5, Icons.account_balance,
+                      'Funds'), // Funds (indeks 5)
                   _buildNavItem(
-                      context, 6, Icons.account_balance_wallet, 'Portfolio'),
+                      context, 6, Icons.school, 'Eğitim'), // Eğitim (indeks 6)
+                  // DÜZELTİLMİŞ KISIM SONU
+                  _buildNavItem(context, 7, Icons.account_balance_wallet,
+                      'Portfolio'), // Index 7
                 ],
               ),
             ),

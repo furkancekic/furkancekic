@@ -114,9 +114,14 @@ class GlassCurvedNavigationBar extends StatelessWidget {
                 _buildCenterButton(context, 2, Icons.candlestick_chart),
                 _buildNavItem(context, 3, Icons.analytics_rounded, 'Backtest'),
                 _buildNavItem(context, 4, Icons.slideshow_rounded, 'Reels'),
-                _buildNavItem(context, 5, Icons.account_balance, 'Funds'),
+                // DÜZELTİLMİŞ KISIM BAŞLANGICI
+                _buildNavItem(context, 5, Icons.account_balance,
+                    'Funds'), // Funds (indeks 5)
+                _buildNavItem(context, 6, Icons.school_outlined,
+                    'Edu'), // Edu/Eğitim (indeks 6)
+                // DÜZELTİLMİŞ KISIM SONU
                 _buildNavItem(
-                    context, 6, Icons.account_balance_wallet, 'Portfolio'),
+                    context, 7, Icons.account_balance_wallet, 'Portfolio'),
               ],
             ),
           ),

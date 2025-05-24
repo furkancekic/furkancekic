@@ -7,71 +7,6 @@ import '../services/portfolio_service.dart' as portfolio_service;
 import '../services/portfolio_benchmark_service.dart';
 import '../services/stock_api_service.dart';
 
-// Varsayılan olarak bu sınıfların var olduğunu kabul ediyorum
-// class BenchmarkInfo {
-//   final String id;
-//   final String name;
-//   final String symbol;
-//   final String description;
-//   final String category;
-//   final String region;
-
-//   BenchmarkInfo({
-//     required this.id,
-//     required this.name,
-//     required this.symbol,
-//     required this.description,
-//     required this.category,
-//     required this.region,
-//   });
-// }
-
-// class BenchmarkData {
-//   final String id;
-//   final String name;
-//   final String symbol;
-//   final String timeframe;
-//   final List<PerformancePoint> data;
-//   final double returnPercent;
-
-//   BenchmarkData({
-//     required this.id,
-//     required this.name,
-//     required this.symbol,
-//     required this.timeframe,
-//     required this.data,
-//     required this.returnPercent,
-//   });
-// }
-
-// class PerformancePoint {
-//   final DateTime date;
-//   final double value;
-
-//   PerformancePoint({
-//     required this.date,
-//     required this.value,
-//   });
-// }
-
-// class PortfolioBenchmarkMetrics {
-//   final double alpha;
-//   final double beta;
-//   final double rSquared;
-//   final double sharpeRatio;
-//   final double correlation;
-//   final double informationRatio; // Treynor yerine Information Ratio kullanıldığı varsayılıyor
-
-//   PortfolioBenchmarkMetrics({
-//     required this.alpha,
-//     required this.beta,
-//     required this.rSquared,
-//     required this.sharpeRatio,
-//     required this.correlation,
-//     required this.informationRatio,
-//   });
-// }
-
 class BenchmarkComparisonScreen extends StatefulWidget {
   final Portfolio?
       portfolio; // Optional: if null, compares all portfolios combined
@@ -93,12 +28,17 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
   String _selectedTimeframe = '1M'; // Default to 1 month view
   final List<String> _timeframes = ['1W', '1M', '3M', '6M', '1Y', 'All'];
 
+  // NEW: Toggle for normalized view
+  bool _isNormalizedView =
+      false; // false = absolute values, true = normalized (100% start)
+
+  // NEW: Separate data storage for both views
+  List<BenchmarkData> _absoluteBenchmarkData = [];
+  List<BenchmarkData> _normalizedBenchmarkData = [];
+
   // Custom ticker controller and state variables
   final TextEditingController _customTickerController = TextEditingController();
-  String? _customTicker; // Bu değişken son eklenen özel ticker'ı tutuyordu,
-  // artık birden fazla özel ticker olabileceği için
-  // _selectedBenchmarkIds listesindeki 'CUSTOM_' prefix'li ID'lere bakacağız.
-  // Ancak _customTicker'ı chip göstermek için hala kullanabiliriz.
+  String? _customTicker;
   bool _isCustomTickerValid = false;
   bool _isValidatingTicker = false;
 
@@ -107,6 +47,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
 
   // Portfolio data
   List<PerformancePoint> _portfolioPerformanceData = [];
+  List<PerformancePoint> _normalizedPortfolioData = [];
   double _portfolioReturn = 0.0;
 
   // Date range for normalization
@@ -116,7 +57,6 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
   // Colors for different benchmarks and portfolio
   final Color _portfolioColor = Colors.blue;
   final List<Color> _benchmarkColors = [
-    // Standart benchmarklar için ana renk paleti
     Colors.red.shade400,
     Colors.green.shade600,
     Colors.orange.shade500,
@@ -183,11 +123,10 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
       // Load comparison metrics if a specific portfolio is selected
       if (widget.portfolio != null && _selectedBenchmarkIds.isNotEmpty) {
         final firstBenchmarkId = _selectedBenchmarkIds.firstWhere(
-          (id) => !_isCustomBenchmarkId(
-              id), // Metrikler için standart bir benchmark seç
+          (id) => !_isCustomBenchmarkId(id),
           orElse: () => _selectedBenchmarkIds.isNotEmpty
               ? _selectedBenchmarkIds.first
-              : '', // Fallback
+              : '',
         );
         if (firstBenchmarkId.isNotEmpty) {
           _comparisonMetrics =
@@ -228,10 +167,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     });
 
     try {
-      // Use StockApiService to check if ticker is valid
       final stockInfo = await StockApiService.getStockInfo(ticker);
-
-      // If price is 0, it's probably an invalid ticker
       final isValid = stockInfo.price > 0;
 
       setState(() {
@@ -281,11 +217,9 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     }
 
     setState(() {
-      // _customTicker'ı son eklenen ticker için güncellemek yerine,
-      // _selectedBenchmarkIds'e eklemek yeterli. Chip gösterimi için _customTickerController.text kullanılabilir.
       _selectedBenchmarkIds.add(customId);
-      _customTickerController.clear(); // Input'u temizle
-      _isCustomTickerValid = false; // Bir sonraki giriş için sıfırla
+      _customTickerController.clear();
+      _isCustomTickerValid = false;
     });
 
     // Reload benchmark data
@@ -326,14 +260,44 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
       _determineTimeframeDateRange();
 
       if (widget.portfolio != null) {
+        // Load both regular and normalized portfolio data
         final performance =
             await portfolio_service.PortfolioService.getPortfolioPerformance(
           widget.portfolio!.id!,
           _selectedTimeframe,
         );
+
+        // Try to load normalized performance
+        List<portfolio_service.PerformancePoint> normalizedPerformance = [];
+        try {
+          final normalizedResult = await portfolio_service.PortfolioService
+              .getNormalizedPortfolioPerformance(
+            widget.portfolio!.id!,
+            _selectedTimeframe,
+          );
+          normalizedPerformance = normalizedResult.data;
+        } catch (e) {
+          print('Normalized portfolio data not available: $e');
+          // Fallback: create normalized data from regular data
+          if (performance.data.isNotEmpty) {
+            final baseValue = performance.data.first.value;
+            normalizedPerformance = performance.data
+                .map((point) => portfolio_service.PerformancePoint(
+                      date: point.date,
+                      value: (point.value / baseValue) * 100,
+                    ))
+                .toList();
+          }
+        }
+
         final convertedData = _convertPerformancePoints(performance.data);
+        final convertedNormalizedData =
+            _convertPerformancePoints(normalizedPerformance);
+
         setState(() {
           _portfolioPerformanceData = convertedData;
+          _normalizedPortfolioData = convertedNormalizedData;
+
           if (_portfolioPerformanceData.isNotEmpty) {
             final firstValue = _portfolioPerformanceData.first.value;
             final lastValue = _portfolioPerformanceData.last.value;
@@ -347,13 +311,37 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
           }
         });
       } else {
+        // Load total portfolio performance
         final performance = await portfolio_service.PortfolioService
-            .getTotalPortfoliosPerformance(
-          _selectedTimeframe,
-        );
+            .getTotalPortfoliosPerformance(_selectedTimeframe);
+
+        List<portfolio_service.PerformancePoint> normalizedPerformance = [];
+        try {
+          final normalizedResult = await portfolio_service.PortfolioService
+              .getNormalizedTotalPortfoliosPerformance(_selectedTimeframe);
+          normalizedPerformance = normalizedResult.data;
+        } catch (e) {
+          print('Normalized total portfolio data not available: $e');
+          // Fallback: create normalized data from regular data
+          if (performance.data.isNotEmpty) {
+            final baseValue = performance.data.first.value;
+            normalizedPerformance = performance.data
+                .map((point) => portfolio_service.PerformancePoint(
+                      date: point.date,
+                      value: (point.value / baseValue) * 100,
+                    ))
+                .toList();
+          }
+        }
+
         final convertedData = _convertPerformancePoints(performance.data);
+        final convertedNormalizedData =
+            _convertPerformancePoints(normalizedPerformance);
+
         setState(() {
           _portfolioPerformanceData = convertedData;
+          _normalizedPortfolioData = convertedNormalizedData;
+
           if (_portfolioPerformanceData.isNotEmpty) {
             final firstValue = _portfolioPerformanceData.first.value;
             final lastValue = _portfolioPerformanceData.last.value;
@@ -380,14 +368,36 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
   List<PerformancePoint> _convertPerformancePoints(
       List<portfolio_service.PerformancePoint> points) {
     return points
-        .map((p) => PerformancePoint(
-              date: p.date,
-              value: p.value,
-            ))
+        .map((p) => PerformancePoint(date: p.date, value: p.value))
         .toList();
   }
 
+  // NEW: Updated to load both absolute and normalized data
   Future<void> _loadBenchmarkData() async {
+    try {
+      // Load both absolute and normalized data in parallel
+      await Future.wait([
+        _loadAbsoluteBenchmarkData(),
+        _loadNormalizedBenchmarkData(),
+      ]);
+
+      // Update the main _benchmarkData based on current view
+      setState(() {
+        _benchmarkData = _isNormalizedView
+            ? _normalizedBenchmarkData
+            : _absoluteBenchmarkData;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load benchmark data: $e'),
+          backgroundColor: AppTheme.negativeColor,
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadAbsoluteBenchmarkData() async {
     try {
       List<BenchmarkData> newBenchmarkData = [];
 
@@ -436,17 +446,11 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
             }
           } catch (e) {
             print('Error loading custom ticker data ($ticker): $e');
-            // Optionally, remove the failed ticker from _selectedBenchmarkIds or show a specific error
           }
-        } else {
-          // Standard Benchmark
-          // Assuming PortfolioBenchmarkService.getBenchmarkPerformance can take a single ID
-          // If not, you might need to batch these or call it for each standard benchmark.
-          // For simplicity, let's assume it works for a list (even if it's a list of one).
         }
       }
 
-      // Load standard benchmarks in a single call if possible
+      // Load standard benchmarks
       List<String> standardBenchmarkIdsToLoad = _selectedBenchmarkIds
           .where((id) => !_isCustomBenchmarkId(id))
           .toList();
@@ -460,16 +464,137 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
       }
 
       setState(() {
-        _benchmarkData = newBenchmarkData;
+        _absoluteBenchmarkData = newBenchmarkData;
+        if (!_isNormalizedView) {
+          _benchmarkData = _absoluteBenchmarkData;
+        }
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to load benchmark data: $e'),
-          backgroundColor: AppTheme.negativeColor,
-        ),
-      );
+      print('Error loading absolute benchmark data: $e');
     }
+  }
+
+  Future<void> _loadNormalizedBenchmarkData() async {
+    try {
+      List<BenchmarkData> newNormalizedData = [];
+
+      // For custom tickers, normalize the absolute data
+      for (String id in _selectedBenchmarkIds) {
+        if (_isCustomBenchmarkId(id)) {
+          final absoluteData = _absoluteBenchmarkData.firstWhere(
+            (data) => data.id == id,
+            orElse: () => BenchmarkData(
+              id: id,
+              name: id.substring('CUSTOM_'.length),
+              symbol: id.substring('CUSTOM_'.length),
+              timeframe: _selectedTimeframe,
+              data: [],
+              returnPercent: 0.0,
+            ),
+          );
+
+          if (absoluteData.data.isNotEmpty) {
+            final normalizedData =
+                _normalizeToHundredPercent(absoluteData.data);
+            final returnPercent = normalizedData.isNotEmpty
+                ? normalizedData.last.value - 100
+                : 0.0;
+
+            newNormalizedData.add(BenchmarkData(
+              id: id,
+              name: absoluteData.name,
+              symbol: absoluteData.symbol,
+              timeframe: _selectedTimeframe,
+              data: normalizedData,
+              returnPercent: returnPercent,
+            ));
+          }
+        }
+      }
+
+      // Load normalized standard benchmarks
+      List<String> standardBenchmarkIdsToLoad = _selectedBenchmarkIds
+          .where((id) => !_isCustomBenchmarkId(id))
+          .toList();
+      if (standardBenchmarkIdsToLoad.isNotEmpty) {
+        try {
+          List<BenchmarkData> standardNormalizedData =
+              await PortfolioBenchmarkService.getNormalizedBenchmarkPerformance(
+            _selectedTimeframe,
+            standardBenchmarkIdsToLoad,
+          );
+          newNormalizedData.addAll(standardNormalizedData);
+        } catch (e) {
+          print(
+              'Normalized benchmark service not available, using fallback: $e');
+          // Fallback: normalize the absolute data
+          for (String id in standardBenchmarkIdsToLoad) {
+            final absoluteData = _absoluteBenchmarkData.firstWhere(
+              (data) => data.id == 'benchmark_$id' || data.id == id,
+              orElse: () => BenchmarkData(
+                  id: id,
+                  name: id,
+                  symbol: id,
+                  timeframe: _selectedTimeframe,
+                  data: [],
+                  returnPercent: 0.0),
+            );
+
+            if (absoluteData.data.isNotEmpty) {
+              final normalizedData =
+                  _normalizeToHundredPercent(absoluteData.data);
+              final returnPercent = normalizedData.isNotEmpty
+                  ? normalizedData.last.value - 100
+                  : 0.0;
+
+              newNormalizedData.add(BenchmarkData(
+                id: absoluteData.id,
+                name: absoluteData.name,
+                symbol: absoluteData.symbol,
+                timeframe: _selectedTimeframe,
+                data: normalizedData,
+                returnPercent: returnPercent,
+              ));
+            }
+          }
+        }
+      }
+
+      setState(() {
+        _normalizedBenchmarkData = newNormalizedData;
+        if (_isNormalizedView) {
+          _benchmarkData = _normalizedBenchmarkData;
+        }
+      });
+    } catch (e) {
+      print('Error loading normalized benchmark data: $e');
+    }
+  }
+
+  // NEW: Helper method to normalize data to 100% start
+  List<PerformancePoint> _normalizeToHundredPercent(
+      List<PerformancePoint> data) {
+    if (data.isEmpty) return [];
+
+    final baseValue = data.first.value;
+    if (baseValue <= 0) return data;
+
+    return data
+        .map((point) => PerformancePoint(
+              date: point.date,
+              value: (point.value / baseValue) * 100,
+            ))
+        .toList();
+  }
+
+  // NEW: Toggle between views
+  void _toggleView() {
+    setState(() {
+      _isNormalizedView = !_isNormalizedView;
+      // Switch the data source
+      _benchmarkData =
+          _isNormalizedView ? _normalizedBenchmarkData : _absoluteBenchmarkData;
+    });
   }
 
   String _getApiIntervalForTimeframe(String timeframe) {
@@ -481,11 +606,11 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
       case '3M':
         return '1d';
       case '6M':
-        return '1d'; // For 6M, daily might be too much, weekly could be an option
+        return '1d';
       case '1Y':
         return '1wk';
       case 'All':
-        return '1mo'; // For 'All' (e.g., 3 years), monthly is good
+        return '1mo';
       default:
         return '1d';
     }
@@ -498,14 +623,12 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     final expectedPoints =
         _getExpectedDataPointsForTimeframe(_selectedTimeframe);
     if (points.length == expectedPoints || points.length < 2) {
-      // If too few points, no need to sample
       return points;
     }
 
     if (points.length > expectedPoints) {
       final sampledPoints = <PerformancePoint>[];
-      final step = (points.length - 1) /
-          (expectedPoints - 1); // Ensure first and last points are included
+      final step = (points.length - 1) / (expectedPoints - 1);
 
       for (int i = 0; i < expectedPoints; i++) {
         final index = (i * step).round();
@@ -513,36 +636,32 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
           sampledPoints.add(points[index]);
         }
       }
-      // Ensure the last point is always included if not already by rounding
+
       if (sampledPoints.isEmpty ||
           sampledPoints.last.date != points.last.date) {
         if (sampledPoints.isNotEmpty && sampledPoints.length >= expectedPoints)
           sampledPoints.removeLast();
         sampledPoints.add(points.last);
       }
-      return sampledPoints
-          .take(expectedPoints)
-          .toList(); // Ensure we don't exceed expected points
+      return sampledPoints.take(expectedPoints).toList();
     }
-    // If we have fewer points than expected (but more than 1), just return them.
-    // Or you could implement interpolation if needed, but for now, this is simpler.
     return points;
   }
 
   int _getExpectedDataPointsForTimeframe(String timeframe) {
     switch (timeframe) {
       case '1W':
-        return 7; // Daily for a week
+        return 7;
       case '1M':
-        return 15; // ~Every other day for a month
+        return 15;
       case '3M':
-        return 15; // ~Weekly for 3 months
+        return 15;
       case '6M':
-        return 15; // ~Bi-weekly for 6 months
+        return 15;
       case '1Y':
-        return 12; // Monthly for a year
+        return 12;
       case 'All':
-        return 20; // More points for longer "All" views
+        return 20;
       default:
         return 15;
     }
@@ -712,20 +831,16 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                       );
                     }
                     if (mounted) {
-                      // Widget'ın hala ağaçta olduğundan emin ol
                       setState(() {});
                     }
-                    // Optionally, trigger validation as user types after a delay
                   },
                 ),
               ),
               const SizedBox(width: 12),
               ElevatedButton(
-                onPressed: _customTickerController.text
-                            .trim()
-                            .isEmpty || // YENİ EKLENEN KONTROLssss
+                onPressed: _customTickerController.text.trim().isEmpty ||
                         _isValidatingTicker
-                    ? null // Koşullardan biri true ise buton devre dışı
+                    ? null
                     : _addCustomTicker,
                 style: ElevatedButton.styleFrom(
                     backgroundColor: accent,
@@ -756,7 +871,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                     setState(() {
                       _selectedBenchmarkIds.remove('CUSTOM_$ticker');
                     });
-                    _loadBenchmarkData(); // Reload data after removing a custom ticker
+                    _loadBenchmarkData();
                   },
                 );
               }).toList(),
@@ -894,6 +1009,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     );
   }
 
+  // UPDATED: Performance chart with toggle
   Widget _buildPerformanceChart() {
     final cardColor =
         Theme.of(context).extension<AppThemeExtension>()?.cardColor ??
@@ -908,49 +1024,78 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     Map<String, List<FlSpot>> normalizedDataSets = {};
     int expectedPoints = _getExpectedDataPointsForTimeframe(_selectedTimeframe);
 
-    if (_portfolioPerformanceData.isNotEmpty) {
+    // Use the appropriate portfolio data based on view
+    final currentPortfolioData = _isNormalizedView
+        ? _normalizedPortfolioData
+        : _portfolioPerformanceData;
+
+    if (currentPortfolioData.isNotEmpty) {
       final List<FlSpot> portfolioSpots = [];
-      double baseValue = _portfolioPerformanceData.first.value;
-      if (baseValue > 0) {
-        // Portföy verisini de normalize et (eğer beklenen nokta sayısından farklıysa)
-        List<PerformancePoint> pointsToNormalize = _portfolioPerformanceData
-                    .length ==
-                expectedPoints
-            ? _portfolioPerformanceData
-            : _normalizeDataPointsToMatchTimeframe(_portfolioPerformanceData);
+
+      if (_isNormalizedView) {
+        // For normalized view, data is already normalized to 100%
+        List<PerformancePoint> pointsToNormalize =
+            currentPortfolioData.length == expectedPoints
+                ? currentPortfolioData
+                : _normalizeDataPointsToMatchTimeframe(currentPortfolioData);
 
         for (int i = 0; i < pointsToNormalize.length; i++) {
-          double normalizedValue =
-              (pointsToNormalize[i].value / baseValue) * 100;
-          portfolioSpots.add(FlSpot(i.toDouble(), normalizedValue));
+          portfolioSpots.add(FlSpot(i.toDouble(), pointsToNormalize[i].value));
         }
-        if (portfolioSpots.isNotEmpty) {
-          // Sadece doluysa ekle
-          normalizedDataSets['Portfolio'] = portfolioSpots;
+      } else {
+        // For absolute view, normalize to start at 100 for chart display
+        double baseValue = currentPortfolioData.first.value;
+        if (baseValue > 0) {
+          List<PerformancePoint> pointsToNormalize =
+              currentPortfolioData.length == expectedPoints
+                  ? currentPortfolioData
+                  : _normalizeDataPointsToMatchTimeframe(currentPortfolioData);
+
+          for (int i = 0; i < pointsToNormalize.length; i++) {
+            double normalizedValue =
+                (pointsToNormalize[i].value / baseValue) * 100;
+            portfolioSpots.add(FlSpot(i.toDouble(), normalizedValue));
+          }
         }
+      }
+
+      if (portfolioSpots.isNotEmpty) {
+        normalizedDataSets['Portfolio'] = portfolioSpots;
       }
     }
 
     for (var benchmark in _benchmarkData) {
       final List<FlSpot> spots = [];
       if (benchmark.data.isNotEmpty) {
-        double baseValue = benchmark.data.first.value;
-        if (baseValue > 0) {
-          // Benchmark verisini de normalize et (eğer beklenen nokta sayısından farklıysa)
+        if (_isNormalizedView) {
+          // For normalized view, data is already normalized to 100%
           List<PerformancePoint> pointsToNormalize =
               benchmark.data.length == expectedPoints
                   ? benchmark.data
                   : _normalizeDataPointsToMatchTimeframe(benchmark.data);
 
           for (int i = 0; i < pointsToNormalize.length; i++) {
-            double normalizedValue =
-                (pointsToNormalize[i].value / baseValue) * 100;
-            spots.add(FlSpot(i.toDouble(), normalizedValue));
+            spots.add(FlSpot(i.toDouble(), pointsToNormalize[i].value));
           }
-          if (spots.isNotEmpty) {
-            // Sadece doluysa ekle
-            normalizedDataSets[benchmark.name] = spots;
+        } else {
+          // For absolute view, normalize to start at 100 for chart display
+          double baseValue = benchmark.data.first.value;
+          if (baseValue > 0) {
+            List<PerformancePoint> pointsToNormalize =
+                benchmark.data.length == expectedPoints
+                    ? benchmark.data
+                    : _normalizeDataPointsToMatchTimeframe(benchmark.data);
+
+            for (int i = 0; i < pointsToNormalize.length; i++) {
+              double normalizedValue =
+                  (pointsToNormalize[i].value / baseValue) * 100;
+              spots.add(FlSpot(i.toDouble(), normalizedValue));
+            }
           }
+        }
+
+        if (spots.isNotEmpty) {
+          normalizedDataSets[benchmark.name] = spots;
         }
       }
     }
@@ -965,28 +1110,44 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
       );
     }
 
-    // Ensure all datasets have the same number of points for x-axis consistency if needed,
-    // or rely on FlSpot's x value for correct plotting. _normalizeDataPointsToMatchTimeframe should handle this.
-    // However, if _portfolioPerformanceData and _benchmarkData have different original date points
-    // before normalization to `expectedPoints`, their x-axis might not perfectly align semantically
-    // if `_normalizeDataPointsToMatchTimeframe` isn't perfectly aligning them to common date points.
-    // For simplicity, we assume `i.toDouble()` as x-axis is sufficient after normalization.
-
     return FuturisticCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Performance Comparison',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary)),
-          const SizedBox(height: 8),
-          const Text('Normalized to 100 at start of period',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                  color: AppTheme.textSecondary)),
+          // UPDATED: Header with toggle
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _isNormalizedView
+                          ? 'Normalized Performance Comparison'
+                          : 'Performance Comparison',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      _isNormalizedView
+                          ? 'All assets start at 100% - shows relative performance'
+                          : 'Assets normalized to 100% at start for comparison',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // NEW: Toggle button
+              _buildViewToggle(),
+            ],
+          ),
           const SizedBox(height: 16),
           SizedBox(
             height: 300,
@@ -1004,21 +1165,19 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                       AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
-                      showTitles: true, reservedSize: 32,
+                      showTitles: true,
+                      reservedSize: 32,
                       interval: expectedPoints > 5
                           ? (expectedPoints / 5).floorToDouble()
-                          : 1, // Use floorToDouble
+                          : 1,
                       getTitlesWidget: (value, meta) {
                         final index = value.toInt();
                         List<DateTime> dateSeries = [];
 
-                        // Get dates from a representative dataset (e.g., portfolio or first benchmark)
-                        // Ensure the dataset used for dates actually has data and matches expectedPoints count.
                         if (normalizedDataSets['Portfolio'] != null &&
-                            _portfolioPerformanceData.length >=
-                                expectedPoints) {
+                            currentPortfolioData.length >= expectedPoints) {
                           dateSeries = _normalizeDataPointsToMatchTimeframe(
-                                  _portfolioPerformanceData)
+                                  currentPortfolioData)
                               .map((p) => p.date)
                               .toList();
                         } else if (_benchmarkData.isNotEmpty &&
@@ -1028,11 +1187,9 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                                   _benchmarkData.first.data)
                               .map((p) => p.date)
                               .toList();
-                        } else if (_portfolioPerformanceData.isNotEmpty) {
-                          // Fallback if counts don't match expectedPoints
-                          dateSeries = _portfolioPerformanceData
-                              .map((p) => p.date)
-                              .toList();
+                        } else if (currentPortfolioData.isNotEmpty) {
+                          dateSeries =
+                              currentPortfolioData.map((p) => p.date).toList();
                         }
 
                         if (dateSeries.isEmpty ||
@@ -1052,11 +1209,22 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) => Text(
-                            value.toInt().toString(),
-                            style:
-                                TextStyle(color: textSecondary, fontSize: 10))),
+                        reservedSize: 50,
+                        getTitlesWidget: (value, meta) {
+                          if (_isNormalizedView) {
+                            // For normalized view, show actual percentage values
+                            return Text('${value.toInt()}%',
+                                style: TextStyle(
+                                    color: textSecondary, fontSize: 10));
+                          } else {
+                            // For absolute view, show as relative percentage
+                            final displayValue = value - 100;
+                            return Text(
+                                '${displayValue >= 0 ? '+' : ''}${displayValue.toInt()}%',
+                                style: TextStyle(
+                                    color: textSecondary, fontSize: 10));
+                          }
+                        }),
                   ),
                 ),
                 borderData: FlBorderData(show: false),
@@ -1068,8 +1236,14 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                       return touchedSpots.map((spot) {
                         final datasetName = _getDatasetNameForLineId(
                             spot.barIndex, normalizedDataSets.keys.toList());
+                        final displayValue =
+                            _isNormalizedView ? spot.y : spot.y - 100;
+                        final suffix = _isNormalizedView ? '' : '%';
+                        final prefix = _isNormalizedView
+                            ? ''
+                            : (displayValue >= 0 ? '+' : '');
                         return LineTooltipItem(
-                          '$datasetName: ${spot.y.toStringAsFixed(2)}',
+                          '$datasetName: $prefix${displayValue.toStringAsFixed(2)}$suffix',
                           TextStyle(
                               color: _getColorForLineId(spot.barIndex,
                                   normalizedDataSets.keys.toList()),
@@ -1079,6 +1253,19 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
                     },
                   ),
                 ),
+                // Add baseline at 100% if normalized view
+                extraLinesData: _isNormalizedView
+                    ? null
+                    : ExtraLinesData(
+                        horizontalLines: [
+                          HorizontalLine(
+                            y: 100,
+                            color: textSecondary.withOpacity(0.3),
+                            strokeWidth: 1,
+                            dashArray: [5, 5],
+                          ),
+                        ],
+                      ),
               ),
             ),
           ),
@@ -1087,7 +1274,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
             spacing: 16,
             runSpacing: 12,
             children: normalizedDataSets.keys.map((name) {
-              final id = _getBenchmarkIdForName(name); // Get ID from name
+              final id = _getBenchmarkIdForName(name);
               final color = (name == 'Portfolio')
                   ? _portfolioColor
                   : _getBenchmarkColor(id);
@@ -1145,6 +1332,80 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     );
   }
 
+  // NEW: Build toggle button widget
+  Widget _buildViewToggle() {
+    final accent =
+        Theme.of(context).extension<AppThemeExtension>()?.accentColor ??
+            AppTheme.accentColor;
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: accent.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildToggleButton(
+            label: '\$',
+            isActive: !_isNormalizedView,
+            tooltip: 'Absolute Values',
+            onTap: () {
+              if (_isNormalizedView) _toggleView();
+            },
+          ),
+          _buildToggleButton(
+            label: '%',
+            isActive: _isNormalizedView,
+            tooltip: 'Normalized View (100% start)',
+            onTap: () {
+              if (!_isNormalizedView) _toggleView();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleButton({
+    required String label,
+    required bool isActive,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    final accent =
+        Theme.of(context).extension<AppThemeExtension>()?.accentColor ??
+            AppTheme.accentColor;
+
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isActive ? accent : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isActive ? Colors.black : AppTheme.textSecondary,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   List<LineChartBarData> _createLineData(Map<String, List<FlSpot>> dataSets) {
     final List<LineChartBarData> lineBarsData = [];
     List<String> sortedKeys = dataSets.keys.toList();
@@ -1170,9 +1431,9 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
           barWidth: (name == 'Portfolio') ? 3.5 : (isCustom ? 2.5 : 2.0),
           isStrokeCapRound: true,
           dotData: FlDotData(show: false),
-          dashArray: isCustom ? [4, 4] : null, // Özel ticker için kesikli çizgi
+          dashArray: isCustom ? [4, 4] : null,
           belowBarData: BarAreaData(
-            show: name == 'Portfolio', // Sadece portföy için alanı göster
+            show: name == 'Portfolio',
             gradient: LinearGradient(
               colors: [color.withOpacity(0.3), color.withOpacity(0.0)],
               begin: Alignment.topCenter,
@@ -1194,9 +1455,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
       (id) => !_isCustomBenchmarkId(id),
       orElse: () => '',
     );
-    if (firstStandardBenchmarkId.isEmpty)
-      return const SizedBox
-          .shrink(); // Karşılaştırılacak standart benchmark yok
+    if (firstStandardBenchmarkId.isEmpty) return const SizedBox.shrink();
 
     final benchmarkName = _getBenchmarkName(firstStandardBenchmarkId);
     final textPrim =
@@ -1211,11 +1470,9 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
 
     Color getMetricColor(double value, bool higherIsBetter) {
       if (value > 0 && higherIsBetter) return positiveColor;
-      if (value < 0 && !higherIsBetter)
-        return positiveColor; // e.g. lower beta might be "good" if it's very low
+      if (value < 0 && !higherIsBetter) return positiveColor;
       if (value < 0 && higherIsBetter) return negativeColor;
-      if (value > 0 && !higherIsBetter)
-        return negativeColor; // e.g. higher beta might be "bad" if too high
+      if (value > 0 && !higherIsBetter) return negativeColor;
       return textPrim;
     }
 
@@ -1332,6 +1589,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     );
   }
 
+  // UPDATED: Return statistics with normalized view support
   Widget _buildReturnStatistics() {
     final textPrim =
         Theme.of(context).extension<AppThemeExtension>()?.textPrimary ??
@@ -1371,6 +1629,16 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
 
     if (_portfolioPerformanceData.isNotEmpty) {
       final portfolioName = widget.portfolio?.name ?? 'All Portfolios';
+
+      // Calculate display return based on view
+      double displayReturn;
+      if (_isNormalizedView && _normalizedPortfolioData.isNotEmpty) {
+        displayReturn = _normalizedPortfolioData.last.value -
+            100; // Convert from 115% to +15%
+      } else {
+        displayReturn = _portfolioReturn; // Traditional percentage return
+      }
+
       rows.add(TableRow(
         decoration: BoxDecoration(
             color: _portfolioColor.withOpacity(0.1),
@@ -1396,18 +1664,17 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
           Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                  '${_portfolioReturn >= 0 ? '+' : ''}${_portfolioReturn.toStringAsFixed(2)}%',
+                  '${displayReturn >= 0 ? '+' : ''}${displayReturn.toStringAsFixed(2)}%',
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: _portfolioReturn >= 0
-                          ? positiveColor
-                          : negativeColor),
+                      color:
+                          displayReturn >= 0 ? positiveColor : negativeColor),
                   textAlign: TextAlign.right)),
         ],
       ));
     }
 
-    // Sıralamayı, efsanedekiyle tutarlı hale getirmek için _benchmarkData'yı _selectedBenchmarkIds'ye göre sırala
+    // Sort benchmarks consistently
     List<BenchmarkData> sortedBenchmarkData = [];
     for (String id in _selectedBenchmarkIds) {
       var found = _benchmarkData.where((b) => b.id == id);
@@ -1417,11 +1684,12 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     }
 
     for (final benchmark in sortedBenchmarkData) {
-      // Sıralanmış listeyi kullan
-      final benchmarkId = benchmark
-          .id; // benchmark.id zaten doğru ID'yi ('CUSTOM_XXX' veya 'SP500') içermeli
+      final benchmarkId = benchmark.id;
       final color = _getBenchmarkColor(benchmarkId);
       final isCustom = _isCustomBenchmarkId(benchmarkId);
+
+      // Use the return from the appropriate data based on view
+      double displayReturn = benchmark.returnPercent;
 
       rows.add(TableRow(
         decoration: BoxDecoration(
@@ -1458,11 +1726,9 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
           Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                  '${benchmark.returnPercent >= 0 ? '+' : ''}${benchmark.returnPercent.toStringAsFixed(2)}%',
+                  '${displayReturn >= 0 ? '+' : ''}${displayReturn.toStringAsFixed(2)}%',
                   style: TextStyle(
-                      color: benchmark.returnPercent >= 0
-                          ? positiveColor
-                          : negativeColor,
+                      color: displayReturn >= 0 ? positiveColor : negativeColor,
                       fontWeight:
                           isCustom ? FontWeight.bold : FontWeight.normal),
                   textAlign: TextAlign.right)),
@@ -1474,8 +1740,11 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Return Comparison',
-              style: TextStyle(
+          Text(
+              _isNormalizedView
+                  ? 'Normalized Return Comparison'
+                  : 'Return Comparison',
+              style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.textPrimary)),
@@ -1496,7 +1765,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
   String _getDateLabel(DateTime date) {
     switch (_selectedTimeframe) {
       case '1W':
-        return '${date.day}'; // Belki gün adı daha iyi olur: DateFormat('E').format(date)
+        return '${date.day}';
       case '1M':
       case '3M':
         return '${date.day}/${date.month}';
@@ -1510,7 +1779,6 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     }
   }
 
-  // *** GÜNCELLENMİŞ FONKSİYON ***
   Color _getBenchmarkColor(String benchmarkId) {
     if (_isCustomBenchmarkId(benchmarkId)) {
       String ticker = benchmarkId.substring('CUSTOM_'.length);
@@ -1519,21 +1787,16 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
         return _customTickerSpecificColors[
             hashCode % _customTickerSpecificColors.length];
       }
-      // Fallback if custom colors list is empty
       return Colors.grey.shade700;
     } else {
-      // Standart benchmarklar için: ID'nin hash'ini kullanarak _benchmarkColors listesinden bir renk seç.
-      // Bu, _selectedBenchmarkIds listesindeki sıradan bağımsız, tutarlı bir renk ataması sağlar.
       int idHash = benchmarkId.hashCode.abs();
       if (_benchmarkColors.isNotEmpty) {
         return _benchmarkColors[idHash % _benchmarkColors.length];
       }
-      // Fallback if benchmark colors list is empty
       return Colors.grey.shade500;
     }
   }
 
-  // *** GÜNCELLENMİŞ FONKSİYON ***
   String _getBenchmarkName(String benchmarkId) {
     if (_isCustomBenchmarkId(benchmarkId)) {
       return benchmarkId.substring('CUSTOM_'.length);
@@ -1551,25 +1814,17 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     return benchmark.name;
   }
 
-  // *** GÜNCELLENMİŞ FONKSİYON ***
   String _getBenchmarkIdForName(String name) {
-    // Önce _benchmarkData'dan (yani grafikte gerçekten olan verilerden) ID'yi bulmaya çalış
+    // First try to find from _benchmarkData
     for (final data in _benchmarkData) {
       if (data.name == name) {
-        return data.id; // Bu ID "SP500" veya "CUSTOM_AAPL" olabilir
+        return data.id;
       }
     }
-    // Eğer _benchmarkData'da yoksa (örneğin henüz yüklenmemişse veya efsane dışında bir yerde çağrıldıysa)
-    // _availableBenchmarks'tan (standart benchmarklar için) bulmayı dene
+
+    // Then try from _availableBenchmarks
     final availableInfo =
         _availableBenchmarks.firstWhere((b) => b.name == name, orElse: () {
-      // Eğer bu da bulunamazsa ve isim 'CUSTOM_' ile başlamıyorsa,
-      // potansiyel bir özel ticker olabilir, bu durumda 'CUSTOM_' prefix'ini ekleyerek ID oluştur.
-      // Bu durum, _benchmarkData henüz tam oluşmadığında efsane çizilirken olabilir.
-      // Ancak _isCustomBenchmarkId kontrolü zaten _getBenchmarkColor'da var.
-      // En güvenlisi, eğer yukarıdaki kontrollerde bulunamazsa, adı olduğu gibi ID kabul etmek
-      // ve _getBenchmarkColor'ın bunu işlemesini beklemek.
-      // Veya daha spesifik olarak:
       bool mightBeCustom = true;
       for (var bInfo in _availableBenchmarks) {
         if (bInfo.name == name) {
@@ -1598,7 +1853,6 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
   }
 
   String _getDatasetNameForLineId(int lineId, List<String> datasetKeys) {
-    // datasetKeys, _createLineData'da oluşturulan sırayla gelmeli
     if (lineId >= 0 && lineId < datasetKeys.length) {
       return datasetKeys[lineId];
     }
@@ -1611,8 +1865,7 @@ class _BenchmarkComparisonScreenState extends State<BenchmarkComparisonScreen> {
     final name = datasetKeys[lineId];
     if (name == 'Portfolio') return _portfolioColor;
 
-    final id = _getBenchmarkIdForName(
-        name); // Ensure we get the correct ID ('CUSTOM_XXX' or 'SP500')
+    final id = _getBenchmarkIdForName(name);
     return _getBenchmarkColor(id);
   }
 }

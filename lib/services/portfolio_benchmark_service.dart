@@ -49,6 +49,105 @@ class PortfolioBenchmarkService {
     }
   }
 
+  static Future<List<BenchmarkData>> getNormalizedBenchmarkPerformance(
+    String timeframe,
+    List<String> benchmarks,
+  ) async {
+    try {
+      // Construct benchmark string for API
+      final benchmarksStr = benchmarks.join(',');
+
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/benchmark/normalized-performance?timeframe=$timeframe&benchmarks=$benchmarksStr'),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+
+        if (jsonData['status'] == 'success' && jsonData['data'] != null) {
+          List<dynamic> benchmarkList = jsonData['data'];
+          return benchmarkList
+              .map((data) => BenchmarkData.fromJson(data))
+              .toList();
+        } else {
+          throw Exception(jsonData['message'] ??
+              'Failed to load normalized benchmark data');
+        }
+      } else {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+    } catch (e) {
+      // Return mock normalized data for development
+      return _getMockNormalizedBenchmarkData(timeframe, benchmarks);
+    }
+  }
+
+  /// Generate mock normalized benchmark data (starts at 100%)
+  static List<BenchmarkData> _getMockNormalizedBenchmarkData(
+    String timeframe,
+    List<String> benchmarks,
+  ) {
+    final List<BenchmarkData> result = [];
+    final now = DateTime.now();
+
+    // Number of data points based on timeframe
+    int dataPoints = _getDataPointsForTimeframe(timeframe);
+
+    for (String benchmark in benchmarks) {
+      // Select return pattern based on benchmark
+      bool isPositive =
+          benchmark.contains('SP500') || benchmark.contains('NASDAQ');
+      bool isVolatile =
+          benchmark.contains('CRYPTO') || benchmark.contains('VIX');
+
+      List<PerformancePoint> data = [];
+      double value = 100.0; // Starting value (normalized to 100%)
+
+      for (int i = 0; i < dataPoints; i++) {
+        // Generate movement with properties matching the benchmark type
+        double volatilityFactor = isVolatile ? 2.0 : 1.0;
+        double directionBias = isPositive ? 0.15 : -0.05;
+
+        // Realistic movement: smaller percentage changes from 100% baseline
+        double movementPercent =
+            (directionBias + (0.3 - (i % 7) / 15)) * volatilityFactor;
+        value = value * (1 + movementPercent / 100); // Apply percentage change
+
+        // Prevent going too low (below 50% would be extreme)
+        if (value < 50) value = 50;
+
+        // Calculate date based on timeframe and point index
+        DateTime date = _getDateForDataPoint(now, timeframe, i, dataPoints);
+
+        // Add data point
+        data.add(PerformancePoint(
+          date: date,
+          value: value,
+        ));
+      }
+
+      // Calculate return as difference from 100%
+      double returnPercent = 0.0;
+      if (data.isNotEmpty) {
+        returnPercent = data.last.value - 100.0; // Convert 105% to +5%
+      }
+
+      result.add(BenchmarkData(
+        id: benchmark.startsWith('CUSTOM_')
+            ? benchmark
+            : 'benchmark_$benchmark',
+        name: _getBenchmarkName(benchmark),
+        symbol: benchmark,
+        timeframe: timeframe,
+        data: data,
+        returnPercent: returnPercent,
+      ));
+    }
+
+    return result;
+  }
+
   /// Compare portfolio performance against selected benchmarks
   /// Returns comparative metrics like alpha, beta, correlation, etc.
   static Future<PortfolioBenchmarkMetrics> compareToBenchmark(

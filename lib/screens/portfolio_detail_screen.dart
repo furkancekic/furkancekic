@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common_widgets.dart';
 import '../widgets/mini_chart.dart';
+import '../widgets/switchable_performance_chart.dart'; // Add this import
 import '../models/portfolio.dart';
 import '../models/position.dart';
 import '../services/portfolio_service.dart';
@@ -25,10 +26,8 @@ class PortfolioDetailScreen extends StatefulWidget {
 class _PortfolioDetailScreenState extends State<PortfolioDetailScreen> {
   late Portfolio _portfolio;
   bool _isLoading = true;
-  bool _isPerformanceLoading = true;
   String _selectedTimeframe = '1M';
   final List<String> _timeframes = ['1W', '1M', '3M', '6M', '1Y', 'All'];
-  List<PerformancePoint> _performanceData = [];
 
   // Track which positions are expanded
   final Set<String> _expandedPositions = {};
@@ -38,7 +37,6 @@ class _PortfolioDetailScreenState extends State<PortfolioDetailScreen> {
     super.initState();
     _portfolio = widget.portfolio;
     _loadPortfolioDetails();
-    _loadPerformanceData();
   }
 
   Future<void> _loadPortfolioDetails() async {
@@ -67,40 +65,8 @@ class _PortfolioDetailScreenState extends State<PortfolioDetailScreen> {
     }
   }
 
-  Future<void> _loadPerformanceData() async {
-    setState(() {
-      _isPerformanceLoading = true;
-    });
-
-    try {
-      final performance = await PortfolioService.getPortfolioPerformance(
-        _portfolio.id!,
-        _selectedTimeframe,
-      );
-      setState(() {
-        _performanceData = performance.data;
-        _isPerformanceLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isPerformanceLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load performance data: $e'),
-            backgroundColor: AppTheme.negativeColor,
-          ),
-        );
-      }
-    }
-  }
-
   Future<void> _refreshData() async {
-    await Future.wait([
-      _loadPortfolioDetails(),
-      _loadPerformanceData(),
-    ]);
+    await _loadPortfolioDetails();
   }
 
   void _navigateToAddPosition() async {
@@ -260,7 +226,7 @@ class _PortfolioDetailScreenState extends State<PortfolioDetailScreen> {
 
                       const SizedBox(height: 24),
 
-                      // Performance chart section
+                      // Performance chart section - UPDATED WITH SWITCHABLE CHART
                       _buildPerformanceSection(),
 
                       const SizedBox(height: 24),
@@ -413,7 +379,6 @@ class _PortfolioDetailScreenState extends State<PortfolioDetailScreen> {
       children: [
         // Section title with timeframe selector
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
               'Performance',
@@ -423,221 +388,63 @@ class _PortfolioDetailScreenState extends State<PortfolioDetailScreen> {
                 color: AppTheme.textPrimary,
               ),
             ),
-            SizedBox(
-              height: 32,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                shrinkWrap: true,
-                itemCount: _timeframes.length,
-                itemBuilder: (context, index) {
-                  final timeframe = _timeframes[index];
-                  final isSelected = timeframe == _selectedTimeframe;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: ChoiceChip(
-                      label: Text(
-                        timeframe,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isSelected
-                              ? Colors.black
-                              : AppTheme.textSecondary,
-                        ),
-                      ),
-                      selected: isSelected,
-                      selectedColor: AppTheme.accentColor,
-                      backgroundColor: AppTheme.cardColor,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _selectedTimeframe = timeframe;
-                          });
-                          _loadPerformanceData();
-                        }
-                      },
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 0),
-                      labelPadding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 0),
-                    ),
-                  );
-                },
-              ),
-            ),
+            const Spacer(),
+            _buildTimeframeSelector(),
           ],
         ),
 
         const SizedBox(height: 16),
 
-        // Performance chart
+        // UPDATED: Use SwitchablePerformanceChart instead of the old chart
         FuturisticCard(
-          padding: const EdgeInsets.all(12),
-          child: _isPerformanceLoading
-              ? const Center(
-                  child: SizedBox(
-                    height: 200,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppTheme.accentColor,
-                      ),
-                    ),
-                  ),
-                )
-              : _performanceData.isEmpty
-                  ? const SizedBox(
-                      height: 200,
-                      child: Center(
-                        child: Text(
-                          'No performance data available',
-                          style: TextStyle(color: AppTheme.textSecondary),
-                        ),
-                      ),
-                    )
-                  : SizedBox(
-                      height: 200,
-                      child: LineChart(
-                        LineChartData(
-                          gridData: const FlGridData(show: false),
-                          titlesData: const FlTitlesData(show: false),
-                          borderData: FlBorderData(show: false),
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: _createChartSpots(),
-                              isCurved: true,
-                              color: AppTheme
-                                  .accentColor, // Changed from colors to color
-                              barWidth: 3,
-                              isStrokeCapRound: true,
-                              dotData: const FlDotData(show: false),
-                              belowBarData: BarAreaData(
-                                show: true,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppTheme.accentColor.withOpacity(0.3),
-                                    AppTheme.accentColor.withOpacity(0.0),
-                                  ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
-                              ),
-                            ),
-                          ],
-                          lineTouchData: LineTouchData(
-                            touchTooltipData: LineTouchTooltipData(
-                              tooltipBgColor:
-                                  AppTheme.cardColor.withOpacity(0.8),
-                              getTooltipItems:
-                                  (List<LineBarSpot> touchedSpots) {
-                                return touchedSpots.map((spot) {
-                                  final date =
-                                      _performanceData[spot.x.toInt()].date;
-                                  final value = spot.y;
-                                  return LineTooltipItem(
-                                    '${_formatDate(date)}\n\$${value.toStringAsFixed(2)}',
-                                    const TextStyle(
-                                        color: AppTheme.textPrimary),
-                                  );
-                                }).toList();
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-        ),
-
-        if (_performanceData.isNotEmpty) ...[
-          const SizedBox(height: 16),
-
-          // Performance metrics
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildPerformanceMetric(
-                'Start',
-                '\$${_performanceData.first.value.toStringAsFixed(2)}',
-                AppTheme.textPrimary,
-              ),
-              _buildPerformanceMetric(
-                'End',
-                '\$${_performanceData.last.value.toStringAsFixed(2)}',
-                AppTheme.textPrimary,
-              ),
-              _buildPerformanceMetric(
-                'Change',
-                '${_getPerformanceChangePercent()}',
-                _getPerformanceColor(),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-
-  List<FlSpot> _createChartSpots() {
-    List<FlSpot> spots = [];
-
-    for (int i = 0; i < _performanceData.length; i++) {
-      spots.add(FlSpot(i.toDouble(), _performanceData[i].value));
-    }
-
-    return spots;
-  }
-
-  Widget _buildPerformanceMetric(String label, String value, Color valueColor) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: valueColor,
+          padding: const EdgeInsets.all(16),
+          child: SwitchablePerformanceChart(
+            portfolioId: _portfolio.id!,
+            timeframe: _selectedTimeframe,
+            height: 320, // Slightly taller to accommodate the toggle and extra info
           ),
         ),
       ],
     );
   }
 
-  String _getPerformanceChangePercent() {
-    if (_performanceData.isEmpty || _performanceData.length < 2) {
-      return '0.00%';
-    }
-
-    final startValue = _performanceData.first.value;
-    final endValue = _performanceData.last.value;
-
-    if (startValue == 0) {
-      return 'N/A';
-    }
-
-    final changePercent = ((endValue - startValue) / startValue) * 100;
-    final isPositive = changePercent >= 0;
-
-    return '${isPositive ? '+' : ''}${changePercent.toStringAsFixed(2)}%';
-  }
-
-  Color _getPerformanceColor() {
-    if (_performanceData.isEmpty || _performanceData.length < 2) {
-      return AppTheme.textPrimary;
-    }
-
-    final startValue = _performanceData.first.value;
-    final endValue = _performanceData.last.value;
-
-    return endValue >= startValue
-        ? AppTheme.positiveColor
-        : AppTheme.negativeColor;
+  Widget _buildTimeframeSelector() {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: _timeframes.map((timeframe) {
+          final isSelected = _selectedTimeframe == timeframe;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedTimeframe = timeframe;
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected ? AppTheme.accentColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                timeframe,
+                style: TextStyle(
+                  color: isSelected ? Colors.black : AppTheme.textSecondary,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 
   Widget _buildAssetAllocation() {
