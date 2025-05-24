@@ -166,7 +166,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
       _loadPortfolios(); // Refresh when returning
     });
   }
-  
+
   void _navigateToBenchmarkComparison([Portfolio? portfolio]) {
     Navigator.push(
       context,
@@ -216,7 +216,27 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
     final change = lastValue - firstValue;
     final changePercent = firstValue > 0 ? (change / firstValue) * 100 : 0;
     final isPositive = change >= 0;
+    // --- ÇÖZÜM BAŞLANGICI ---
+    // Y ekseni ızgarası ve başlıkları için güvenli bir aralık hesapla
+    double yAxisValueSpan = (lastValue - firstValue).abs();
+    double yAxisInterval;
 
+    if (yAxisValueSpan == 0) {
+      // Eğer tüm veri noktaları aynıysa veya sadece bir veri noktası varsa (düz çizgi),
+      // varsayılan bir aralık kullan. 1.0 genellikle iyi bir başlangıçtır.
+      // Grafikteki değerlere göre daha akıllı bir varsayılan da belirlenebilir.
+      yAxisInterval = 1.0;
+    } else {
+      yAxisInterval =
+          yAxisValueSpan / 5; // Genellikle 5 ızgara çizgisi hedeflenir
+    }
+
+    // fl_chart için aralığın kesinlikle sıfır olmadığından emin ol (çok küçük pozitif değerler de sorun olabilir)
+    // Ancak asıl hata != 0 olduğu için bu kontrol yeterli.
+    if (yAxisInterval == 0) {
+      yAxisInterval = 1.0; // Son bir güvenlik önlemi
+    }
+    // --- ÇÖZÜM SONU ---
     return FuturisticCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,9 +541,11 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   // New widget to replace the asset allocation pie chart
   Widget _buildBenchmarkComparisonCard() {
     if (_portfolios.isEmpty) return const SizedBox.shrink();
-    
-    final accent = Theme.of(context).extension<AppThemeExtension>()?.accentColor ?? AppTheme.accentColor;
-    
+
+    final accent =
+        Theme.of(context).extension<AppThemeExtension>()?.accentColor ??
+            AppTheme.accentColor;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: FuturisticCard(
@@ -548,7 +570,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Sample benchmark options
             Wrap(
               spacing: 8,
@@ -560,9 +582,9 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 _buildBenchmarkChip('Gold', Colors.amber),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             Center(
               child: ElevatedButton.icon(
                 onPressed: () => _navigateToBenchmarkComparison(),
@@ -583,7 +605,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
       ),
     );
   }
-  
+
   Widget _buildBenchmarkChip(String name, Color color) {
     return Chip(
       label: Text(
@@ -833,17 +855,24 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                   icon: Icon(
                     Icons.compare_arrows,
                     size: 16,
-                    color: Theme.of(context).extension<AppThemeExtension>()?.accentColor ?? AppTheme.accentColor,
+                    color: Theme.of(context)
+                            .extension<AppThemeExtension>()
+                            ?.accentColor ??
+                        AppTheme.accentColor,
                   ),
                   label: Text(
                     'Compare to Benchmark',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Theme.of(context).extension<AppThemeExtension>()?.accentColor ?? AppTheme.accentColor,
+                      color: Theme.of(context)
+                              .extension<AppThemeExtension>()
+                              ?.accentColor ??
+                          AppTheme.accentColor,
                     ),
                   ),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
@@ -980,8 +1009,8 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                   children: [
                     // Timeframe selector
                     Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       child: SizedBox(
                         height: 40,
                         child: ListView.builder(
@@ -1004,7 +1033,8 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                                     _loadPerformanceData(); // Reload chart data
                                   }
                                 },
-                                backgroundColor: ext?.cardColor ?? AppTheme.cardColor,
+                                backgroundColor:
+                                    ext?.cardColor ?? AppTheme.cardColor,
                                 selectedColor: accent,
                                 labelStyle: TextStyle(
                                   color: isSelected ? Colors.black : textPrim,
@@ -1015,7 +1045,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                         ),
                       ),
                     ),
-                
+
                     // Main content - scrollable
                     Expanded(
                       child: ListView(
@@ -1029,7 +1059,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                           // Portfolio Summary
                           if (!_isLoading && _portfolios.isNotEmpty)
                             _buildPortfolioSummary(),
-                            
+
                           // Benchmark Comparison Card (replaces pie chart)
                           if (!_isLoading && _portfolios.isNotEmpty)
                             _buildBenchmarkComparisonCard(),
@@ -1046,7 +1076,8 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                             _buildEmptyState()
                           else
                             ..._portfolios
-                                .map((portfolio) => _buildPortfolioCard(portfolio))
+                                .map((portfolio) =>
+                                    _buildPortfolioCard(portfolio))
                                 .toList(),
 
                           // Add some bottom padding

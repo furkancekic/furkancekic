@@ -1,6 +1,49 @@
 // widgets/common_widgets.dart
+// Güncellenmiş versiyon - tema stiline göre widget seçimi
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../theme/theme_styles.dart';
+import 'glassmorphism_widgets.dart';
+
+class AdaptiveCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double elevation;
+  final VoidCallback? onTap;
+  final Color? color;
+
+  const AdaptiveCard({
+    Key? key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.elevation = 4,
+    this.onTap,
+    this.color,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final themeStyle = themeExtension?.themeStyle ?? ThemeStyle.modern;
+
+    if (themeStyle == ThemeStyle.glassmorphism) {
+      return GlassCard(
+        child: child,
+        padding: padding,
+        onTap: onTap,
+        color: color,
+      );
+    } else {
+      return FuturisticCard(
+        child: child,
+        padding: padding,
+        elevation: elevation,
+        onTap: onTap,
+        color: color,
+      );
+    }
+  }
+}
 
 class FuturisticCard extends StatelessWidget {
   final Widget child;
@@ -20,7 +63,6 @@ class FuturisticCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ThemeExtension'dan renkleri al
     final theme = Theme.of(context);
     final themeExtension = theme.extension<AppThemeExtension>();
     final cardColor = color ?? themeExtension?.cardColor ?? AppTheme.cardColor;
@@ -31,7 +73,7 @@ class FuturisticCard extends StatelessWidget {
       color: cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: accentColor, width: 1),
+        side: BorderSide(color: accentColor.withOpacity(0.3), width: 1),
       ),
       child: InkWell(
         onTap: onTap,
@@ -42,6 +84,7 @@ class FuturisticCard extends StatelessWidget {
   }
 }
 
+// Diğer common widget'lar aynı kalabilir
 class ShimmerLoading extends StatelessWidget {
   final double width;
   final double height;
@@ -56,11 +99,9 @@ class ShimmerLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ThemeExtension'dan tema tipini al
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final isDark = themeExtension?.isDark ?? true;
 
-    // Koyu/açık temaya göre renkleri ayarla
     final baseColor = isDark ? Colors.grey.shade800 : Colors.grey.shade300;
     final highlightColor = isDark ? Colors.grey.shade700 : Colors.grey.shade100;
 
@@ -105,7 +146,6 @@ class GlowingText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ThemeExtension'dan renkleri al
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final textColor =
         color ?? themeExtension?.textPrimary ?? AppTheme.textPrimary;
@@ -148,7 +188,6 @@ class StockPriceChange extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPositive = priceChange >= 0;
 
-    // ThemeExtension'dan renkleri al
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final color = isPositive
         ? (themeExtension?.positiveColor ?? AppTheme.positiveColor)
@@ -194,6 +233,47 @@ class StockPriceChange extends StatelessWidget {
   }
 }
 
+class AdaptiveSearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hintText;
+  final Function(String)? onChanged;
+  final VoidCallback? onClear;
+  final VoidCallback? onSubmitted;
+
+  const AdaptiveSearchField({
+    Key? key,
+    required this.controller,
+    this.hintText = 'Search...',
+    this.onChanged,
+    this.onClear,
+    this.onSubmitted,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final themeStyle = themeExtension?.themeStyle ?? ThemeStyle.modern;
+
+    if (themeStyle == ThemeStyle.glassmorphism) {
+      return GlassSearchField(
+        controller: controller,
+        hintText: hintText,
+        onChanged: onChanged,
+        onClear: onClear,
+        onSubmitted: onSubmitted,
+      );
+    } else {
+      return SearchField(
+        controller: controller,
+        hintText: hintText,
+        onChanged: onChanged,
+        onClear: onClear,
+        onSubmitted: onSubmitted,
+      );
+    }
+  }
+}
+
 class SearchField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
@@ -212,7 +292,6 @@ class SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ThemeExtension'dan renkleri al
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final cardColor = themeExtension?.cardColor ?? AppTheme.cardColor;
     final textPrimary = themeExtension?.textPrimary ?? AppTheme.textPrimary;
@@ -243,10 +322,7 @@ class SearchField extends StatelessWidget {
           prefixIcon: Icon(Icons.search, color: accentColor),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
-                  icon: Icon(
-                    Icons.clear,
-                    color: textSecondary,
-                  ),
+                  icon: Icon(Icons.clear, color: textSecondary),
                   onPressed: () {
                     controller.clear();
                     onClear?.call();
@@ -280,7 +356,6 @@ class NeonBorder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ThemeExtension'dan renkleri al
     final themeExtension = Theme.of(context).extension<AppThemeExtension>();
     final borderColor =
         color ?? themeExtension?.accentColor ?? AppTheme.accentColor;

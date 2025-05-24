@@ -1,9 +1,10 @@
-// main.dart - Güncellenen navigation ile
+// main.dart - İki tema sistemi ile güncellenmiş
+
+import 'widgets/optimized_navigation_bars.dart'; // SimpleNavigationProvider için
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
-import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
 import 'screens/screener_screen.dart';
 import 'screens/chart_screen.dart';
@@ -20,21 +21,35 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Set screen orientation
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
-  // Create theme provider
+  // Status bar style ayarları
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
+
+  // Create theme providers
   final themeProvider = ThemeProvider();
 
   // Load saved settings
   await themeProvider.loadSettings();
 
   runApp(
-    // Wrap app with Provider
-    ChangeNotifierProvider(
-      create: (_) => themeProvider,
+    // Multi Provider için
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => themeProvider),
+        ChangeNotifierProvider(
+            create: (_) => SimpleNavigationProvider()), // YENİ
+      ],
       child: const MyApp(),
     ),
   );
@@ -45,16 +60,35 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Access ThemeProvider
+    // Her iki provider'ı da dinle
     final themeProvider = Provider.of<ThemeProvider>(context);
+    // Radikal mod aktifse onun temasını kullan
+    final activeTheme = themeProvider.theme;
+
+    // Status bar style'ı ayarla
+    final brightness = (themeProvider.themeMode == ThemeMode.light
+        ? Brightness.dark
+        : Brightness.light);
+
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: brightness,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: brightness,
+      ),
+    );
 
     return MaterialApp(
       title: 'Modern Finance',
-      theme: themeProvider.theme,
+      theme: activeTheme,
       debugShowCheckedModeBanner: false,
-      // Ana sayfa olarak HomeScreen'i kullan
-      home: const HomeScreen(),
+      // Ana sayfa seçimi - TEST İÇİN DEĞİŞTİRİLDİ
+      home: const HomeScreen(), // ← DEMO EKRANI ANA SAYFA YAPILDI
+      // Normal kullanım için: home: const HomeScreen(),
       routes: {
+        '/home': (context) =>
+            const HomeScreen(), // ← HomeScreen route olarak eklendi
         '/chart': (context) => const ChartScreen(),
         '/screener': (context) => const ScreenerScreen(),
         '/backtest': (context) => const BacktestingScreen(),
@@ -81,6 +115,14 @@ class MyApp extends StatelessWidget {
           default:
             return null;
         }
+      },
+      // Tema geçişlerinde animasyon
+      builder: (context, child) {
+        return AnimatedTheme(
+          data: activeTheme,
+          duration: const Duration(milliseconds: 300),
+          child: child!,
+        );
       },
     );
   }

@@ -1,26 +1,28 @@
 // theme/theme_provider.dart
+// Güncellenmiş provider - tema stili desteği ile
 import 'package:flutter/material.dart';
 import 'app_theme.dart';
+import 'theme_styles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Remove your custom ThemeMode enum and use Flutter's built-in one
-// Flutter's ThemeMode enum has: light, dark, system
 enum ColorPalette { blue, purple, green, orange, red }
 
 class ThemeProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.dark;
   ColorPalette _colorPalette = ColorPalette.blue;
+  ThemeStyle _themeStyle = ThemeStyle.modern;
 
   // Getter
   ThemeMode get themeMode => _themeMode;
   ColorPalette get colorPalette => _colorPalette;
+  ThemeStyle get themeStyle => _themeStyle;
 
   // Temel tema seçimi
   ThemeData get theme {
     if (_themeMode == ThemeMode.light) {
-      return AppTheme.getLightTheme(_colorPalette);
+      return AppTheme.getLightTheme(_colorPalette, _themeStyle);
     } else {
-      return AppTheme.getDarkTheme(_colorPalette);
+      return AppTheme.getDarkTheme(_colorPalette, _themeStyle);
     }
   }
 
@@ -38,6 +40,13 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Tema stilini değiştir
+  void setThemeStyle(ThemeStyle style) {
+    _themeStyle = style;
+    _saveSettings();
+    notifyListeners();
+  }
+
   // Başlangıçta kayıtlı tercihleri yükle
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -47,6 +56,9 @@ class ThemeProvider extends ChangeNotifier {
     final paletteIndex = prefs.getInt('colorPalette') ?? 0;
     _colorPalette = ColorPalette.values[paletteIndex];
 
+    final styleIndex = prefs.getInt('themeStyle') ?? 0;
+    _themeStyle = ThemeStyle.values[styleIndex];
+
     notifyListeners();
   }
 
@@ -55,14 +67,16 @@ class ThemeProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool('isDarkMode', _themeMode == ThemeMode.dark);
     prefs.setInt('colorPalette', _colorPalette.index);
+    prefs.setInt('themeStyle', _themeStyle.index);
   }
 
   // Demo için tema değiştir (önizleme için)
-  ThemeData previewTheme(ThemeMode mode, ColorPalette palette) {
+  ThemeData previewTheme(
+      ThemeMode mode, ColorPalette palette, ThemeStyle style) {
     if (mode == ThemeMode.light) {
-      return AppTheme.getLightTheme(palette);
+      return AppTheme.getLightTheme(palette, style);
     } else {
-      return AppTheme.getDarkTheme(palette);
+      return AppTheme.getDarkTheme(palette, style);
     }
   }
 }

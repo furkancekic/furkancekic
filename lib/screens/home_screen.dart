@@ -1,9 +1,14 @@
-// home_screen.dart - CurvedNavigationBar güncellenmiş versiyonu
-// lib/screens/home_screen.dart - Fund navigation eklenmiş
+// screens/home_screen.dart
+// Güncellenmiş versiyon - Tema stili desteği ile
+import '../widgets/alternative_navigation_with_switch.dart';
+import '../widgets/optimized_navigation_bars.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'portfolio_screen.dart';
 import '../theme/app_theme.dart';
+import '../theme/theme_styles.dart';
 import '../widgets/common_widgets.dart';
+import '../widgets/glassmorphism_widgets.dart';
 import '../widgets/mini_chart.dart';
 import '../widgets/intraday_chart.dart';
 import '../services/stock_api_service.dart' as api_service;
@@ -15,7 +20,51 @@ import 'backtesting_screen.dart';
 import 'fund_screens/fund_main_screen.dart';
 
 /// ====================================================================
-///  FeatureCard
+///  AdaptiveFeatureCard - Tema stiline göre değişen feature card
+/// ====================================================================
+class AdaptiveFeatureCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final Color color;
+  final VoidCallback onTap;
+
+  const AdaptiveFeatureCard({
+    Key? key,
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.color,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final themeStyle = themeExtension?.themeStyle ?? ThemeStyle.modern;
+
+    if (themeStyle == ThemeStyle.glassmorphism) {
+      return GlassFeatureCard(
+        icon: icon,
+        title: title,
+        description: description,
+        color: color,
+        onTap: onTap,
+      );
+    } else {
+      return FeatureCard(
+        icon: icon,
+        title: title,
+        description: description,
+        color: color,
+        onTap: onTap,
+      );
+    }
+  }
+}
+
+/// ====================================================================
+///  FeatureCard - Modern tema için
 /// ====================================================================
 class FeatureCard extends StatelessWidget {
   final IconData icon;
@@ -111,17 +160,20 @@ class _HomeScreenState extends State<HomeScreen> {
     ChartScreen(),
     BacktestingScreen(),
     StockReelsScreen(),
-    FundMainScreen(), // Fund screen eklendi
+    FundMainScreen(),
     PortfolioScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
+    final themeStyle = themeExtension?.themeStyle ?? ThemeStyle.modern;
+
     return Scaffold(
       extendBody: true,
       drawer: const AppDrawer(),
       body: _screens[_currentIndex],
-      bottomNavigationBar: CurvedNavigationBar(
+      bottomNavigationBar: NavigationBarWithIntegratedSwitch(
         currentIndex: _currentIndex,
         onIndexSelected: (i) => setState(() => _currentIndex = i),
       ),
@@ -130,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 /// ====================================================================
-///  CurvedNavigationBar - Fonds eklendi
+///  CurvedNavigationBar - Modern tema için
 /// ====================================================================
 class CurvedNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -215,7 +267,7 @@ class CurvedNavigationBar extends StatelessWidget {
             ),
           ),
 
-          // menü - Fund screen eklendi
+          // menü
           Positioned(
             bottom: 0,
             left: 0,
@@ -232,8 +284,7 @@ class CurvedNavigationBar extends StatelessWidget {
                   _buildNavItem(
                       context, 3, Icons.analytics_rounded, 'Backtest'),
                   _buildNavItem(context, 4, Icons.slideshow_rounded, 'Reels'),
-                  _buildNavItem(context, 5, Icons.account_balance,
-                      'Funds'), // Fund eklendi
+                  _buildNavItem(context, 5, Icons.account_balance, 'Funds'),
                   _buildNavItem(
                       context, 6, Icons.account_balance_wallet, 'Portfolio'),
                 ],
@@ -549,6 +600,7 @@ class _HomeContentState extends State<HomeContent> {
 
   SliverAppBar _buildAppBar(Color accent) {
     final ext = Theme.of(context).extension<AppThemeExtension>();
+    final themeStyle = ext?.themeStyle ?? ThemeStyle.modern;
 
     return SliverAppBar(
       pinned: true,
@@ -588,7 +640,7 @@ class _HomeContentState extends State<HomeContent> {
       flexibleSpace: FlexibleSpaceBar(
         background: Padding(
           padding: const EdgeInsets.fromLTRB(16, 80, 16, 0),
-          child: SearchField(
+          child: AdaptiveSearchField(
             controller: _searchController,
             hintText: 'Search stocks, indices, ETFs...',
             onSubmitted: () => _performSearch(_searchController.text),
@@ -749,7 +801,7 @@ class _HomeContentState extends State<HomeContent> {
             Row(
               children: [
                 Expanded(
-                  child: FeatureCard(
+                  child: AdaptiveFeatureCard(
                     icon: Icons.filter_list,
                     title: 'Stock\nScreener',
                     description: 'Find stocks matching your criteria',
@@ -761,7 +813,7 @@ class _HomeContentState extends State<HomeContent> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: FeatureCard(
+                  child: AdaptiveFeatureCard(
                     icon: Icons.candlestick_chart,
                     title: 'Advanced\nCharts',
                     description: 'Technical analysis tools',
@@ -777,7 +829,7 @@ class _HomeContentState extends State<HomeContent> {
             Row(
               children: [
                 Expanded(
-                  child: FeatureCard(
+                  child: AdaptiveFeatureCard(
                     icon: Icons.account_balance,
                     title: 'Investment\nFunds',
                     description: 'Explore and analyze funds',
@@ -789,7 +841,7 @@ class _HomeContentState extends State<HomeContent> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: FeatureCard(
+                  child: AdaptiveFeatureCard(
                     icon: Icons.analytics,
                     title: 'Strategy\nBacktesting',
                     description: 'Test your trading strategies',
@@ -805,7 +857,7 @@ class _HomeContentState extends State<HomeContent> {
             Row(
               children: [
                 Expanded(
-                  child: FeatureCard(
+                  child: AdaptiveFeatureCard(
                     icon: Icons.slideshow,
                     title: 'Stock\nReels',
                     description: 'Quick stock insights in a swipe',
@@ -817,7 +869,7 @@ class _HomeContentState extends State<HomeContent> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: FeatureCard(
+                  child: AdaptiveFeatureCard(
                     icon: Icons.account_balance_wallet,
                     title: 'Portfolio\nTracker',
                     description: 'Track your investments',
@@ -858,6 +910,7 @@ class MarketIndexCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPositive = change >= 0;
     final ext = Theme.of(context).extension<AppThemeExtension>();
+    final themeStyle = ext?.themeStyle ?? ThemeStyle.modern;
     final txtPrim = ext?.textPrimary ?? AppTheme.textPrimary;
     final txtSec = ext?.textSecondary ?? AppTheme.textSecondary;
     final cardColor = ext?.cardColor ?? AppTheme.cardColor;
@@ -867,6 +920,77 @@ class MarketIndexCard extends StatelessWidget {
     final color = isPositive ? posColor : negColor;
     final sign = isPositive ? '+' : '';
 
+    if (themeStyle == ThemeStyle.glassmorphism) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 10),
+        child: GlassCard(
+          borderRadius: 16,
+          blur: 10,
+          opacity: 0.1,
+          child: Container(
+            width: 150,
+            height: 130,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: txtSec,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500)),
+                const SizedBox(height: 8),
+                Text(
+                  value.toStringAsFixed(value > 100
+                      ? 2
+                      : value > 10
+                          ? 3
+                          : 4),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: txtPrim,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                          isPositive
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                          color: color,
+                          size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$sign${change.abs().toStringAsFixed(2)} '
+                        '($sign${percentChange.abs().toStringAsFixed(2)}%)',
+                        style: TextStyle(
+                            color: color,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Modern tema için mevcut tasarım
     return Container(
       width: 150,
       margin: const EdgeInsets.only(right: 10),
@@ -960,7 +1084,7 @@ class StockListItem extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: FuturisticCard(
+      child: AdaptiveCard(
         onTap: onTap,
         padding: const EdgeInsets.all(16),
         child: Row(
