@@ -1,0 +1,119 @@
+[
+    {
+      "id": "indicators_1",
+      "title": "RSI: Göreceli Güç Endeksi",
+      "description": "Piyasanın aşırı alım veya aşırı satım bölgelerini belirlemek için güçlü bir momentum osilatörü.",
+      "type": "interactive",
+      "estimatedTime": "15 dk",
+      "order": 1,
+      "isCompleted": false,
+      "isLocked": false,
+      "prerequisites": [],
+      "content": [
+        {
+          "id": "indicators_1_content_1",
+          "type": "textContent",
+          "title": "RSI Nedir ve Nasıl Hesaplanır?",
+          "content": "Göreceli Güç Endeksi (Relative Strength Index - RSI), J. Welles Wilder tarafından geliştirilen, fiyat hareketlerinin hızını ve değişimini ölçen bir momentum osilatörüdür. 0 ile 100 arasında bir değer alır.\n\nRSI, belirli bir periyottaki (genellikle 14 periyot) ortalama kazançların, ortalama kayıplara oranını kullanarak hesaplanır. Yüksek RSI değerleri, varlığın son dönemde güçlü bir şekilde yükseldiğini ve potansiyel olarak 'aşırı alınmış' olabileceğini gösterirken; düşük RSI değerleri, güçlü bir düşüş yaşandığını ve 'aşırı satılmış' olabileceğini işaret eder.",
+          "bulletPoints": [
+            "Momentum osilatörüdür, fiyat değişiminin hızını ölçer.",
+            "Genellikle 14 periyotluk ayar kullanılır.",
+            "0-100 arasında salınır."
+          ],
+          "definitions": {
+            "Momentum": "Bir fiyat hareketinin hızı veya gücüdür.",
+            "Osilatör": "Belirli bir merkez çizgisi veya aralık etrafında dalgalanan bir gösterge türüdür."
+          }
+        },
+        {
+          "id": "indicators_1_content_2",
+          "type": "textContent",
+          "title": "RSI Nasıl Yorumlanır?",
+          "content": "RSI'ın en yaygın kullanım alanları şunlardır:\n\n1.  **Aşırı Alım ve Aşırı Satım Bölgeleri:**\n    *   Genellikle RSI 70'in üzerine çıktığında varlığın aşırı alındığı ve bir düzeltme veya düşüş yaşanabileceği düşünülür.\n    *   RSI 30'un altına indiğinde ise varlığın aşırı satıldığı ve bir tepki yükselişi veya toparlanma görülebileceği düşünülür.\n    *   Ancak, güçlü trendlerde RSI uzun süre aşırı alım veya aşırı satım bölgelerinde kalabilir, bu yüzden tek başına bir al/sat sinyali olarak kullanılmamalıdır.\n\n2.  **Uyumsuzluklar (Divergence):**\n    *   **Pozitif (Bullish) Uyumsuzluk:** Fiyatlar daha düşük dipler yaparken RSI'ın daha yüksek dipler yapması durumudur. Bu, düşüş trendinin zayıfladığına ve potansiyel bir yukarı dönüşe işaret edebilir.\n    *   **Negatif (Bearish) Uyumsuzluk:** Fiyatlar daha yüksek tepeler yaparken RSI'ın daha düşük tepeler yapması durumudur. Bu, yükseliş trendinin gücünü kaybettiğine ve potansiyel bir aşağı dönüşe işaret edebilir.\n\n3.  **Trend Teyidi:** RSI, 50 seviyesini bir referans noktası olarak kullanarak trendi teyit etmek için de kullanılabilir. Yükseliş trendlerinde RSI genellikle 50'nin üzerinde, düşüş trendlerinde ise 50'nin altında hareket etme eğilimindedir.",
+          "bulletPoints": [
+            "70 üzeri aşırı alım, 30 altı aşırı satım olarak kabul edilir.",
+            "Pozitif ve negatif uyumsuzluklar önemli dönüş sinyalleri olabilir.",
+            "50 seviyesi, trendin yönü hakkında fikir verebilir."
+          ],
+          "definitions": {}
+        },
+        {
+          "id": "indicators_1_chart_1",
+          "type": "interactiveChartContent",
+          "title": "RSI Uygulaması (Örnek Varlık)",
+          "explanation": "Aşağıdaki grafikte, ana fiyat grafiğinin altında 14 periyotluk RSI göstergesi yer almaktadır. Fiyat hareketleri ile RSI arasındaki ilişkiyi, aşırı alım/satım bölgelerini ve olası uyumsuzlukları inceleyebilirsiniz. Göstergeler bölümünden RSI'ı açıp kapatabilirsiniz.",
+          "symbol": "SPY", 
+          "timeframe": "Günlük",
+          "chartType": "candlestick",
+          "indicators": [ 
+          ],
+          "annotations": [
+            "RSI 70'in üzerine çıktığında aşırı alım sinyalleri arayın.",
+            "RSI 30'un altına indiğinde aşırı satım sinyalleri arayın.",
+            "Fiyat yeni bir dip yaparken RSI daha yüksek bir dip yapıyorsa (pozitif uyumsuzluk), bu bir alım fırsatı olabilir."
+          ]
+        },
+        {
+          "id": "indicators_1_chart_2_rsi_only", 
+          "type": "interactiveChartContent",
+          "title": "RSI Gösterge Grafiği",
+          "explanation": "Bu grafik sadece RSI (14) değerini göstermektedir. Aşırı alım (70 üzeri) ve aşırı satım (30 altı) bölgeleri işaretlenmiştir. Varlığın son dönemdeki momentumunu değerlendirin.",
+          "symbol": "SPY",
+          "timeframe": "Günlük",
+          "chartType": "indicator", 
+          "indicators": [], 
+          "annotations": []
+        }
+      ],
+      "quiz": null 
+    },
+ 
+    {
+      "id": "indicators_10_quiz",
+      "title": "Teknik Göstergeler Sınavı",
+      "description": "Popüler teknik göstergeler hakkındaki bilginizi ölçün.",
+      "type": "quiz",
+      "estimatedTime": "10 dk",
+      "order": 10,
+      "isCompleted": false,
+      "isLocked": true,
+      "prerequisites": ["indicators_1", "indicators_2", "indicators_3", "indicators_4", "indicators_5", "indicators_6", "indicators_7", "indicators_8", "indicators_9"],
+      "content": [],
+      "quiz": {
+        "id": "quiz_indicators_main",
+        "title": "Teknik Göstergeler Değerlendirme",
+        "passingScore": 70,
+        "timeLimit": 15,
+        "questions": [
+          {
+            "id": "qi_1",
+            "type": "multipleChoice",
+            "question": "RSI göstergesinde genellikle hangi değer aşırı alım bölgesi olarak kabul edilir?",
+            "options": ["20", "30", "50", "70"],
+            "correctAnswerIndex": 3,
+            "explanation": "RSI'da 70 ve üzeri seviyeler genellikle aşırı alım bölgesi olarak yorumlanır."
+          },
+          {
+            "id": "qi_2",
+            "type": "trueFalse",
+            "question": "MACD göstergesi, iki farklı hareketli ortalamanın farkını gösterir.",
+            "correctAnswer": true,
+            "explanation": "MACD (Moving Average Convergence Divergence), genellikle 26 periyotluk EMA ile 12 periyotluk EMA arasındaki farkı ve bu farkın 9 periyotluk EMA'sını (sinyal çizgisi) içerir."
+          },
+          {
+            "id": "qi_3",
+            "type": "multipleChoice",
+            "question": "Bollinger Bantları daraldığında (birbirine yaklaştığında) bu genellikle neyin habercisidir?",
+            "options": [
+              "Yüksek volatilite döneminin başlangıcı",
+              "Düşük volatilite döneminin ve yakında bir kırılmanın olabileceği",
+              "Güçlü bir düşüş trendinin teyidi",
+              "Güçlü bir yükseliş trendinin teyidi"
+            ],
+            "correctAnswerIndex": 1,
+            "explanation": "Bollinger Bantları'nın daralması (squeeze), düşük volatiliteyi gösterir ve genellikle bunu takiben büyük bir fiyat hareketinin (kırılma) yaşanabileceğine işaret eder."
+          }
+        ]
+      }
+    }
+  ]

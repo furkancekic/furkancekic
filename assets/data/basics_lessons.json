@@ -1,0 +1,163 @@
+[
+    {
+      "id": "basics_1",
+      "title": "Finansal Piyasalar: Neden ve Nasıl?",
+      "description": "Finansal dünyanın kapılarını aralayın: Piyasaların işleyişini ve yatırımın temellerini öğrenin.",
+      "type": "theory",
+      "estimatedTime": "12 dk",
+      "order": 1,
+      "isCompleted": false,
+      "isLocked": false,
+      "prerequisites": [],
+      "content": [
+        {
+          "id": "basics_1_content_1",
+          "type": "textContent",
+          "title": "Giriş: Finansal Piyasalar Neden Var?",
+          "content": "Günlük hayatımızda farkında olsak da olmasak da finansal piyasalarla sürekli etkileşim halindeyiz. Peki, bu karmaşık gibi görünen yapılar tam olarak ne işe yarar?\n\nFinansal piyasalar, en basit tanımıyla, fon fazlası olanlarla (tasarruf sahipleri, yatırımcılar) fon ihtiyacı olanları (şirketler, devletler, bireyler) bir araya getiren platformlardır. Bu platformlar, ekonominin verimli işlemesi için hayati öneme sahiptir.\n\nÖrneğin, bir şirket yeni bir fabrika kurmak için paraya ihtiyaç duyduğunda, hisse senedi veya tahvil çıkararak finansal piyasalar üzerinden bu fonu bulabilir. Aynı şekilde, birikimlerini değerlendirmek isteyen bir birey de bu hisse senetlerini veya tahvilleri alarak yatırım yapabilir.",
+          "bulletPoints": [
+            "Fonların etkin dağılımını sağlar.",
+            "Şirketlerin büyümesi ve istihdam yaratması için kaynak oluşturur.",
+            "Yatırımcılara çeşitli getiri fırsatları sunar.",
+            "Risklerin yönetilmesine ve dağıtılmasına olanak tanır.",
+            "Fiyat keşfi mekanizmasıdır (varlıkların değerinin belirlenmesi)."
+          ],
+          "definitions": {
+            "Finansal Araç": "Parasal bir değeri temsil eden ve ticareti yapılabilen sözleşmelerdir (örn: hisse senedi, tahvil, döviz).",
+            "Sermaye": "Bir işi kurmak veya yürütmek için gerekli olan para ve diğer varlıkların tümü."
+          }
+        },
+        {
+          "id": "basics_1_content_2",
+          "type": "textContent",
+          "title": "Piyasa Türleri: Nerede Ne İşlem Görür?",
+          "content": "Finansal piyasalar, işlem gören varlıkların türüne, vadesine ve örgütlenme şekline göre çeşitli kategorilere ayrılır. En temel ayrımlardan bazıları şunlardır:\n\n1.  **Para Piyasaları vs. Sermaye Piyasaları:**\n    *   **Para Piyasaları:** Kısa vadeli (genellikle bir yıldan az) fonların alınıp satıldığı piyasalardır. Hazine bonoları, mevduat sertifikaları gibi araçlar burada işlem görür. Likidite yüksektir.\n    *   **Sermaye Piyasaları:** Uzun vadeli fonların ve finansal varlıkların (hisse senetleri, uzun vadeli tahviller) işlem gördüğü piyasalardır. Genellikle daha yüksek risk ve getiri potansiyeli sunarlar.\n\n2.  **Birincil Piyasalar vs. İkincil Piyasalar:**\n    *   **Birincil Piyasalar:** Finansal varlıkların ilk kez ihraç edildiği (satışa sunulduğu) piyasalardır. Şirketlerin halka arzları (IPO) buna bir örnektir. Fonlar doğrudan ihraççıya gider.\n    *   **İkincil Piyasalar:** Daha önce ihraç edilmiş finansal varlıkların yatırımcılar arasında alınıp satıldığı piyasalardır. Borsa İstanbul (BIST) gibi borsalar ikincil piyasa örnekleridir. Likiditeyi sağlarlar.\n\n3.  **Organize Piyasalar vs. Tezgah Üstü Piyasalar (OTC):**\n    *   **Organize Piyasalar (Borsalar):** İşlemlerin belirli kurallar ve standartlar çerçevesinde yapıldığı, merkezi bir otoriteye sahip piyasalardır.\n    *   **Tezgah Üstü Piyasalar (OTC):** Merkezi bir konumu olmayan, işlemlerin taraflar arasında doğrudan veya aracı kurumlar vasıtasıyla yapıldığı, daha esnek kurallara sahip piyasalardır. Döviz işlemleri (Forex) büyük ölçüde OTC piyasalarda gerçekleşir.",
+          "bulletPoints": [
+            "Para piyasaları kısa vade, sermaye piyasaları uzun vadeye odaklanır.",
+            "Birincil piyasada varlıklar ilk kez satılır, ikincil piyasada yatırımcılar arasında el değiştirir.",
+            "Borsalar organize piyasalardır; Forex ise büyük oranda tezgah üstü bir piyasadır."
+          ],
+          "definitions": {
+            "Halka Arz (IPO - Initial Public Offering)": "Bir şirketin hisselerini ilk kez halka satışa sunmasıdır.",
+            "Tahvil": "Devletin veya şirketlerin borçlanmak amacıyla çıkardığı, belirli bir vade sonunda anapara ve faiz ödemesi vaat eden borç senedidir."
+          }
+        }
+      ],
+      "quiz": null
+    },
+    {
+      "id": "basics_2",
+      "title": "Hisse Senedi: Şirkete Ortak Olmak",
+      "description": "Bir şirketin hissesini almanın ne anlama geldiğini ve yatırımcılara hangi hakları sunduğunu keşfedin.",
+      "type": "theory",
+      "estimatedTime": "15 dk",
+      "order": 2,
+      "isCompleted": false,
+      "isLocked": true,
+      "prerequisites": ["basics_1"],
+      "content": [
+        {
+          "id": "basics_2_content_1",
+          "type": "textContent",
+          "title": "Hisse Senedi Tam Olarak Nedir?",
+          "content": "Hisse senedi, bir anonim şirketin (A.Ş.) sermayesinin eşdeğer paylarından her birini temsil eden kıymetli bir evraktır. Bir şirketin hisse senedini satın aldığınızda, o şirketin belirli bir oranda ortağı olursunuz. Bu ortaklık size çeşitli haklar ve sorumluluklar getirir.\n\n**Hisse senedi sahibi olarak temel haklarınız:**\n\n*   **Kârdan Pay Alma (Temettü Hakkı):** Şirket kâr ederse ve kâr dağıtma kararı alırsa, sahip olduğunuz hisse oranında temettü (kâr payı) alırsınız.\n*   **Yönetime Katılma (Oy Hakkı):** Şirketin genel kurul toplantılarında, sahip olduğunuz her hisse için genellikle bir oy hakkınız olur. Bu sayede şirket kararlarında söz sahibi olabilirsiniz (pratikte küçük yatırımcılar için etkisi sınırlı olsa da).\n*   **Rüçhan Hakkı (Yeni Pay Alma Hakkı):** Şirket sermaye artırımına gittiğinde, yeni çıkarılacak hisselerden mevcut payınız oranında öncelikli olarak alma hakkınızdır.\n*   **Bilgi Edinme Hakkı:** Şirketin faaliyetleri, mali durumu ve geleceğe yönelik planları hakkında bilgi alma hakkınız vardır.\n*   **Tasfiyeden Pay Alma Hakkı:** Şirket tasfiye edilirse (kapanırsa), borçlar ödendikten sonra kalan varlıklardan hisseniz oranında pay alırsınız.",
+          "bulletPoints": [
+            "Şirket ortaklığını temsil eder ve mülkiyet hakkı verir.",
+            "Temettü geliri ve sermaye kazancı (değer artışı) potansiyeli sunar.",
+            "Likittir; yani borsada kolayca alınıp satılabilir.",
+            "Risk içerir; şirket performansı ve piyasa koşullarına bağlı olarak değeri düşebilir."
+          ],
+          "definitions": {
+            "Sermaye Piyasası Kurulu (SPK)": "Türkiye'de sermaye piyasalarının düzenlenmesi ve denetlenmesinden sorumlu kurumdur.",
+            "Nominal Değer (İtibari Değer)": "Hisse senedinin üzerinde yazılı olan, genellikle çok küçük (örn: 1 TL) bir değerdir ve piyasa değeriyle karıştırılmamalıdır."
+          }
+        },
+        {
+          "id": "basics_2_content_2",
+          "type": "textContent",
+          "title": "Hisse Senedi Türleri",
+          "content": "Hisse senetleri, sağladıkları haklar ve özellikler bakımından farklı türlere ayrılabilir. En yaygın türler şunlardır:\n\n*   **Adi Hisse Senetleri:** En yaygın hisse senedi türüdür. Sahiplerine yukarıda belirtilen temel ortaklık haklarını (oy, temettü vb.) tanır. Şirketin riskine ve getirisine doğrudan katılırlar.\n*   **İmtiyazlı Hisse Senetleri (Payları):** Sahiplerine bazı konularda (örn: kâr payı dağıtımında öncelik, yönetim kuruluna üye seçme hakkı gibi) adi hisse senedi sahiplerine göre fazladan haklar veya imtiyazlar tanıyan hisse senetleridir. Bu imtiyazlar şirketin ana sözleşmesinde belirtilir.\n    *   *Örnek İmtiyazlar:* Belirli bir oranda sabit temettü garantisi, oy hakkında imtiyaz (örn: bir hisse için birden fazla oy), tasfiye bakiyesinden öncelikli pay alma.\n\n*   **Nama Yazılı Hisse Senetleri:** Üzerinde belirli bir kişinin veya kurumun adı yazılı olan ve devri için şirketin pay defterine kayıt gerektiren senetlerdir.\n*   **Hamiline Yazılı Hisse Senetleri:** Üzerinde belirli bir isim yazmayan, senedi elinde bulunduran kişinin (hamilin) hak sahibi sayıldığı senetlerdir. Devri daha kolaydır.",
+          "bulletPoints": [
+            "Adi hisse senetleri en temel ortaklık haklarını sunar.",
+            "İmtiyazlı hisse senetleri belirli konularda ek avantajlar sağlar.",
+            "Nama yazılı senetler kişiye özeldir, hamiline yazılı senetler ise taşıyana aittir."
+          ],
+          "definitions": {
+            "Pay Defteri": "Anonim şirketlerde, nama yazılı hisse senedi sahiplerinin ve sahip oldukları payların kaydedildiği defterdir."
+          }
+        }
+      ],
+      "quiz": null
+    },
+    
+    {
+      "id": "basics_8_quiz", 
+      "title": "Yatırım Temelleri Değerlendirme",
+      "description": "Bu bölümdeki temel kavramları ne kadar öğrendiğinizi test edin.",
+      "type": "quiz",
+      "estimatedTime": "10 dk",
+      "order": 8, 
+      "isCompleted": false,
+      "isLocked": true,
+      "prerequisites": ["basics_1", "basics_2", "basics_3", "basics_4", "basics_5", "basics_6", "basics_7"], 
+      "content": [], 
+      "quiz": {
+        "id": "quiz_basics_main",
+        "title": "Yatırım Temelleri Bilgi Testi",
+        "passingScore": 75, 
+        "timeLimit": 15,
+        "questions": [
+          {
+            "id": "qb_1",
+            "type": "multipleChoice",
+            "question": "Bir şirketin hisse senedini satın alan bir yatırımcı aşağıdakilerden hangisine sahip olmaz?",
+            "options": [
+              "Şirket kârından pay alma (temettü) hakkı",
+              "Şirket yönetimine doğrudan müdahale etme yetkisi",
+              "Şirket genel kurulunda oy kullanma hakkı",
+              "Şirketin yeni çıkardığı hisselerden öncelikli alma (rüçhan) hakkı"
+            ],
+            "correctAnswerIndex": 1,
+            "explanation": "Hisse senedi sahipleri şirketin yönetimine genel kurulda oy kullanarak dolaylı yoldan katılırlar, ancak günlük işleyişe doğrudan müdahale yetkileri yoktur."
+          },
+          {
+            "id": "qb_2",
+            "type": "trueFalse",
+            "question": "Birincil piyasalar, daha önce ihraç edilmiş menkul kıymetlerin yatırımcılar arasında alınıp satıldığı yerlerdir.",
+            "correctAnswer": false,
+            "explanation": "Bu tanım ikincil piyasalara aittir. Birincil piyasalar, menkul kıymetlerin ilk kez ihraç edildiği piyasalardır."
+          },
+          {
+            "id": "qb_3",
+            "type": "dragDrop",
+            "question": "Aşağıdaki terimleri doğru açıklamalarıyla eşleştirin:",
+            "items": ["Likidite", "Volatilite", "Halka Arz (IPO)"],
+            "targets": [
+              "Bir varlığın fiyatındaki dalgalanma veya oynaklık derecesi.",
+              "Bir şirketin hisselerini ilk kez halka satışa sunması.",
+              "Bir finansal varlığın kolayca nakde çevrilebilme özelliği."
+            ],
+            "correctMatches": {
+              "Likidite": "Bir finansal varlığın kolayca nakde çevrilebilme özelliği.",
+              "Volatilite": "Bir varlığın fiyatındaki dalgalanma veya oynaklık derecesi.",
+              "Halka Arz (IPO)": "Bir şirketin hisselerini ilk kez halka satışa sunması."
+            },
+            "explanation": "Doğru eşleşmeler: Likidite - Kolayca nakde çevrilebilme, Volatilite - Fiyat dalgalanması, IPO - İlk halka satış."
+          },
+          {
+            "id": "qb_4",
+            "type": "multipleChoice",
+            "question": "Aşağıdakilerden hangisi genellikle para piyasası aracı değildir?",
+            "options": [
+              "Hazine Bonosu",
+              "Mevduat Sertifikası",
+              "Hisse Senedi",
+              "Repo İşlemleri"
+            ],
+            "correctAnswerIndex": 2,
+            "explanation": "Hisse senetleri, genellikle uzun vadeli yatırım araçları olup sermaye piyasalarında işlem görürler."
+          }
+        ]
+      }
+    }
+  ]

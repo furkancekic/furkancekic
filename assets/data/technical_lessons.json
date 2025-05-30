@@ -1,0 +1,162 @@
+[
+    {
+      "id": "tech_1",
+      "title": "Teknik Analize Giriş: Fiyatın İzinde",
+      "description": "Fiyat grafiklerinin sırlarını çözerek gelecekteki hareketleri tahmin etme sanatı ve temel prensipleri.",
+      "type": "theory",
+      "estimatedTime": "10 dk",
+      "order": 1,
+      "isCompleted": false,
+      "isLocked": false,
+      "prerequisites": [],
+      "content": [
+        {
+          "id": "tech_1_content_1",
+          "type": "textContent",
+          "title": "Teknik Analiz Nedir?",
+          "content": "Teknik analiz, geçmiş piyasa verilerini, özellikle fiyat ve işlem hacmini inceleyerek gelecekteki fiyat hareketlerini tahmin etmeye çalışan bir analiz yöntemidir. Temel analizin aksine, bir şirketin 'içsel değerini' (finansal durumu, yönetimi, sektörü vb.) anlamaya çalışmak yerine, piyasadaki arz ve talep güçlerinin fiyatlara nasıl yansıdığına odaklanır.\n\nTeknik analistler, piyasa psikolojisinin ve yatırımcı davranışlarının kendini tekrar eden desenler oluşturduğuna inanırlar. Bu desenleri ve trendleri belirleyerek alım-satım kararları vermeyi hedeflerler.",
+          "bulletPoints": [
+            "Geçmiş fiyat hareketleri gelecekteki hareketler hakkında ipuçları içerir.",
+            "Piyasa her şeyi fiyatlar (bilinen tüm bilgiler zaten fiyata yansımıştır).",
+            "Fiyatlar rastgele değil, trendler halinde hareket eder.",
+            "Tarih tekerrür eder (geçmişte işe yarayan formasyonlar ve göstergeler gelecekte de çalışabilir)."
+          ],
+          "definitions": {
+            "Arz (Supply)": "Belirli bir fiyattan satılmaya hazır olan menkul kıymet miktarıdır.",
+            "Talep (Demand)": "Belirli bir fiyattan alınmaya istekli olunan menkul kıymet miktarıdır.",
+            "İşlem Hacmi (Volume)": "Belirli bir zaman diliminde alınıp satılan toplam hisse senedi (veya diğer varlık) sayısıdır. Trendin gücünü teyit etmede önemlidir."
+          }
+        },
+        {
+          "id": "tech_1_content_2",
+          "type": "textContent",
+          "title": "Teknik Analiz vs. Temel Analiz",
+          "content": "Yatırım dünyasında iki ana analiz yaklaşımı vardır: Teknik analiz ve Temel analiz. Her ikisinin de amacı kârlı yatırım kararları almaktır, ancak yöntemleri farklıdır.\n\n*   **Temel Analiz:** Bir şirketin gerçek değerini belirlemeye odaklanır. Bunun için şirketin mali tablolarını (bilanço, gelir tablosu, nakit akış tablosu), yönetim kalitesini, rekabet avantajlarını, sektör durumunu ve genel ekonomik koşulları inceler. Amaç, 'değerinin altında' işlem gören şirketleri bulmaktır.\n\n*   **Teknik Analiz:** 'Ne' alınıp satıldığıyla değil, 'ne zaman' alınıp satılacağıyla daha çok ilgilenir. Fiyat grafiklerindeki desenleri, trendleri ve göstergeleri kullanarak piyasanın yönünü tahmin etmeye çalışır.\n\nBirçok yatırımcı, bu iki yaklaşımı birleştirerek kullanır. Örneğin, temel analize göre iyi bir şirket bulunduktan sonra, teknik analizle doğru giriş ve çıkış noktaları belirlenebilir.",
+          "bulletPoints": [
+            "Temel analiz 'neden' sorusuna, teknik analiz 'ne zaman' sorusuna odaklanır.",
+            "Temel analiz şirketin değerini, teknik analiz fiyat hareketlerini inceler.",
+            "İki yöntem birbirini tamamlayıcı olarak kullanılabilir."
+          ],
+          "definitions": {
+            "İçsel Değer (Intrinsic Value)": "Bir varlığın tüm temel faktörler dikkate alındığında sahip olduğu varsayılan gerçek değeridir."
+          }
+        }
+      ],
+      "quiz": null
+    },
+    {
+      "id": "tech_2",
+      "title": "Grafik Türleri: Fiyatın Görsel Dili",
+      "description": "Çizgi, bar ve mum grafiklerini okumayı öğrenerek piyasa hareketlerini daha iyi anlayın ve yorumlayın.",
+      "type": "interactive",
+      "estimatedTime": "18 dk",
+      "order": 2,
+      "isCompleted": false,
+      "isLocked": true,
+      "prerequisites": ["tech_1"],
+      "content": [
+        {
+          "id": "tech_2_content_1",
+          "type": "textContent",
+          "title": "Neden Farklı Grafik Türleri Var?",
+          "content": "Fiyat hareketlerini görselleştirmek için çeşitli grafik türleri kullanılır. Her biri, farklı detay seviyelerinde bilgi sunar ve analistlerin tercihlerine göre kullanılır. En yaygın olanları şunlardır:\n\n*   **Çizgi Grafik (Line Chart):** Genellikle belirli bir zaman periyodunun (gün, hafta, ay) kapanış fiyatlarını birleştirerek oluşturulur. Basittir ve genel trendi görmek için kullanışlıdır.\n*   **Bar Grafik (Bar Chart / OHLC Chart):** Her bir zaman periyodu için dört önemli fiyat bilgisini gösterir: Açılış (Open), En Yüksek (High), En Düşük (Low) ve Kapanış (Close). Dikey bir çizgi en yüksek ve en düşük fiyatları, soldaki küçük yatay çizgi açılış fiyatını, sağdaki küçük yatay çizgi ise kapanış fiyatını gösterir.\n*   **Mum Grafik (Candlestick Chart):** Bar grafiğe benzer şekilde OHLC bilgilerini içerir ancak daha görsel bir sunum sunar. 'Gövde' açılış ve kapanış fiyatları arasındaki farkı, 'fitiller' (gölgeler) ise en yüksek ve en düşük fiyatları gösterir. Gövdenin rengi genellikle fiyatın o periyotta yükseldiğini mi (genellikle yeşil veya beyaz) yoksa düştüğünü mü (genellikle kırmızı veya siyah) gösterir.",
+          "bulletPoints": [
+            "Çizgi grafik genel trend için idealdir.",
+            "Bar ve Mum grafikler daha detaylı OHLC bilgisi sunar.",
+            "Mum grafikler, görsel yorumlama kolaylığı nedeniyle popülerdir."
+          ],
+          "definitions": {
+            "OHLC": "Açılış (Open), En Yüksek (High), En Düşük (Low), Kapanış (Close) fiyatlarının kısaltmasıdır."
+          }
+        },
+        {
+          "id": "tech_2_chart_1",
+          "type": "interactiveChartContent",
+          "title": "Mum Grafik İncelemesi (BTC/USD Günlük)",
+          "explanation": "Aşağıdaki mum grafiği, Bitcoin'in Amerikan Doları karşısındaki günlük fiyat hareketlerini gösterir. Yeşil mumlar kapanışın açılıştan yüksek, kırmızı mumlar ise düşük olduğunu belirtir. Mumların gövdelerini ve fitillerini inceleyerek her günkü fiyat aralığını ve kapanış yönünü görebilirsiniz. Grafiği yakınlaştırıp kaydırarak belirli dönemleri detaylı analiz edebilirsiniz.",
+          "symbol": "BTC/USD",
+          "timeframe": "Günlük",
+          "chartType": "candlestick",
+          "indicators": [
+             {"type": "SMA", "parameters": {"period": 50, "color": "blue"}, "isVisible": false}, 
+             {"type": "EMA", "parameters": {"period": 20, "color": "orange"}, "isVisible": false}
+          ],
+          "annotations": [
+            "Uzun yeşil gövdeli mumlar güçlü alıcı baskısını gösterir.",
+            "Uzun kırmızı gövdeli mumlar güçlü satıcı baskısını gösterir.",
+            "Uzun üst fitilli mumlar, gün içinde yükseliş yaşandığını ancak kapanışa doğru satış baskısıyla karşılaşıldığını gösterebilir.",
+            "Doji mumu (açılış ve kapanış fiyatının çok yakın olması) kararsızlığı işaret edebilir."
+          ]
+        },
+        {
+          "id": "tech_2_chart_2",
+          "type": "interactiveChartContent",
+          "title": "Çizgi Grafik ve Alan Grafik (ETH/USD Haftalık)",
+          "explanation": "Bu grafikte Ethereum'un haftalık kapanış fiyatlarını gösteren bir çizgi grafik ve aynı veriyi kullanan bir alan grafik bulunmaktadır. Çizgi grafik genel trendi net bir şekilde gösterirken, alan grafik trendin altındaki bölgeyi doldurarak görsel bir vurgu yapar. Grafik tipini değiştirerek farkı gözlemleyebilirsiniz.",
+          "symbol": "ETH/USD",
+          "timeframe": "Haftalık",
+          "chartType": "line", 
+          "indicators": [],
+          "annotations": [
+            "Çizgi grafikler, uzun vadeli trend analizleri için sıkça kullanılır.",
+            "Alan grafikleri, özellikle hacim veya birikim gibi verileri göstermek için de tercih edilebilir."
+          ]
+        }
+      ],
+      "quiz": null
+    },
+    {
+      "id": "tech_12_quiz",
+      "title": "Teknik Analiz Bilgi Sınavı",
+      "description": "Teknik analiz prensipleri ve grafik okuma becerilerinizi test edin.",
+      "type": "quiz",
+      "estimatedTime": "12 dk",
+      "order": 12,
+      "isCompleted": false,
+      "isLocked": true,
+      "prerequisites": ["tech_1", "tech_2", "tech_3", "tech_4", "tech_5", "tech_6", "tech_7", "tech_8", "tech_9", "tech_10", "tech_11"],
+      "content": [],
+      "quiz": {
+        "id": "quiz_technical_main",
+        "title": "Teknik Analiz Değerlendirme Testi",
+        "passingScore": 80,
+        "timeLimit": 20,
+        "questions": [
+          {
+            "id": "qt_1",
+            "type": "multipleChoice",
+            "question": "Aşağıdakilerden hangisi teknik analizin temel varsayımlarından biri değildir?",
+            "options": [
+              "Fiyatlar trendler halinde hareket eder.",
+              "Piyasa her şeyi fiyatlar.",
+              "Bir şirketin içsel değeri her zaman piyasa fiyatına eşittir.",
+              "Tarih tekerrür eder."
+            ],
+            "correctAnswerIndex": 2,
+            "explanation": "Teknik analiz, bir şirketin içsel değeriyle doğrudan ilgilenmez; bu temel analizin konusudur. Teknik analiz, piyasa fiyatının zaten tüm bilinen bilgileri yansıttığını varsayar."
+          },
+          {
+            "id": "qt_2",
+            "type": "trueFalse",
+            "question": "Mum grafikte, mumun gövdesi o periyottaki en yüksek ve en düşük fiyatlar arasındaki farkı gösterir.",
+            "correctAnswer": false,
+            "explanation": "Mumun gövdesi açılış ve kapanış fiyatları arasındaki farkı gösterir. En yüksek ve en düşük fiyatlar fitiller (gölgeler) ile temsil edilir."
+          },
+          {
+            "id": "qt_3",
+            "type": "multipleChoice",
+            "question": "Fiyatların belirli bir seviyenin altına düşmekte zorlandığı ve alıcıların devreye girdiği bölgeye ne ad verilir?",
+            "options": [
+              "Direnç Seviyesi",
+              "Destek Seviyesi",
+              "Trend Çizgisi",
+              "Volatilite Bandı"
+            ],
+            "correctAnswerIndex": 1,
+            "explanation": "Destek seviyesi, fiyatların düşüş sırasında karşılaştığı ve genellikle yukarı yönlü tepki verdiği bir fiyat bölgesidir."
+          }
+
+        ]
+      }
+    }
+  ]
