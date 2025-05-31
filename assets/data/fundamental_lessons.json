@@ -1,0 +1,343 @@
+[
+  {
+    "id": "fundamental_1",
+    "title": "Temel Analize Giriş: Şirketin Değerini Anlamak",
+    "description": "Bir şirketin gerçek değerini anlamak için finansal sağlığını ve piyasa konumunu nasıl analiz edeceğinizi öğrenin.",
+    "type": "theory",
+    "estimatedTime": "18 dk",
+    "order": 1,
+    "isCompleted": false,
+    "isLocked": false,
+    "prerequisites": [],
+    "content": [
+      {
+        "id": "fundamental_1_content_1",
+        "type": "textContent",
+        "title": "Temel Analiz Nedir ve Neden Önemlidir?",
+        "explanation": "Bu bölümde, temel analizin ne olduğunu, hangi faktörlere odaklandığını ve yatırım kararlarında neden önemli bir rol oynadığını öğreneceğiz.",
+        "content": "Temel analiz, bir menkul kıymetin (genellikle hisse senedi, ancak tahvil veya diğer varlıklar için de kullanılabilir) 'içsel değerini' veya 'gerçek değerini' belirlemeye odaklanan bir değerleme yöntemidir. Bu analiz, şirketin finansal tablolarını (bilanço, gelir tablosu, nakit akış tablosu), genel ekonomik ve endüstriyel koşulları, şirket yönetiminin kalitesini ve deneyimini, rekabet avantajlarını, marka değerini ve diğer birçok kalitatif (niteliksel) ve kantitatif (niceliksel) faktörü kapsamlı bir şekilde inceleyerek yapılır.\n\nTemel analizin ana amacı, bir hisse senedinin mevcut piyasa fiyatının, hesaplanan içsel değerinden daha düşük mü (potansiyel olarak 'ucuz' veya 'değerinin altında'), daha yüksek mi (potansiyel olarak 'pahalı' veya 'aşırı değerli') yoksa yaklaşık olarak adil mi olduğunu belirlemektir. Temel analistler genellikle, piyasanın uzun vadede bu içsel değere doğru hareket edeceğine, yani fiyatların eninde sonunda şirketin gerçek temellerini yansıtacağına inanırlar.",
+        "bulletPoints": [
+          "Şirketin finansal sağlığını ve performansını derinlemesine inceler.",
+          "Makroekonomik göstergeleri (faiz oranları, enflasyon, GSYİH büyümesi vb.) ve sektörel trendleri dikkate alır.",
+          "Bir varlığın 'adil' veya 'gerçek' değerini bulmayı hedefler.",
+          "Genellikle uzun vadeli yatırım kararları için temel oluşturur.",
+          "Teknik analizden farklı olarak 'ne alınır?' sorusuna ve nedenine odaklanır; teknik analiz ise daha çok 'ne zaman alınır/satılır?' sorusuyla ilgilenir."
+        ],
+        "definitions": {
+          "İçsel Değer (Intrinsic Value)": "Bir varlığın, tüm temel finansal ve ekonomik faktörler dikkate alındığında sahip olduğu varsayılan adil veya gerçek değeridir. Bu, piyasa tarafından belirlenen fiyattan farklı olabilir.",
+          "Kalitatif Faktörler": "Doğrudan sayılarla ölçülemeyen ancak bir şirketin uzun vadeli başarısı ve değeri üzerinde önemli etkisi olabilen faktörlerdir. Örnekler: yönetim kalitesi, marka bilinirliği ve sadakati, patentler, rekabetçi konum, kurumsal yönetim uygulamaları.",
+          "Kantitatif Faktörler": "Şirketin finansal tablolarından elde edilen ve sayısal olarak ifade edilebilen verilerdir. Örnekler: gelirler, karlar, borç seviyeleri, kâr marjları, finansal oranlar (F/K, PD/DD vb.).",
+          "Değerleme (Valuation)": "Bir varlığın veya şirketin ekonomik değerini belirleme sürecidir."
+        }
+      },
+      {
+        "id": "fundamental_1_content_2",
+        "type": "textContent",
+        "title": "Temel Analizin Temel Yaklaşımları: Yukarıdan Aşağıya ve Aşağıdan Yukarıya",
+        "explanation": "Temel analiz yaparken kullanılabilecek iki ana metodolojik yaklaşımı ve aralarındaki farkları anlayalım.",
+        "content": "Temel analiz genellikle iki ana stratejik yaklaşımla gerçekleştirilir:\n\n1.  **Yukarıdan Aşağıya (Top-Down) Yaklaşım:** Bu yaklaşımda analist, analizine en geniş perspektiften başlar ve giderek daraltır. İlk olarak genel ekonominin durumu (makroekonomik görünüm; örneğin GSYİH büyümesi, faiz oranları, enflasyon, işsizlik oranları) incelenir. Ardından, genel ekonomide iyi performans göstermesi beklenen sektörler belirlenir. Son olarak, bu cazip sektörlerdeki en iyi potansiyele sahip bireysel şirketler seçilir.\n\n2.  **Aşağıdan Yukarıya (Bottom-Up) Yaklaşım:** Bu yaklaşımda ise analist, genel makroekonomik veya sektörel trendlere daha az odaklanır ve doğrudan bireysel şirketlerin temellerine yoğunlaşır. Bir şirketin güçlü finansallara, rekabet avantajlarına, yetenekli bir yönetime ve cazip bir içsel değere sahip olduğuna inanılıyorsa, genel piyasa veya sektör koşulları ne olursa olsun yatırım yapılabilir. Bu yaklaşım, 'iyi bir şirketin her zaman iyi bir yatırım olduğu' fikrine dayanır, yeter ki doğru fiyattan alınsın.\n\nHer iki yaklaşımın da kendine göre avantajları ve dezavantajları bulunmaktadır. Bazı yatırımcılar ve analistler, daha kapsamlı bir bakış açısı elde etmek için bu iki yaklaşımı bir arada kullanmayı tercih edebilirler.",
+        "bulletPoints": [
+          "Top-down yaklaşım: Genel ekonomiden başlar, sektöre, sonra şirkete iner.",
+          "Bottom-up yaklaşım: Doğrudan şirkete odaklanır, genel koşulları ikincil plana atar.",
+          "Top-down, makroekonomik rüzgarları arkasına almak isteyenler için uygundur.",
+          "Bottom-up, istisnai şirketleri bulmaya çalışanlar için daha uygundur.",
+          "Yatırımcının kendi felsefesi ve bilgi birikimi, hangi yaklaşımın daha uygun olacağını belirleyebilir."
+        ]
+      }
+    ],
+    "quiz": null
+  },
+  {
+    "id": "fundamental_2",
+    "title": "Finansal Tablolar: Bilanço'nun Dili",
+    "description": "Bir şirketin belirli bir andaki finansal fotoğrafı olan bilançoyu okumayı ve varlık, yükümlülük, özkaynak kalemlerini detaylıca anlamayı öğrenin.",
+    "type": "theory",
+    "estimatedTime": "25 dk",
+    "order": 2,
+    "isCompleted": false,
+    "isLocked": true,
+    "prerequisites": ["fundamental_1"],
+    "content": [
+      {
+        "id": "fundamental_2_content_1",
+        "type": "textContent",
+        "title": "Bilanço Nedir? Temel Denklem ve Bileşenleri",
+        "explanation": "Bilanço, bir şirketin finansal sağlığının anlık bir görüntüsüdür. Varlıklarını, borçlarını ve sahiplerinin sermayesini nasıl dengelediğini gösterir.",
+        "content": "Bilanço (İngilizce: Balance Sheet veya Statement of Financial Position), bir şirketin belirli bir tarihteki (örneğin, 31 Aralık 2023 itibarıyla) finansal durumunu özetleyen temel bir mali tablodur. Şirketin sahip olduğu varlıkları (Assets), bu varlıkları finanse etmek için kullandığı kaynakları, yani borçlarını (Liabilities) ve şirket sahiplerine ait olan sermayeyi (Equity) detaylı bir şekilde listeler.\n\n**Temel Bilanço Denklemi:**\nVARLIKLAR = YÜKÜMLÜLÜKLER + ÖZKAYNAKLAR (Assets = Liabilities + Equity)\n\nBu denklem, muhasebenin temel taşıdır ve her zaman sağlanmalıdır. Bilançonun iki ana tarafı vardır:\n\n*   **Aktif Taraf (Varlıklar):** Şirketin sahip olduğu ve gelecekte ekonomik fayda sağlaması beklenen tüm değerlerdir. Genellikle likiditelerine göre sıralanırlar (en likitten en az likide doğru).\n    *   **Dönen Varlıklar (Current Assets):** Bir yıl içinde veya şirketin normal faaliyet dönemi içinde paraya çevrilmesi, satılması veya tüketilmesi beklenen varlıklardır. Örnekler: Nakit ve Nakit Benzerleri, Banka Mevduatları, Ticari Alacaklar, Stoklar, Peşin Ödenmiş Giderler.\n    *   **Duran Varlıklar (Non-Current Assets):** Bir yıldan daha uzun süre şirkette kalması ve faaliyetlerde kullanılması beklenen varlıklardır. Örnekler: Maddi Duran Varlıklar (Arazi, Bina, Makine, Teçhizat), Maddi Olmayan Duran Varlıklar (Marka Değeri, Patentler, Lisanslar, Şerefiye), Uzun Vadeli Yatırımlar.\n\n*   **Pasif Taraf (Kaynaklar):** Şirketin varlıklarını finanse etmek için kullandığı kaynaklardır.\n    *   **Yükümlülükler (Borçlar - Liabilities):** Şirketin üçüncü kişilere (bankalar, tedarikçiler, devlet vb.) olan mevcut borçlarıdır.\n        *   **Kısa Vadeli Yabancı Kaynaklar (Current Liabilities):** Bir yıl içinde ödenmesi gereken borçlardır. Örnekler: Ticari Borçlar, Kısa Vadeli Banka Kredileri, Ödenecek Vergiler ve Fonlar, Çalışanlara Borçlar.\n        *   **Uzun Vadeli Yabancı Kaynaklar (Non-Current Liabilities):** Bir yıldan daha uzun bir sürede ödenecek borçlardır. Örnekler: Uzun Vadeli Banka Kredileri, Çıkarılmış Tahviller.\n    *   **Özkaynaklar (Sermaye - Equity):** Şirket sahiplerinin (ortakların) şirket üzerindeki net varlık payını ifade eder. Varlıkların borçlar düşüldükten sonra kalan kısmıdır. Örnekler: Ödenmiş Sermaye, Sermaye Yedekleri, Kâr Yedekleri, Geçmiş Yıl Kârları/Zararları, Dönem Net Kârı/Zararı.",
+        "bulletPoints": [
+          "Belirli bir 'anlık' finansal fotoğraf sunar (dönemsel değil).",
+          "Muhasebenin temel denklemi olan Varlıklar = Borçlar + Özkaynaklar üzerine kuruludur.",
+          "Varlıklar, şirketin sahip olduğu ekonomik değerleri; kaynaklar ise bu değerlerin nasıl finanse edildiğini gösterir.",
+          "Şirketin likidite durumu, borçluluk yapısı ve finansal esnekliği hakkında önemli bilgiler verir.",
+          "Dipnotlar, bilanço kalemlerinin detaylarını anlamak için kritik öneme sahiptir."
+        ],
+        "definitions": {
+          "Likidite (Liquidity)": "Bir varlığın değerini önemli ölçüde kaybetmeden ne kadar hızlı bir şekilde nakde çevrilebileceğidir. Nakit en likit varlıktır.",
+          "Cari Oran (Current Ratio)": "Dönen Varlıklar / Kısa Vadeli Yabancı Kaynaklar. Şirketin kısa vadeli borçlarını ödeme gücünü gösteren temel bir likidite oranıdır. Genellikle 1.5-2.0 arası ideal kabul edilir, ancak sektöre göre değişir.",
+          "Kaldıraç Oranı (Leverage Ratio/Debt-to-Equity Ratio)": "Toplam Borçlar / Özkaynaklar. Şirketin ne ölçüde borçla finanse edildiğini gösterir. Yüksek kaldıraç, yüksek risk anlamına gelebilir."
+        }
+      },
+      {
+        "id": "fundamental_2_interactive_1",
+        "type": "interactiveChartContent", 
+        "title": "Örnek Şirket Bilanço Dağılımı (Pasta Grafik)",
+        "explanation": "Bir perakende şirketinin basitleştirilmiş bilanço varlık ve kaynak dağılımını pasta grafiklerle inceleyin. Her bir ana kalemin toplam içindeki payını gözlemleyin. (Bu grafik temsili verilerle oluşturulmuştur ve gerçek bir şirketi yansıtmaz).",
+        "symbol": "PERAKENDE A.Ş. - BİLANÇO",
+        "timeframe": "Yıl Sonu 2023",
+        "chartType": "area",
+        "indicators": [], 
+        "annotations": [
+          "Varlıklar: Dönen varlıklar (nakit, alacaklar, stoklar) ve duran varlıklar (mağazalar, ekipmanlar) olarak ayrılır.",
+          "Kaynaklar: Kısa vadeli borçlar, uzun vadeli borçlar ve özkaynaklar (şirket sahiplerinin payı) olarak ayrılır.",
+          "Sağlıklı bir bilançoda varlıkların kaynaklarla dengeli olması, özkaynakların güçlü olması ve likiditenin yeterli olması beklenir.",
+          "Not: Bu grafik türü (area), bilanço kalemlerinin oransal dağılımını göstermek için ideal değildir. Pasta veya yığılmış çubuk grafikler daha uygun olurdu."
+        ]
+      }
+    ],
+    "quiz": null
+  },
+  {
+    "id": "fundamental_3",
+    "title": "Finansal Tablolar: Gelir Tablosu'nun Sırları",
+    "description": "Bir şirketin belirli bir dönemdeki performansını (kârlılığını) gösteren gelir tablosunu, hasılat, gider ve kâr kalemlerini detaylı analiz edin.",
+    "type": "theory",
+    "estimatedTime": "22 dk",
+    "order": 3,
+    "isCompleted": false,
+    "isLocked": true,
+    "prerequisites": ["fundamental_2"],
+    "content": [
+      {
+        "id": "fundamental_3_content_1",
+        "type": "textContent",
+        "title": "Gelir Tablosu: Şirketin Performans Karnesi",
+        "explanation": "Gelir tablosu, bir şirketin belirli bir zaman dilimindeki finansal performansını, yani ne kadar gelir elde ettiğini ve bu geliri elde etmek için ne kadar harcama yaptığını gösterir.",
+        "content": "Gelir tablosu (veya Kâr ve Zarar Tablosu; İngilizce: Income Statement veya Profit and Loss Statement (P&L)), bir şirketin belirli bir hesap dönemi (genellikle üç ay, altı ay veya bir yıl) boyunca elde ettiği tüm gelirler ile bu gelirleri elde etmek için katlandığı tüm giderleri ve maliyetleri gösteren, sonuç olarak da şirketin ilgili dönemdeki net kârını veya zararını ortaya koyan temel bir mali tablodur.\n\nBilançonun aksine (belirli bir anı gösterir), gelir tablosu bir 'dönemi' kapsar ve şirketin o dönemdeki operasyonel verimliliği ve kârlılığı hakkında kritik bilgiler sunar.\n\n**Temel Gelir Tablosu Yapısı (Basitleştirilmiş Sıra):**\n1.  **Hasılat (Satış Gelirleri - Revenue/Sales):** Şirketin ana faaliyetlerinden (ürün satışı, hizmet sunumu vb.) elde ettiği brüt gelir.\n2.  **Satışların Maliyeti (COGS - Cost of Goods Sold / Cost of Sales):** Satılan mal veya hizmetlerin doğrudan üretim veya tedarik maliyeti.\n3.  **Brüt Kâr (Gross Profit):** Hasılat - Satışların Maliyeti. Şirketin ürün veya hizmetlerinden elde ettiği temel kârlılığı gösterir.\n4.  **Faaliyet Giderleri (Operating Expenses):** Şirketin ana faaliyetlerini sürdürebilmesi için katlandığı dolaylı giderlerdir. Bunlar genellikle şunları içerir:\n    *   Pazarlama, Satış ve Dağıtım Giderleri\n    *   Genel Yönetim Giderleri\n    *   Araştırma ve Geliştirme (Ar-Ge) Giderleri\n5.  **Faaliyet Kârı (Operating Profit / EBIT - Earnings Before Interest and Taxes):** Brüt Kâr - Faaliyet Giderleri. Şirketin ana operasyonlarından ne kadar kâr elde ettiğini gösterir, finansman ve vergi etkileri hariçtir.\n6.  **Diğer Faaliyetlerden Gelirler/Giderler (Net):** Ana faaliyet dışı gelir ve giderler.\n7.  **Finansman Gelirleri/Giderleri (Net):** Faiz gelirleri, faiz giderleri, kur farkı gelir/giderleri gibi finansal işlemlerden kaynaklanan net tutar.\n8.  **Vergi Öncesi Kâr (Profit Before Tax / EBT - Earnings Before Tax):** Tüm gelir ve giderler (finansman dahil) sonrası, vergiler öncesi kâr.\n9.  **Kurumlar Vergisi (Income Tax Expense):** Ödenen veya ödenecek olan kurumlar vergisi.\n10. **Net Kâr (Dönem Kârı / Net Income / Net Profit):** Şirketin tüm gelirler elde edildikten ve tüm giderler (finansman ve vergiler dahil) düşüldükten sonra kalan nihai kârı veya zararıdır.",
+        "bulletPoints": [
+          "Belirli bir dönemin (örn: çeyrek, yıl) finansal performansını özetler.",
+          "Şirketin kârlılığını ve operasyonel verimliliğini analiz etmede kilit rol oynar.",
+          "Gelir kaynaklarının çeşitliliği ve gider yapısının etkinliği hakkında önemli ipuçları verir.",
+          "Kâr marjları (brüt kâr marjı, faaliyet kâr marjı, net kâr marjı) şirketin kârlılık trendlerini ve sektördeki konumunu anlamak için kullanılır."
+        ],
+        "definitions": {
+          "Hasılat (Revenue/Sales)": "Bir şirketin normal ticari faaliyetlerinden (mal satışı veya hizmet sunumu) elde ettiği brüt gelir miktarıdır.",
+          "Brüt Kâr Marjı (Gross Profit Margin)": "(Brüt Kâr / Hasılat) * 100. Şirketin sattığı her birim mal veya hizmetten, doğrudan maliyetler düşüldükten sonra ne kadar kâr elde ettiğini yüzde olarak gösterir.",
+          "Faaliyet Kâr Marjı (Operating Profit Margin)": "(Faaliyet Kârı / Hasılat) * 100. Şirketin ana operasyonlarından ne kadar verimli kâr ürettiğini gösterir.",
+          "Net Kâr Marjı (Net Profit Margin)": "(Net Kâr / Hasılat) * 100. Şirketin elde ettiği hasılatın ne kadarının net kâra dönüştüğünü gösterir; tüm giderler dikkate alınmıştır."
+        }
+      }
+    ],
+    "quiz": null
+  },
+  {
+    "id": "fundamental_4",
+    "title": "Finansal Oranlar: F/K ve PD/DD ile Değerleme",
+    "description": "En popüler değerleme oranlarından Fiyat/Kazanç (F/K) ve Piyasa Değeri/Defter Değeri (PD/DD) oranlarını nasıl hesaplayıp, yorumlayacağınızı ve karşılaştırmalı analizde nasıl kullanacağınızı öğrenin.",
+    "type": "interactive",
+    "estimatedTime": "30 dk",
+    "order": 4,
+    "isCompleted": false,
+    "isLocked": true,
+    "prerequisites": ["fundamental_3"],
+    "content": [
+      {
+        "id": "fundamental_4_content_1",
+        "type": "textContent",
+        "title": "Fiyat/Kazanç (F/K) Oranı: Popüler Bir Değerleme Metriği",
+        "explanation": "F/K oranı, bir hisse senedinin kârlılığına göre pahalı mı yoksa ucuz mu olduğunu anlamak için yaygın olarak kullanılan bir göstergedir.",
+        "content": "Fiyat/Kazanç (F/K veya P/E Ratio) oranı, bir şirketin hisse senedi başına düşen piyasa fiyatının, hisse başına düşen yıllık net kârına (HBK veya EPS) bölünmesiyle hesaplanır. Bu oran, yatırımcıların şirketin kazandığı her bir birim kâr için ne kadar ödemeye razı olduklarını gösterir. Diğer bir deyişle, şirketin mevcut kârlılık seviyesiyle piyasa değerinin kaç yılda geri döneceğini ifade eder (basit bir yaklaşımla).\n\n**Hesaplanışı:** F/K Oranı = Hisse Başına Piyasa Fiyatı / Hisse Başına Kâr (HBK)\n\n*   **Yüksek F/K Oranı:** Genellikle yatırımcıların şirketten gelecekte yüksek bir kâr büyümesi beklediğini veya hissenin mevcut kârlılığına göre aşırı değerli (pahalı) olabileceğini gösterir. Büyüme potansiyeli yüksek teknoloji şirketleri genellikle yüksek F/K oranlarına sahip olabilir.\n*   **Düşük F/K Oranı:** Şirketin mevcut kârlılığına göre piyasa tarafından yeterince değerlenmediğini (potansiyel olarak ucuz olduğunu), düşük büyüme beklentileri olduğunu ya da şirketin belirli riskler taşıdığını gösterebilir. Olgun ve istikrarlı sektörlerdeki şirketler daha düşük F/K oranlarına sahip olabilir.\n\nF/K oranı tek başına bir şirketin iyi veya kötü bir yatırım olduğunu söylemek için yeterli değildir. Mutlaka şirketin faaliyet gösterdiği sektörün ortalama F/K oranı, şirketin geçmiş F/K oranları, gelecekteki büyüme beklentileri, borçluluk durumu ve genel piyasa koşulları ile birlikte değerlendirilmelidir.",
+        "bulletPoints": [
+          "Şirketin kârlılığına göre piyasa değerini ölçer; yatırımcıların kâr için ne kadar ödediğini gösterir.",
+          "Düşük F/K her zaman 'iyi bir alım', yüksek F/K her zaman 'kötü bir alım' anlamına gelmez; bağlam önemlidir.",
+          "Sektör ortalamaları ve benzer şirketlerin F/K oranları ile karşılaştırılmalıdır.",
+          "Gelecekteki kâr büyüme beklentileri (PEG oranı ile de bakılabilir) F/K yorumunda kritik rol oynar.",
+          "Negatif HBK durumunda F/K oranı hesaplanamaz veya anlamsızdır."
+        ],
+        "definitions": {
+          "Hisse Başına Kâr (HBK/EPS - Earnings Per Share)": "Şirketin belirli bir dönemdeki net kârının, o dönemdeki ortalama tedavüldeki (piyasada işlem gören) hisse senedi sayısına bölünmesiyle bulunur.",
+          "PEG Oranı (Price/Earnings to Growth Ratio)": "F/K oranının, şirketin beklenen yıllık kâr büyüme yüzdesine bölünmesiyle hesaplanır. F/K oranını büyüme beklentisiyle normalize ettiği için özellikle büyüme şirketlerini karşılaştırırken faydalı olabilir. Genellikle PEG < 1 cazip kabul edilir."
+        }
+      },
+      {
+        "id": "fundamental_4_content_2",
+        "type": "textContent",
+        "title": "Piyasa Değeri/Defter Değeri (PD/DD) Oranı: Varlık Bazlı Değerleme",
+        "explanation": "PD/DD oranı, bir şirketin piyasa değerini muhasebe kayıtlarındaki net varlık değeriyle karşılaştırır.",
+        "content": "Piyasa Değeri/Defter Değeri (PD/DD veya P/B Ratio) oranı, bir şirketin toplam piyasa değerinin (hisse senedi fiyatı x toplam hisse sayısı), şirketin defter değerine (yani bilançodaki toplam özkaynaklarına) bölünmesiyle hesaplanır. Alternatif olarak, hisse başına piyasa fiyatının hisse başına defter değerine bölünmesiyle de bulunabilir. Bu oran, yatırımcıların şirketin net varlıklarının (muhasebe değerine göre) her bir birimi için ne kadar ödemeye istekli olduklarını gösterir.\n\n**Hesaplanışı:** PD/DD Oranı = Toplam Piyasa Değeri / Toplam Özkaynaklar (Defter Değeri)\n(Veya: Hisse Başına Piyasa Fiyatı / Hisse Başına Defter Değeri)\n\n*   **PD/DD > 1:** Piyasanın, şirketi muhasebe kayıtlarındaki net varlık değerinden daha değerli bulduğunu gösterir. Bu durum, şirketin kârlılığı, büyüme potansiyeli, güçlü marka değeri gibi maddi olmayan varlıkları veya gelecekteki kazanç beklentileri nedeniyle olabilir.\n*   **PD/DD < 1:** Piyasanın, şirketi muhasebe kayıtlarındaki net varlık değerinden daha az değerli bulduğunu gösterir. Bu, şirketin potansiyel olarak değerinin altında fiyatlandığını (ucuz olduğunu) veya şirketin kârlılık sorunları, yüksek borçluluk gibi temel zayıflıkları olduğunu ya da varlıklarının verimli kullanılmadığını işaret edebilir.\n*   **PD/DD ≈ 1:** Piyasa değeri ile defter değerinin birbirine yakın olduğunu gösterir.\n\nPD/DD oranı genellikle finans (bankalar, sigorta şirketleri) gibi bilançolarında önemli miktarda maddi varlık bulunduran veya varlık yoğun sektörlerdeki şirketleri değerlendirirken daha anlamlıdır. Hizmet veya teknoloji gibi maddi olmayan varlıkları daha yoğun olan şirketler için PD/DD oranı çok yüksek çıkabilir ve tek başına yanıltıcı olabilir. Özkaynak Kârlılığı (ROE) ile birlikte değerlendirilmesi, oranın yorumlanmasına yardımcı olur. Yüksek ROE'ye sahip bir şirketin yüksek PD/DD oranına sahip olması daha makul karşılanabilir.",
+        "bulletPoints": [
+          "Şirketin piyasa değerini, muhasebe kayıtlarındaki net varlıklarıyla (özkaynaklarıyla) karşılaştırır.",
+          "PD/DD = 1 ise, piyasa değeri şirketin defter değerine eşittir.",
+          "Özellikle bankacılık, sigortacılık gibi finansal kuruluşlar ve varlık-yoğun sanayi şirketleri için faydalıdır.",
+          "Tek başına değil, sektör ortalamaları ve şirketin Özkaynak Kârlılığı (ROE) ile birlikte yorumlanmalıdır.",
+          "Çok düşük PD/DD oranları (örn: 0.5'in altı) potansiyel bir fırsat veya ciddi bir sorun işareti olabilir; detaylı inceleme gerektirir."
+        ],
+        "definitions": {
+          "Defter Değeri (Book Value)": "Bir şirketin bilançosundaki toplam varlıklarından toplam borçları (hem kısa hem uzun vadeli) çıkarıldıktan sonra kalan net varlık değeridir. Bu, şirketin özkaynaklarına eşittir.",
+          "Hisse Başına Defter Değeri (Book Value Per Share - BVPS)": "Şirketin toplam özkaynaklarının, tedavüldeki toplam hisse senedi sayısına bölünmesiyle bulunur.",
+          "Özkaynak Kârlılığı (ROE - Return on Equity)": "(Net Kâr / Ortalama Özkaynaklar) * 100. Şirketin, ortaklarının yatırdığı sermayeye (özkaynaklara) karşılık ne kadar net kâr ürettiğini gösteren önemli bir kârlılık oranıdır."
+        }
+      },
+      {
+        "id": "fundamental_4_interactive_1",
+        "type": "fundamentalRatioComparisonChart",
+        "title": "Farklı Sektörlerdeki Şirketlerin F/K Oranları Karşılaştırması",
+        "explanation": "Bu interaktif grafik, farklı sektörlerden seçilmiş (varsayımsal) şirketlerin Fiyat/Kazanç (F/K) oranlarını karşılaştırmaktadır. Her şirketin F/K oranını ve genel sektör ortalamasını (referans çizgisi) inceleyebilirsiniz.",
+        "ratioType": "FK",
+        "companies": [
+          { "name": "TeknoX A.Ş. (Teknoloji)", "value": 28.5 },
+          { "name": "SağlamBank (Finans)", "value": 7.2 },
+          { "name": "EnerjiP (Enerji)", "value": 12.8 },
+          { "name": "PerakendeDev (Perakende)", "value": 19.3 },
+          { "name": "İnşaGrup (İnşaat)", "value": 9.5 }
+        ],
+        "averageRatio": 15.5,
+        "learningPoints": [
+          "F/K oranları sektörden sektöre büyük farklılıklar gösterebilir.",
+          "Bir şirketin F/K oranını sadece kendi sektöründeki diğer şirketlerle ve sektör ortalamasıyla karşılaştırmak daha anlamlıdır.",
+          "Teknoloji gibi büyüme potansiyeli yüksek sektörlerde F/K oranları genellikle daha yüksektir.",
+          "Finans ve enerji gibi daha olgun veya döngüsel sektörlerde F/K oranları daha düşük olabilir.",
+          "Düşük F/K her zaman 'ucuz', yüksek F/K her zaman 'pahalı' demek değildir; şirketin büyüme beklentileri, riskleri ve kârlılık kalitesi de önemlidir."
+        ]
+      }
+    ],
+    "quiz": {
+      "id": "quiz_fundamental_ratios",
+      "title": "Temel Finansal Oranlar Testi",
+      "passingScore": 70,
+      "timeLimit": 12,
+      "questions": [
+        {
+          "id": "qfr_1",
+          "type": "multipleChoice",
+          "question": "F/K oranı hesaplanırken paydada aşağıdaki değerlerden hangisi kullanılır?",
+          "options": [
+            "Hisse Başına Defter Değeri (HB DD)",
+            "Hisse Başına Satışlar (HBS)",
+            "Hisse Başına Kâr (HBK veya EPS)",
+            "Hisse Başına Temettü (HBT)"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "Fiyat/Kazanç (F/K) oranı, Hisse Başına Piyasa Fiyatı'nın Hisse Başına Kâr'a (HBK veya EPS) bölünmesiyle bulunur."
+        },
+        {
+          "id": "qfr_2",
+          "type": "trueFalse",
+          "question": "Piyasa Değeri/Defter Değeri (PD/DD) oranının 1'den küçük olması, genellikle piyasanın şirketi muhasebe kayıtlarındaki net varlık değerinden daha değerli bulduğunu gösterir.",
+          "correctAnswer": false,
+          "explanation": "Tam tersi, PD/DD oranının 1'den küçük olması, piyasanın şirketi net varlık değerinden (defter değerinden) daha az değerli bulduğunu veya potansiyel bir değer düşüklüğü olabileceğini gösterir."
+        },
+        {
+          "id": "qfr_3",
+          "type": "dragDrop",
+          "question": "Aşağıdaki finansal terimleri doğru açıklamalarıyla eşleştirin:",
+          "items": ["Yüksek F/K Oranı", "Düşük PD/DD Oranı", "Hisse Başına Kâr (HBK)", "Özkaynak Kârlılığı (ROE)"],
+          "targets": [
+            "Şirketin net kârının, tedavüldeki hisse sayısına bölünmesiyle elde edilen değer.",
+            "Genellikle yüksek büyüme beklentisi veya hissenin aşırı değerlenmiş olabileceğine işaret eder.",
+            "Şirketin özkaynaklarını kullanarak ne kadar verimli kâr ürettiğini gösteren oran.",
+            "Piyasanın şirketi defter değerinden daha az değerli bulduğunu veya potansiyel bir ucuzluk sinyali olabileceğini gösterir."
+          ],
+          "correctMatches": {
+            "Yüksek F/K Oranı": "Genellikle yüksek büyüme beklentisi veya hissenin aşırı değerlenmiş olabileceğine işaret eder.",
+            "Düşük PD/DD Oranı": "Piyasanın şirketi defter değerinden daha az değerli bulduğunu veya potansiyel bir ucuzluk sinyali olabileceğini gösterir.",
+            "Hisse Başına Kâr (HBK)": "Şirketin net kârının, tedavüldeki hisse sayısına bölünmesiyle elde edilen değer.",
+            "Özkaynak Kârlılığı (ROE)": "Şirketin özkaynaklarını kullanarak ne kadar verimli kâr ürettiğini gösteren oran."
+          }
+        },
+        {
+            "id": "qfr_4",
+            "type": "multipleChoice",
+            "question": "Bir şirketin PEG oranı 0.8 ise, bu genellikle ne anlama gelir?",
+            "options": [
+                "Şirket kâr etmiyor.",
+                "Şirketin F/K oranı, beklenen kâr büyüme oranından daha düşüktür ve potansiyel olarak cazip olabilir.",
+                "Şirketin F/K oranı, beklenen kâr büyüme oranından daha yüksektir ve potansiyel olarak pahalı olabilir.",
+                "Şirketin borçları çok yüksektir."
+            ],
+            "correctAnswerIndex": 1,
+            "explanation": "PEG oranı = F/K / Yıllık HBK Büyüme Oranı. PEG < 1 genellikle, şirketin F/K oranının büyüme potansiyeline göre düşük olduğunu ve hissenin potansiyel olarak cazip olabileceğini gösterir."
+        }
+      ]
+    }
+  },
+  {
+    "id": "fundamental_5",
+    "title": "Temel Analiz Kapsamlı Değerlendirme",
+    "description": "Temel analiz prensipleri, finansal tablolar ve değerleme oranları hakkındaki genel bilginizi bu kapsamlı test ile ölçün.",
+    "type": "quiz",
+    "estimatedTime": "15 dk",
+    "order": 5,
+    "isCompleted": false,
+    "isLocked": true,
+    "prerequisites": ["fundamental_1", "fundamental_2", "fundamental_3", "fundamental_4"],
+    "content": [],
+    "quiz": {
+      "id": "quiz_fundamental_final",
+      "title": "Temel Analiz Genel Değerlendirme Testi",
+      "passingScore": 75,
+      "timeLimit": 20,
+      "questions": [
+        {
+          "id": "qff_1",
+          "type": "multipleChoice",
+          "question": "Aşağıdakilerden hangisi temel analizin birincil odak noktası değildir?",
+          "options": [
+            "Şirketin rekabet avantajları ve pazar payı.",
+            "Hisse senedi fiyat grafiğindeki kısa vadeli trendler ve formasyonlar.",
+            "Sektörün büyüme potansiyeli ve düzenleyici ortamı.",
+            "Şirket yönetiminin geçmiş performansı ve gelecek vizyonu."
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Hisse senedi fiyat grafiğindeki kısa vadeli trendler ve formasyonlar teknik analizin konusudur. Temel analiz daha çok şirketin içsel değeri ve uzun vadeli potansiyeli ile ilgilenir."
+        },
+        {
+          "id": "qff_2",
+          "type": "trueFalse",
+          "question": "Bir şirketin bilançosunda, 'Dönen Varlıklar' kalemi, şirketin bir yıldan daha uzun sürede paraya çevirmeyi veya tüketmeyi beklediği varlıkları ifade eder.",
+          "correctAnswer": false,
+          "explanation": "Dönen varlıklar, bir yıl veya normal bir faaliyet dönemi içinde paraya çevrilmesi, satılması veya tüketilmesi beklenen varlıklardır. Bir yıldan uzun süreli olanlar duran varlıklardır."
+        },
+        {
+          "id": "qff_3",
+          "type": "multipleChoice",
+          "question": "Bir şirketin gelir tablosunda 'Faaliyet Kârı (EBIT)' nasıl hesaplanır?",
+          "options": [
+            "Hasılat - Satışların Maliyeti - Finansman Giderleri",
+            "Brüt Kâr - Faaliyet Giderleri",
+            "Net Kâr + Vergiler + Faiz Giderleri",
+            "Hasılat - Tüm Giderler (Vergiler Dahil)"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Faaliyet Kârı (veya EBIT - Faiz ve Vergi Öncesi Kâr), Brüt Kâr'dan faaliyet giderlerinin (pazarlama, yönetim, Ar-Ge vb.) düşülmesiyle bulunur."
+        },
+        {
+          "id": "qff_4",
+          "type": "dragDrop",
+          "question": "Aşağıdaki bilanço kalemlerini doğru kategorilerle ('Varlık', 'Yükümlülük' veya 'Özkaynak') eşleştirin:",
+          "items": ["Ticari Alacaklar", "Ödenecek Tahviller (Uzun Vadeli)", "Şerefiye (Goodwill)", "Birikmiş Kârlar (Retained Earnings)"],
+          "targets": ["Varlık", "Yükümlülük", "Varlık", "Özkaynak"],
+          "correctMatches": {
+            "Ticari Alacaklar": "Varlık",
+            "Ödenecek Tahviller (Uzun Vadeli)": "Yükümlülük",
+            "Şerefiye (Goodwill)": "Varlık",
+            "Birikmiş Kârlar (Retained Earnings)": "Özkaynak"
+          },
+          "explanation": "Ticari Alacaklar ve Şerefiye varlıktır. Ödenecek Tahviller bir yükümlülüktür (borç). Birikmiş Kârlar ise özkaynak kalemidir."
+        },
+        {
+          "id": "qff_5",
+          "type": "multipleChoice",
+          "question": "Bir şirketin F/K oranı sektör ortalamasının önemli ölçüde altında ise, bu durum aşağıdakilerden hangisine işaret etmez?",
+          "options": [
+            "Şirketin hisselerinin piyasa tarafından değerinin altında fiyatlanıyor olabileceğine.",
+            "Yatırımcıların şirketten çok yüksek bir büyüme beklediğine.",
+            "Şirketin kârlılığında veya geleceğe yönelik beklentilerinde bazı sorunlar olabileceğine.",
+            "Sektördeki diğer şirketlere göre daha az riskli bir yatırım olarak algılanıyor olabileceğine (eğer temelleri sağlamsa)."
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Düşük F/K oranı genellikle yüksek büyüme beklentisiyle ilişkilendirilmez. Tam tersine, yüksek büyüme beklentisi olan şirketlerin F/K oranları genellikle daha yüksektir."
+        }
+      ]
+    }
+  }
+]

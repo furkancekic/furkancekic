@@ -1,0 +1,298 @@
+[
+  {
+    "id": "portfolio_1",
+    "title": "Portföy Yönetimine Giriş: Risk ve Getiri Dengesi",
+    "description": "Yatırım portföyü nedir, neden önemlidir? Risk ve getiri arasındaki ilişkiyi ve çeşitlendirmenin temellerini öğrenin.",
+    "type": "theory",
+    "estimatedTime": "20 dk",
+    "order": 1,
+    "isCompleted": false,
+    "isLocked": false,
+    "prerequisites": [],
+    "content": [
+      {
+        "id": "portfolio_1_content_1",
+        "type": "textContent",
+        "title": "Yatırım Portföyü Nedir?",
+        "explanation": "Bu bölümde, bir yatırım portföyünün ne anlama geldiğini ve yatırımcılar için neden bu kadar önemli olduğunu temel düzeyde anlayacağız.",
+        "content": "Yatırım portföyü, bir bireyin veya kurumun sahip olduğu tüm yatırım araçlarının (hisse senetleri, tahviller, yatırım fonları, gayrimenkul, emtialar, nakit ve nakit benzeri varlıklar vb.) bir koleksiyonudur. Basitçe ifade etmek gerekirse, tüm yatırımlarınızın bir araya getirilmiş halidir.\n\nPortföy oluşturmanın ve yönetmenin temel amacı, yatırımcının belirli finansal hedeflerine (örneğin, emeklilik için birikim yapmak, bir ev peşinatı toplamak, servetini büyütmek) ulaşmasına yardımcı olurken, aynı zamanda riski kabul edilebilir bir seviyede tutmaktır.\n\n'Tüm yumurtaları aynı sepete koymamak' atasözü, portföy yönetiminin ve özellikle çeşitlendirmenin temel mantığını çok iyi özetler. Farklı özelliklere sahip çeşitli varlık sınıflarına ve bu sınıflar içindeki farklı menkul kıymetlere yatırım yaparak, tek bir yatırımın beklenmedik bir şekilde kötü performans göstermesi durumunda portföyün tamamı üzerindeki olumsuz etkiyi sınırlamak veya dengelemek mümkün olur.",
+        "bulletPoints": [
+          "Birden fazla yatırım aracının stratejik bir birleşimidir.",
+          "Temel amacı, riski yönetirken getiriyi maksimize etmektir.",
+          "Yatırımcının finansal hedeflerine, risk toleransına ve yatırım ufkuna göre kişiselleştirilir.",
+          "Pasif (endeks takibi) veya aktif (sürekli alım-satım) olarak yönetilebilir."
+        ],
+        "definitions": {
+          "Varlık Sınıfı (Asset Class)": "Benzer finansal özelliklere, düzenlemelere ve piyasa davranışlarına sahip yatırım araçları grubudur (örn: Hisse Senetleri, Sabit Getirili Menkul Kıymetler, Gayrimenkul, Emtialar, Nakit).",
+          "Risk Toleransı": "Bir yatırımcının, yatırımlarının değerindeki dalgalanmalara ve potansiyel kayıplara karşı ne ölçüde dayanıklı ve rahat olduğudur. Genellikle yaş, finansal durum ve kişilikle ilgilidir.",
+          "Yatırım Ufku (Investment Horizon)": "Bir yatırımcının parasını belirli bir yatırımda veya portföyde tutmayı planladığı süredir (kısa, orta veya uzun vadeli)."
+        }
+      },
+      {
+        "id": "portfolio_1_content_2",
+        "type": "textContent",
+        "title": "Risk ve Getiri İlişkisi: Temel Kural",
+        "explanation": "Finansın en temel kavramlarından biri olan risk ve getiri arasındaki değiş-tokuş ilişkisini inceleyelim.",
+        "content": "Finans dünyasının en temel ve yaygın kabul gören prensiplerinden biri, risk ile beklenen getiri arasında genellikle pozitif bir ilişki olduğudur. Bu demektir ki, potansiyel olarak daha yüksek getiri sunan yatırımlar, genellikle daha yüksek düzeyde risk taşırlar. Tersine, daha düşük riskli olarak kabul edilen yatırımlar da tipik olarak daha mütevazı potansiyel getiriler sunar.\n\nÖrneğin:\n*   **Devlet Tahvilleri:** Genellikle en düşük riskli yatırım araçlarından biri olarak kabul edilir çünkü devletin borcunu ödeyememe riski (temerrüt riski) çok düşüktür. Bu nedenle, getirileri de genellikle diğer varlık sınıflarına göre daha düşüktür.\n*   **Büyük ve İstikrarlı Şirketlerin Hisse Senetleri ('Blue Chip'):** Devlet tahvillerine göre biraz daha riskli olabilirler ancak genellikle istikrarlı bir büyüme ve temettü ödemesi sunarlar. Getiri potansiyelleri tahvillere göre daha yüksek olabilir.\n*   **Küçük Ölçekli Büyüme Şirketlerinin Hisse Senetleri ('Small-Cap Growth Stocks'):** Bu şirketler büyük bir büyüme potansiyeline sahip olabilirler ancak aynı zamanda iş modellerinin henüz kanıtlanmamış olması, rekabetin yoğun olması gibi nedenlerle yüksek risk taşırlar. Başarılı olurlarsa çok yüksek getiriler sağlayabilirler, ancak başarısızlık riski de yüksektir.\n\nEtkili bir portföy yönetimi, yatırımcının bireysel risk toleransına ve getiri beklentilerine en uygun dengeyi bulmayı amaçlar. 'Bedava öğle yemeği yoktur' prensibi burada da geçerlidir; risksiz yüksek getiri genellikle mümkün değildir.",
+        "bulletPoints": [
+          "Genel kural: Daha yüksek potansiyel getiri, daha yüksek risk anlamına gelir.",
+          "Yatırımcılar, aldıkları ek risk için ek getiri beklerler (risk primi).",
+          "Portföy çeşitlendirmesi, belirli bir getiri seviyesi için toplam riski optimize etmeye yardımcı olabilir.",
+          "Her yatırımcının kabul edebileceği 'ideal' risk-getiri dengesi farklıdır ve zamanla değişebilir."
+        ],
+        "definitions": {
+          "Risk Primi (Risk Premium)": "Riskli bir yatırımdan beklenen getirinin, risksiz bir yatırımın (örn: devlet tahvili) getirisinden ne kadar fazla olduğudur.",
+          "Oynaklık (Volatility)": "Bir yatırımın fiyatındaki zaman içindeki dalgalanma derecesidir. Genellikle standart sapma ile ölçülür ve riskin bir göstergesi olarak kullanılır."
+        }
+      }
+    ],
+    "quiz": null
+  },
+  {
+    "id": "portfolio_2",
+    "title": "Çeşitlendirmenin Gücü: Riski Azaltmak",
+    "description": "Portföy çeşitlendirmesinin ne olduğunu, nasıl çalıştığını ve yatırım riskini azaltmada neden kritik olduğunu anlayın.",
+    "type": "interactive",
+    "estimatedTime": "25 dk",
+    "order": 2,
+    "isCompleted": false,
+    "isLocked": true,
+    "prerequisites": ["portfolio_1"],
+    "content": [
+      {
+        "id": "portfolio_2_content_1",
+        "type": "textContent",
+        "title": "Çeşitlendirme (Diversification) Nedir?",
+        "explanation": "Portföy riskini yönetmenin en etkili yollarından biri olan çeşitlendirmenin prensiplerini ve faydalarını keşfedin.",
+        "content": "Çeşitlendirme, yatırım riskini azaltmak amacıyla sermayeyi farklı varlık sınıflarına, sektörlere, coğrafi bölgelere ve bireysel menkul kıymetlere yayma stratejisidir. Temel mantığı, tüm yatırımların aynı anda ve aynı yönde (yani hepsi birden iyi veya hepsi birden kötü) performans göstermeyeceği varsayımına dayanır.\n\nİyi çeşitlendirilmiş bir portföyde, bazı yatırımlar değer kaybederken diğerleri değer kazanabilir veya en azından daha az değer kaybedebilir. Bu durum, portföyün genel oynaklığını azaltır ve büyük kayıp riskini sınırlar.\n\n**Çeşitlendirme Türleri:**\n*   **Varlık Sınıfı Bazında:** Hisse senetleri, tahviller, emtialar, gayrimenkul gibi farklı varlık sınıflarına yatırım yapmak.\n*   **Sektörel Bazda:** Teknoloji, sağlık, finans, enerji gibi farklı sektörlerdeki şirketlere yatırım yapmak.\n*   **Coğrafi Bazda:** Farklı ülkelerin veya bölgelerin piyasalarına yatırım yapmak (gelişmiş piyasalar, gelişmekte olan piyasalar).\n*   **Şirket Bazında:** Aynı sektör içinde bile farklı büyüklükteki (büyük, orta, küçük ölçekli) ve farklı risk profillerine sahip şirketlere yatırım yapmak.\n\nÇeşitlendirme, özellikle 'sistematik olmayan risk' olarak adlandırılan, belirli bir şirkete veya sektöre özgü riskleri önemli ölçüde azaltabilir. Ancak, tüm piyasayı etkileyen 'sistematik risk' (piyasa riski) çeşitlendirme ile tamamen ortadan kaldırılamaz.",
+        "bulletPoints": [
+          "Riski farklı varlıklara ve stratejilere yayarak azaltır.",
+          "Şirkete veya sektöre özgü (sistematik olmayan) riskleri minimize eder.",
+          "Portföyün genel oynaklığını (volatilite) düşürmeye yardımcı olur.",
+          "Farklı varlıkların korelasyonu düşük olduğunda daha etkilidir.",
+          "Aşırı çeşitlendirme (çok fazla sayıda küçük pozisyon) getiriyi seyreltebilir ve yönetimi zorlaştırabilir."
+        ],
+        "definitions": {
+          "Korelasyon (Correlation)": "İki veya daha fazla değişkenin (bu durumda yatırım getirileri) birlikte hareket etme eğilimini ölçen istatistiksel bir değerdir. Negatif veya düşük pozitif korelasyona sahip varlıklar çeşitlendirme için idealdir.",
+          "Sistematik Olmayan Risk (Unsystematic/Diversifiable Risk)": "Belirli bir şirkete veya sektöre özgü olan, çeşitlendirme ile azaltılabilen risktir (örn: bir şirketin yönetim hatası, bir sektöre özel olumsuz bir düzenleme).",
+          "Sistematik Risk (Systematic/Non-Diversifiable Risk)": "Tüm piyasayı veya ekonomiyi etkileyen, çeşitlendirme ile ortadan kaldırılamayan risktir (örn: faiz oranı değişiklikleri, ekonomik durgunluk, küresel bir kriz)."
+        }
+      },
+      {
+        "id": "portfolio_2_interactive_1",
+        "type": "portfolioComparisonChart",
+        "title": "Çeşitlendirilmiş vs. Odaklanmış Portföy Simülasyonu",
+        "explanation": "Bu interaktif grafik, %100 tek bir teknoloji hissesine yatırım yapan bir portföy ile teknoloji, sağlık, finans ve tüketim sektörlerinden hisseler içeren çeşitlendirilmiş bir portföyün 10 yıllık simüle edilmiş performansını ve oynaklığını karşılaştırmaktadır. Başlangıç değerleri ve varsayımsal getiri/volatilite oranları kullanılmıştır.",
+        "portfolios": [
+          {
+            "name": "Çeşitlendirilmiş Portföy",
+            "colorHex": "#4CAF50",
+            "initialValue": 100000,
+            "averageReturn": 0.09,
+            "volatility": 0.12
+          },
+          {
+            "name": "Tek Sektör (Teknoloji) Portföyü",
+            "colorHex": "#FFC107",
+            "initialValue": 100000,
+            "averageReturn": 0.11,
+            "volatility": 0.22
+          }
+        ],
+        "durationYears": 10,
+        "annotations": [
+          "Yeşil çizgi: Çeşitlendirilmiş Portföy.",
+          "Sarı çizgi: Tek Sektör (Teknoloji) Portföyü.",
+          "Çeşitlendirilmiş portföyün genellikle daha yumuşak bir getiri eğrisi sunduğunu (daha az oynaklık) gözlemleyin.",
+          "Tek sektör portföyü bazı yıllar daha yüksek getiri sağlayabilirken, düşüşlerde daha sert kayıplar yaşayabilir.",
+          "Bu simülasyonlar varsayımsaldır ve geçmiş performans gelecekteki sonuçların garantisi değildir."
+        ]
+      }
+    ],
+    "quiz": null
+  },
+  {
+    "id": "portfolio_3",
+    "title": "Varlık Dağılımı Stratejileri: Portföyünüzü Şekillendirin",
+    "description": "Risk toleransınıza, yatırım hedeflerinize ve zaman ufkunuz uygun varlık dağılımı stratejilerini öğrenin: Agresif, Dengeli, Muhafazakar.",
+    "type": "theory",
+    "estimatedTime": "25 dk",
+    "order": 3,
+    "isCompleted": false,
+    "isLocked": true,
+    "prerequisites": ["portfolio_2"],
+    "content": [
+      {
+        "id": "portfolio_3_content_1",
+        "type": "textContent",
+        "title": "Varlık Dağılımı (Asset Allocation) Nedir?",
+        "explanation": "Portföyünüzü farklı varlık sınıfları arasında nasıl paylaştıracağınız, yatırım başarınızdaki en önemli kararlardan biridir.",
+        "content": "Varlık dağılımı, bir yatırım portföyünü farklı varlık sınıfları (genellikle hisse senetleri, tahviller ve nakit/nakit benzerleri) arasında bölüştürme sürecidir. Araştırmalar, bir portföyün uzun vadeli getirisinin büyük bir kısmının (%90'a varan oranda) hangi spesifik menkul kıymetlerin seçildiğinden ziyade, varlık dağılımı kararıyla belirlendiğini göstermektedir.\n\nDoğru varlık dağılımı stratejisi, yatırımcının:\n*   **Finansal Hedefleri:** Emeklilik, ev almak, çocukların eğitimi gibi.\n*   **Risk Toleransı:** Ne kadar piyasa dalgalanmasına katlanabileceği.\n*   **Yatırım Ufku:** Paraya ne zaman ihtiyaç duyacağı.\n*   **Yaşı ve Finansal Durumu:** gibi kişisel faktörlerine bağlıdır.",
+        "bulletPoints": [
+          "Portföyü farklı varlık sınıflarına (hisse, tahvil, nakit vb.) stratejik olarak bölmektir.",
+          "Uzun vadeli portföy performansını en çok etkileyen karardır.",
+          "Kişisel hedeflere, risk profiline ve zaman ufkuna göre özelleştirilir.",
+          "Piyasa koşulları ve yatırımcının durumu değiştikçe periyodik olarak gözden geçirilmelidir."
+        ],
+        "definitions": {
+          "Stratejik Varlık Dağılımı (Strategic Asset Allocation)": "Yatırımcının uzun vadeli hedeflerine ve risk profiline uygun olarak belirlenen ve genellikle uzun süre sabit tutulan temel varlık dağılımı karmasıdır.",
+          "Taktiksel Varlık Dağılımı (Tactical Asset Allocation)": "Stratejik dağılımdan kısa vadeli sapmalar yaparak piyasa fırsatlarından yararlanmayı amaçlayan, daha aktif bir yaklaşımdır."
+        }
+      },
+      {
+        "id": "portfolio_3_content_2",
+        "type": "textContent",
+        "title": "Yaygın Varlık Dağılımı Stratejileri ve Örnekler",
+        "explanation": "Farklı risk profillerine uygun temel varlık dağılımı modellerini inceleyelim.",
+        "content": "Varlık dağılımı modelleri genellikle yatırımcının risk alma isteğine göre sınıflandırılır:\n\n1.  **Agresif (Büyüme Odaklı) Portföy:**\n    *   **Tipik Dağılım:** %70-90 Hisse Senetleri, %10-30 Tahviller/Nakit.\n    *   **Amaç:** Maksimum sermaye büyümesi.\n    *   **Risk:** Yüksek. Kısa vadede önemli dalgalanmalar yaşanabilir.\n    *   **Uygunluk:** Genellikle genç, uzun yatırım ufkuna (10+ yıl) sahip ve yüksek risk toleransı olan yatırımcılar için.\n\n2.  **Dengeli (Orta Halli Büyüme/Gelir) Portföy:**\n    *   **Tipik Dağılım:** %50-60 Hisse Senetleri, %40-50 Tahviller/Nakit.\n    *   **Amaç:** Büyüme ile sermaye koruması arasında bir denge kurmak.\n    *   **Risk:** Orta.\n    *   **Uygunluk:** Orta yaşlı, orta vadeli yatırım ufkuna (5-10 yıl) sahip ve orta düzeyde risk toleransı olan yatırımcılar için.\n\n3.  **Muhafazakar (Sermaye Koruma/Gelir Odaklı) Portföy:**\n    *   **Tipik Dağılım:** %20-40 Hisse Senetleri, %60-80 Tahviller/Nakit.\n    *   **Amaç:** Sermayeyi korumak ve düzenli gelir elde etmek.\n    *   **Risk:** Düşük.\n    *   **Uygunluk:** Emekliliğe yakın, kısa vadeli yatırım ufkuna (0-5 yıl) sahip ve düşük risk toleransı olan yatırımcılar için.\n\nBu oranlar genel bir rehberdir ve kişiye özel olarak, bazen daha karmaşık varlık sınıfları (gayrimenkul yatırım fonları, emtialar vb.) eklenerek ayarlanmalıdır. '100 - Yaş' kuralı gibi basit yaklaşımlar (örneğin, 30 yaşındaki biri için %70 hisse) bir başlangıç noktası olabilir ancak tek başına yeterli değildir.",
+        "bulletPoints": [
+          "Agresif portföyler yüksek oranda hisse senedi içerir ve büyüme hedefler.",
+          "Dengeli portföyler hisse senetleri ve tahviller arasında bir denge kurar.",
+          "Muhafazakar portföyler daha çok tahvil ve nakit ağırlıklıdır, sermaye korumasını önceler.",
+          "Yaş ilerledikçe ve yatırım ufku kısaldıkça portföy genellikle daha muhafazakar bir yapıya kaydırılır.",
+          "Profesyonel bir danışmandan yardım almak, kişiye özel en uygun dağılımı belirlemede faydalı olabilir."
+        ]
+      }
+    ],
+    "quiz": {
+      "id": "quiz_portfolio_allocation",
+      "title": "Varlık Dağılımı Testi",
+      "passingScore": 70,
+      "timeLimit": 10,
+      "questions": [
+        {
+          "id": "qpa_1",
+          "type": "multipleChoice",
+          "question": "Genç ve uzun yatırım ufkuna sahip (örn: 25 yaşında, 30 yıl sonra emeklilik hedefi) bir yatırımcı için genellikle hangi tür portföy dağılımı daha uygundur?",
+          "options": ["%80 Tahvil, %20 Hisse Senedi (Muhafazakar)", "%50 Tahvil, %50 Hisse Senedi (Dengeli)", "%20 Tahvil, %80 Hisse Senedi (Agresif)", "%100 Nakit"],
+          "correctAnswerIndex": 2,
+          "explanation": "Genç yatırımcılar genellikle daha fazla risk alabilir ve uzun vadede büyüme potansiyeli yüksek, hisse senedi ağırlıklı agresif portföyleri tercih edebilirler."
+        },
+        {
+          "id": "qpa_2",
+          "type": "trueFalse",
+          "question": "Varlık dağılımı kararı, bir portföyün risk ve getiri profilini etkileyen en önemsiz faktörlerden biridir.",
+          "correctAnswer": false,
+          "explanation": "Varlık dağılımı, bir portföyün uzun vadeli performansını ve riskini belirleyen en önemli faktörlerden biridir."
+        },
+        {
+          "id": "qpa_3",
+          "type": "multipleChoice",
+          "question": "Aşağıdakilerden hangisi genellikle en düşük riskli varlık sınıfı olarak kabul edilir?",
+          "options": ["Küçük Ölçekli Şirket Hisseleri", "Emtialar", "Devlet Tahvilleri", "Gelişmekte Olan Ülke Hisse Senetleri"],
+          "correctAnswerIndex": 2,
+          "explanation": "Devlet tahvilleri, devlet güvencesi nedeniyle genellikle en düşük riskli varlık sınıfı olarak kabul edilir."
+        }
+      ]
+    }
+  },
+  {
+    "id": "portfolio_4",
+    "title": "Portföy Yeniden Dengeleme (Rebalancing)",
+    "description": "Portföyünüzün zamanla hedeflenen varlık dağılımından sapmasını önlemek için yeniden dengeleme yapmanın önemini ve yöntemlerini öğrenin.",
+    "type": "theory",
+    "estimatedTime": "15 dk",
+    "order": 4,
+    "isCompleted": false,
+    "isLocked": true,
+    "prerequisites": ["portfolio_3"],
+    "content": [
+      {
+        "id": "portfolio_4_content_1",
+        "type": "textContent",
+        "title": "Portföy Yeniden Dengeleme Nedir ve Neden Gerekli?",
+        "explanation": "Portföyünüzü hedeflerinizle uyumlu tutmak için düzenli bakım yapmanın önemini kavrayın.",
+        "content": "Portföy yeniden dengeleme (rebalancing), zaman içinde piyasa hareketleri nedeniyle orijinal hedef varlık dağılımından sapan bir portföyü, tekrar hedeflenen oranlara getirme işlemidir. Örneğin, hisse senetleri tahvillere göre daha iyi performans gösterirse, portföydeki hisse senedi ağırlığı artar ve tahvil ağırlığı azalır. Bu durum, portföyün risk profilini başlangıçta hedeflenenden daha riskli bir hale getirebilir.\n\nYeniden dengeleme, iyi performans gösteren varlıklardan bir kısmını satıp, düşük performans gösteren varlıklardan alım yaparak yapılır. Bu, 'düşükten al, yüksekten sat' prensibini sistematik bir şekilde uygulamaya benzer ve portföyün istenen risk seviyesinde kalmasına yardımcı olur.",
+        "bulletPoints": [
+          "Portföyü orijinal hedef varlık dağılımına geri döndürür.",
+          "Risk kontrolünü sağlar ve aşırı risk almayı önler.",
+          "Duygusal kararlar vermeden disiplinli bir şekilde 'düşükten al, yüksekten sat' yapılmasını sağlar.",
+          "Belirli periyotlarla (örn: yıllık, 6 aylık) veya varlık ağırlıkları belirli bir eşiği aştığında yapılabilir."
+        ],
+        "definitions": {
+          "Hedef Varlık Dağılımı (Target Asset Allocation)": "Yatırımcının risk toleransı ve hedeflerine göre başlangıçta belirlediği ideal varlık sınıfı yüzdeleridir.",
+          "Sapma Toleransı (Drift Tolerance/Threshold)": "Bir varlık sınıfının hedef ağırlığından ne kadar sapabileceğine dair belirlenen yüzdelik limittir. Bu limit aşıldığında yeniden dengeleme tetiklenir (örn: %5 sapma)."
+        }
+      }
+    ],
+    "quiz": null
+  },
+  {
+    "id": "portfolio_5",
+    "title": "Portföy Yönetimi Değerlendirme",
+    "description": "Portföy yönetimi, çeşitlendirme, varlık dağılımı ve yeniden dengeleme bilginizi test edin.",
+    "type": "quiz",
+    "estimatedTime": "15 dk",
+    "order": 5,
+    "isCompleted": false,
+    "isLocked": true,
+    "prerequisites": ["portfolio_1", "portfolio_2", "portfolio_3", "portfolio_4"],
+    "content": [],
+    "quiz": {
+      "id": "quiz_portfolio_final",
+      "title": "Portföy Yönetimi Kapsamlı Test",
+      "passingScore": 75,
+      "timeLimit": 15,
+      "questions": [
+        {
+          "id": "qpf_1",
+          "type": "multipleChoice",
+          "question": "Çeşitlendirmenin temel amacı nedir?",
+          "options": [
+            "Her zaman en yüksek getiriyi elde etmek",
+            "Yatırım riskini azaltmak",
+            "Sadece tek bir varlık sınıfına odaklanmak",
+            "Sistematik riski tamamen ortadan kaldırmak"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Çeşitlendirme, farklı varlıklara yatırım yaparak portföyün toplam riskini azaltmayı hedefler."
+        },
+        {
+          "id": "qpf_2",
+          "type": "trueFalse",
+          "question": "Sistematik risk (piyasa riski), çeşitlendirme yoluyla önemli ölçüde azaltılabilir.",
+          "correctAnswer": false,
+          "explanation": "Sistematik risk tüm piyasayı etkilediği için çeşitlendirme ile ortadan kaldırılamaz. Çeşitlendirme sistematik olmayan riski azaltır."
+        },
+        {
+          "id": "qpf_3",
+          "type": "dragDrop",
+          "question": "Aşağıdaki portföy türlerini genel risk/getiri profilleriyle eşleştirin:",
+          "items": ["Agresif Portföy", "Dengeli Portföy", "Muhafazakar Portföy"],
+          "targets": ["Yüksek Risk / Yüksek Getiri Potansiyeli", "Orta Risk / Orta Getiri Potansiyeli", "Düşük Risk / Düşük Getiri Potansiyeli"],
+          "correctMatches": {
+            "Agresif Portföy": "Yüksek Risk / Yüksek Getiri Potansiyeli",
+            "Dengeli Portföy": "Orta Risk / Orta Getiri Potansiyeli",
+            "Muhafazakar Portföy": "Düşük Risk / Düşük Getiri Potansiyeli"
+          }
+        },
+        {
+          "id": "qpf_4",
+          "type": "multipleChoice",
+          "question": "Aşağıdakilerden hangisi bir 'varlık sınıfı' değildir?",
+          "options": [
+            "Hisse Senetleri",
+            "Tahviller",
+            "XYZ Teknoloji Şirketi Hisse Senedi",
+            "Emtialar (Altın, Petrol vb.)"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "XYZ Teknoloji Şirketi Hisse Senedi, 'Hisse Senetleri' varlık sınıfı içinde yer alan spesifik bir menkul kıymettir."
+        },
+        {
+          "id": "qpf_5",
+          "type": "multipleChoice",
+          "question": "Portföy yeniden dengelemenin (rebalancing) temel amacı nedir?",
+          "options": [
+            "En iyi performans gösteren varlıklara daha fazla yatırım yapmak",
+            "Portföyü orijinal hedef varlık dağılımına ve risk seviyesine geri döndürmek",
+            "Sık sık alım satım yaparak piyasayı yenmeye çalışmak",
+            "Sadece vergisel avantajlar sağlamak"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Yeniden dengeleme, portföyün zamanla değişen piyasa koşulları nedeniyle hedeflenen risk ve varlık dağılımından sapmasını önlemek için yapılır."
+        }
+      ]
+    }
+  }
+]

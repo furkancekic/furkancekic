@@ -1,162 +1,297 @@
 [
-    {
-      "id": "tech_1",
-      "title": "Teknik Analize Giriş: Fiyatın İzinde",
-      "description": "Fiyat grafiklerinin sırlarını çözerek gelecekteki hareketleri tahmin etme sanatı ve temel prensipleri.",
-      "type": "theory",
-      "estimatedTime": "10 dk",
-      "order": 1,
-      "isCompleted": false,
-      "isLocked": false,
-      "prerequisites": [],
-      "content": [
-        {
-          "id": "tech_1_content_1",
-          "type": "textContent",
-          "title": "Teknik Analiz Nedir?",
-          "content": "Teknik analiz, geçmiş piyasa verilerini, özellikle fiyat ve işlem hacmini inceleyerek gelecekteki fiyat hareketlerini tahmin etmeye çalışan bir analiz yöntemidir. Temel analizin aksine, bir şirketin 'içsel değerini' (finansal durumu, yönetimi, sektörü vb.) anlamaya çalışmak yerine, piyasadaki arz ve talep güçlerinin fiyatlara nasıl yansıdığına odaklanır.\n\nTeknik analistler, piyasa psikolojisinin ve yatırımcı davranışlarının kendini tekrar eden desenler oluşturduğuna inanırlar. Bu desenleri ve trendleri belirleyerek alım-satım kararları vermeyi hedeflerler.",
-          "bulletPoints": [
-            "Geçmiş fiyat hareketleri gelecekteki hareketler hakkında ipuçları içerir.",
-            "Piyasa her şeyi fiyatlar (bilinen tüm bilgiler zaten fiyata yansımıştır).",
-            "Fiyatlar rastgele değil, trendler halinde hareket eder.",
-            "Tarih tekerrür eder (geçmişte işe yarayan formasyonlar ve göstergeler gelecekte de çalışabilir)."
-          ],
-          "definitions": {
-            "Arz (Supply)": "Belirli bir fiyattan satılmaya hazır olan menkul kıymet miktarıdır.",
-            "Talep (Demand)": "Belirli bir fiyattan alınmaya istekli olunan menkul kıymet miktarıdır.",
-            "İşlem Hacmi (Volume)": "Belirli bir zaman diliminde alınıp satılan toplam hisse senedi (veya diğer varlık) sayısıdır. Trendin gücünü teyit etmede önemlidir."
-          }
-        },
-        {
-          "id": "tech_1_content_2",
-          "type": "textContent",
-          "title": "Teknik Analiz vs. Temel Analiz",
-          "content": "Yatırım dünyasında iki ana analiz yaklaşımı vardır: Teknik analiz ve Temel analiz. Her ikisinin de amacı kârlı yatırım kararları almaktır, ancak yöntemleri farklıdır.\n\n*   **Temel Analiz:** Bir şirketin gerçek değerini belirlemeye odaklanır. Bunun için şirketin mali tablolarını (bilanço, gelir tablosu, nakit akış tablosu), yönetim kalitesini, rekabet avantajlarını, sektör durumunu ve genel ekonomik koşulları inceler. Amaç, 'değerinin altında' işlem gören şirketleri bulmaktır.\n\n*   **Teknik Analiz:** 'Ne' alınıp satıldığıyla değil, 'ne zaman' alınıp satılacağıyla daha çok ilgilenir. Fiyat grafiklerindeki desenleri, trendleri ve göstergeleri kullanarak piyasanın yönünü tahmin etmeye çalışır.\n\nBirçok yatırımcı, bu iki yaklaşımı birleştirerek kullanır. Örneğin, temel analize göre iyi bir şirket bulunduktan sonra, teknik analizle doğru giriş ve çıkış noktaları belirlenebilir.",
-          "bulletPoints": [
-            "Temel analiz 'neden' sorusuna, teknik analiz 'ne zaman' sorusuna odaklanır.",
-            "Temel analiz şirketin değerini, teknik analiz fiyat hareketlerini inceler.",
-            "İki yöntem birbirini tamamlayıcı olarak kullanılabilir."
-          ],
-          "definitions": {
-            "İçsel Değer (Intrinsic Value)": "Bir varlığın tüm temel faktörler dikkate alındığında sahip olduğu varsayılan gerçek değeridir."
-          }
+  {
+    "id": "tech_1",
+    "title": "Teknik Analize Giriş: Fiyatın İzinde",
+    "description": "Fiyat grafiklerinin sırlarını çözerek gelecekteki hareketleri tahmin etme sanatı ve temel prensipleri.",
+    "type": "theory",
+    "estimatedTime": "10 dk",
+    "order": 1,
+    "isCompleted": false,
+    "isLocked": false,
+    "prerequisites": [],
+    "content": [
+      {
+        "id": "tech_1_content_1",
+        "type": "textContent",
+        "title": "Teknik Analiz Nedir?",
+        "content": "Teknik analiz, geçmiş piyasa verilerini, özellikle fiyat ve işlem hacmini inceleyerek gelecekteki fiyat hareketlerini tahmin etmeye çalışan bir analiz yöntemidir. Temel analizin aksine, bir şirketin 'içsel değerini' (finansal durumu, yönetimi, sektörü vb.) anlamaya çalışmak yerine, piyasadaki arz ve talep güçlerinin fiyatlara nasıl yansıdığına odaklanır.\n\nTeknik analistler, piyasa psikolojisinin ve yatırımcı davranışlarının kendini tekrar eden desenler oluşturduğuna inanırlar. Bu desenleri ve trendleri belirleyerek alım-satım kararları vermeyi hedeflerler.",
+        "bulletPoints": [
+          "Geçmiş fiyat hareketleri gelecekteki hareketler hakkında ipuçları içerir.",
+          "Piyasa her şeyi fiyatlar (bilinen tüm bilgiler zaten fiyata yansımıştır).",
+          "Fiyatlar rastgele değil, trendler halinde hareket eder.",
+          "Tarih tekerrür eder (geçmişte işe yarayan formasyonlar ve göstergeler gelecekte de çalışabilir)."
+        ],
+        "definitions": {
+          "Arz (Supply)": "Belirli bir fiyattan satılmaya hazır olan menkul kıymet miktarıdır.",
+          "Talep (Demand)": "Belirli bir fiyattan alınmaya istekli olunan menkul kıymet miktarıdır.",
+          "İşlem Hacmi (Volume)": "Belirli bir zaman diliminde alınıp satılan toplam hisse senedi (veya diğer varlık) sayısıdır. Trendin gücünü teyit etmede önemlidir."
         }
-      ],
-      "quiz": null
-    },
-    {
-      "id": "tech_2",
-      "title": "Grafik Türleri: Fiyatın Görsel Dili",
-      "description": "Çizgi, bar ve mum grafiklerini okumayı öğrenerek piyasa hareketlerini daha iyi anlayın ve yorumlayın.",
-      "type": "interactive",
-      "estimatedTime": "18 dk",
-      "order": 2,
-      "isCompleted": false,
-      "isLocked": true,
-      "prerequisites": ["tech_1"],
-      "content": [
-        {
-          "id": "tech_2_content_1",
-          "type": "textContent",
-          "title": "Neden Farklı Grafik Türleri Var?",
-          "content": "Fiyat hareketlerini görselleştirmek için çeşitli grafik türleri kullanılır. Her biri, farklı detay seviyelerinde bilgi sunar ve analistlerin tercihlerine göre kullanılır. En yaygın olanları şunlardır:\n\n*   **Çizgi Grafik (Line Chart):** Genellikle belirli bir zaman periyodunun (gün, hafta, ay) kapanış fiyatlarını birleştirerek oluşturulur. Basittir ve genel trendi görmek için kullanışlıdır.\n*   **Bar Grafik (Bar Chart / OHLC Chart):** Her bir zaman periyodu için dört önemli fiyat bilgisini gösterir: Açılış (Open), En Yüksek (High), En Düşük (Low) ve Kapanış (Close). Dikey bir çizgi en yüksek ve en düşük fiyatları, soldaki küçük yatay çizgi açılış fiyatını, sağdaki küçük yatay çizgi ise kapanış fiyatını gösterir.\n*   **Mum Grafik (Candlestick Chart):** Bar grafiğe benzer şekilde OHLC bilgilerini içerir ancak daha görsel bir sunum sunar. 'Gövde' açılış ve kapanış fiyatları arasındaki farkı, 'fitiller' (gölgeler) ise en yüksek ve en düşük fiyatları gösterir. Gövdenin rengi genellikle fiyatın o periyotta yükseldiğini mi (genellikle yeşil veya beyaz) yoksa düştüğünü mü (genellikle kırmızı veya siyah) gösterir.",
-          "bulletPoints": [
-            "Çizgi grafik genel trend için idealdir.",
-            "Bar ve Mum grafikler daha detaylı OHLC bilgisi sunar.",
-            "Mum grafikler, görsel yorumlama kolaylığı nedeniyle popülerdir."
-          ],
-          "definitions": {
-            "OHLC": "Açılış (Open), En Yüksek (High), En Düşük (Low), Kapanış (Close) fiyatlarının kısaltmasıdır."
-          }
-        },
-        {
-          "id": "tech_2_chart_1",
-          "type": "interactiveChartContent",
-          "title": "Mum Grafik İncelemesi (BTC/USD Günlük)",
-          "explanation": "Aşağıdaki mum grafiği, Bitcoin'in Amerikan Doları karşısındaki günlük fiyat hareketlerini gösterir. Yeşil mumlar kapanışın açılıştan yüksek, kırmızı mumlar ise düşük olduğunu belirtir. Mumların gövdelerini ve fitillerini inceleyerek her günkü fiyat aralığını ve kapanış yönünü görebilirsiniz. Grafiği yakınlaştırıp kaydırarak belirli dönemleri detaylı analiz edebilirsiniz.",
-          "symbol": "BTC/USD",
-          "timeframe": "Günlük",
-          "chartType": "candlestick",
-          "indicators": [
-             {"type": "SMA", "parameters": {"period": 50, "color": "blue"}, "isVisible": false}, 
-             {"type": "EMA", "parameters": {"period": 20, "color": "orange"}, "isVisible": false}
-          ],
-          "annotations": [
-            "Uzun yeşil gövdeli mumlar güçlü alıcı baskısını gösterir.",
-            "Uzun kırmızı gövdeli mumlar güçlü satıcı baskısını gösterir.",
-            "Uzun üst fitilli mumlar, gün içinde yükseliş yaşandığını ancak kapanışa doğru satış baskısıyla karşılaşıldığını gösterebilir.",
-            "Doji mumu (açılış ve kapanış fiyatının çok yakın olması) kararsızlığı işaret edebilir."
-          ]
-        },
-        {
-          "id": "tech_2_chart_2",
-          "type": "interactiveChartContent",
-          "title": "Çizgi Grafik ve Alan Grafik (ETH/USD Haftalık)",
-          "explanation": "Bu grafikte Ethereum'un haftalık kapanış fiyatlarını gösteren bir çizgi grafik ve aynı veriyi kullanan bir alan grafik bulunmaktadır. Çizgi grafik genel trendi net bir şekilde gösterirken, alan grafik trendin altındaki bölgeyi doldurarak görsel bir vurgu yapar. Grafik tipini değiştirerek farkı gözlemleyebilirsiniz.",
-          "symbol": "ETH/USD",
-          "timeframe": "Haftalık",
-          "chartType": "line", 
-          "indicators": [],
-          "annotations": [
-            "Çizgi grafikler, uzun vadeli trend analizleri için sıkça kullanılır.",
-            "Alan grafikleri, özellikle hacim veya birikim gibi verileri göstermek için de tercih edilebilir."
-          ]
-        }
-      ],
-      "quiz": null
-    },
-    {
-      "id": "tech_12_quiz",
-      "title": "Teknik Analiz Bilgi Sınavı",
-      "description": "Teknik analiz prensipleri ve grafik okuma becerilerinizi test edin.",
-      "type": "quiz",
-      "estimatedTime": "12 dk",
-      "order": 12,
-      "isCompleted": false,
-      "isLocked": true,
-      "prerequisites": ["tech_1", "tech_2", "tech_3", "tech_4", "tech_5", "tech_6", "tech_7", "tech_8", "tech_9", "tech_10", "tech_11"],
-      "content": [],
-      "quiz": {
-        "id": "quiz_technical_main",
-        "title": "Teknik Analiz Değerlendirme Testi",
-        "passingScore": 80,
-        "timeLimit": 20,
-        "questions": [
+      }
+    ],
+    "quiz": null
+  },
+  {
+    "id": "tech_2",
+    "title": "Grafik Türleri: Fiyatın Görsel Dili",
+    "description": "Çizgi, bar ve mum grafiklerini okumayı öğrenerek piyasa hareketlerini daha iyi anlayın ve yorumlayın.",
+    "type": "interactive",
+    "estimatedTime": "18 dk",
+    "order": 2,
+    "isCompleted": false,
+    "isLocked": false,
+    "prerequisites": ["tech_1"],
+    "content": [
+      {
+        "id": "tech_2_content_1",
+        "type": "textContent",
+        "title": "Grafik Türlerinin Önemi",
+        "content": "Finansal piyasalarda fiyat hareketlerini görselleştirmek için çeşitli grafik türleri kullanılır. Her biri farklı detay seviyelerinde bilgi sunar ve analistlerin ihtiyaçlarına göre tercih edilir.\n\nEn yaygın kullanılan grafik türleri şunlardır: Çizgi grafikler genel trendi göstermek için, bar ve mum grafikler ise detaylı OHLC (Open-High-Low-Close) bilgilerini sunmak için kullanılır.",
+        "bulletPoints": [
+          "Çizgi grafik: Genel trend analizi için idealdir",
+          "Bar grafik: OHLC bilgilerini sistematik olarak gösterir",
+          "Mum grafik: Görsel yorumlama kolaylığı sağlar",
+          "Her grafik türü farklı analiz ihtiyaçlarına cevap verir"
+        ]
+      },
+      {
+        "id": "tech_2_chart_1",
+        "type": "interactiveChartContent",
+        "title": "Bitcoin Mum Grafik Analizi",
+        "explanation": "Bu interaktif grafik, Bitcoin'in günlük fiyat hareketlerini mum grafik formatında gösterir. Grafiği yakınlaştırabilir, kaydırabilir ve trackball ile detayları inceleyebilirsiniz.",
+        "symbol": "BTC/USD",
+        "timeframe": "Günlük",
+        "chartType": "candlestick",
+        "indicators": [
           {
-            "id": "qt_1",
-            "type": "multipleChoice",
-            "question": "Aşağıdakilerden hangisi teknik analizin temel varsayımlarından biri değildir?",
-            "options": [
-              "Fiyatlar trendler halinde hareket eder.",
-              "Piyasa her şeyi fiyatlar.",
-              "Bir şirketin içsel değeri her zaman piyasa fiyatına eşittir.",
-              "Tarih tekerrür eder."
-            ],
-            "correctAnswerIndex": 2,
-            "explanation": "Teknik analiz, bir şirketin içsel değeriyle doğrudan ilgilenmez; bu temel analizin konusudur. Teknik analiz, piyasa fiyatının zaten tüm bilinen bilgileri yansıttığını varsayar."
+            "type": "SMA",
+            "parameters": {"period": 20},
+            "isVisible": true
           },
           {
-            "id": "qt_2",
-            "type": "trueFalse",
-            "question": "Mum grafikte, mumun gövdesi o periyottaki en yüksek ve en düşük fiyatlar arasındaki farkı gösterir.",
-            "correctAnswer": false,
-            "explanation": "Mumun gövdesi açılış ve kapanış fiyatları arasındaki farkı gösterir. En yüksek ve en düşük fiyatlar fitiller (gölgeler) ile temsil edilir."
-          },
-          {
-            "id": "qt_3",
-            "type": "multipleChoice",
-            "question": "Fiyatların belirli bir seviyenin altına düşmekte zorlandığı ve alıcıların devreye girdiği bölgeye ne ad verilir?",
-            "options": [
-              "Direnç Seviyesi",
-              "Destek Seviyesi",
-              "Trend Çizgisi",
-              "Volatilite Bandı"
-            ],
-            "correctAnswerIndex": 1,
-            "explanation": "Destek seviyesi, fiyatların düşüş sırasında karşılaştığı ve genellikle yukarı yönlü tepki verdiği bir fiyat bölgesidir."
+            "type": "EMA",
+            "parameters": {"period": 50},
+            "isVisible": true
           }
-
+        ],
+        "annotations": [
+          "Yeşil mumlar kapanışın açılıştan yüksek olduğunu gösterir (yükseliş)",
+          "Kırmızı mumlar kapanışın açılıştan düşük olduğunu gösterir (düşüş)",
+          "Üst fitil: Gün içi en yüksek fiyat ile kapanış/açılış arasındaki fark",
+          "Alt fitil: Açılış/kapanış ile gün içi en düşük fiyat arasındaki fark"
+        ]
+      },
+      {
+        "id": "tech_2_chart_2",
+        "type": "interactiveChartContent",
+        "title": "Ethereum Çizgi ve Alan Grafik",
+        "explanation": "Ethereum'un haftalık performansını çizgi grafik formatında inceleyin. Bu grafik türü uzun vadeli trendleri belirlemek için idealdir.",
+        "symbol": "ETH/USD",
+        "timeframe": "Haftalık",
+        "chartType": "line",
+        "indicators": [
+          {
+            "type": "SMA",
+            "parameters": {"period": 10},
+            "isVisible": true
+          }
+        ],
+        "annotations": [
+          "Çizgi grafikler uzun vadeli trend analizlerinde tercih edilir",
+          "Gürültüyü azaltarak ana trendi daha net gösterir",
+          "Kapanış fiyatları temel alınarak oluşturulur"
         ]
       }
+    ],
+    "quiz": null
+  },
+  {
+    "id": "tech_3",
+    "title": "RSI Göstergesi ile Piyasa Momentum Analizi",
+    "description": "Relative Strength Index (RSI) kullanarak aşırı alım ve aşırı satım seviyelerini belirlemeyi öğrenin.",
+    "type": "interactive",
+    "estimatedTime": "25 dk",
+    "order": 3,
+    "isCompleted": false,
+    "isLocked": false,
+    "prerequisites": ["tech_1", "tech_2"],
+    "content": [
+      {
+        "id": "tech_3_content_1",
+        "type": "textContent",
+        "title": "RSI Göstergesinin Temelleri",
+        "content": "Relative Strength Index (RSI), 1978'de J. Welles Wilder tarafından geliştirilen momentum osilatörüdür. 0-100 arasında değer alır ve piyasanın aşırı alım veya aşırı satım bölgelerinde olup olmadığını gösterir.\n\nRSI, belirli bir periyottaki (genellikle 14 gün) fiyat artışlarının, fiyat düşüşlerine oranını hesaplayarak çalışır. Bu oran, piyasanın ne kadar hızlı hareket ettiğini ve bir tersine dönüş yaklaşıp yaklaşmadığını gösterir.",
+        "bulletPoints": [
+          "70 ve üzeri: Aşırı alım bölgesi (satış sinyali olabilir)",
+          "30 ve altı: Aşırı satım bölgesi (alış sinyali olabilir)",
+          "50 seviyesi: Nötr momentum (trend belirleme için kullanılır)",
+          "Divergence: Fiyat ve RSI arasındaki uyumsuzluk güçlü sinyal verir"
+        ],
+        "definitions": {
+          "Momentum": "Fiyat değişiminin hızını ve büyüklüğünü ölçen teknik analiz kavramıdır.",
+          "Osilatör": "Belirli aralıkta (0-100 gibi) hareket eden ve overbought/oversold koşulları gösteren göstergelerdir.",
+          "Divergence": "Fiyat hareketi ile gösterge arasındaki uyumsuzluk, trend değişimi sinyali verebilir."
+        }
+      },
+      {
+        "id": "tech_3_rsi_interactive",
+        "type": "interactiveEducationChart",
+        "title": "RSI Göstergesi Etkileşimli Analiz",
+        "description": "RSI göstergesinin farklı piyasa koşullarında nasıl davrandığını interaktif olarak keşfedin.",
+        "indicatorType": "rsi",
+        "learningPoints": [
+          "RSI 70 seviyesini aştığında aşırı alım sinyali oluşur",
+          "RSI 30 seviyesinin altına indiğinde aşırı satım sinyali oluşur",
+          "RSI ile fiyat arasındaki divergence güçlü trend değişimi sinyali verir",
+          "RSI parametrelerini değiştirerek hassasiyeti ayarlayabilirsiniz",
+          "Farklı senaryolarda RSI'ın davranışını gözlemleyin"
+        ]
+      },
+      {
+        "id": "tech_3_chart_1",
+        "type": "interactiveChartContent",
+        "title": "Apple Hisse Senedi RSI Analizi",
+        "explanation": "Apple (AAPL) hisse senedinin RSI göstergesi ile birlikte analiz edin. Aşırı alım ve satım seviyelerini gerçek veriler üzerinde inceleyin.",
+        "symbol": "AAPL",
+        "timeframe": "Günlük",
+        "chartType": "candlestick",
+        "indicators": [
+          {
+            "type": "RSI",
+            "parameters": {"period": 14},
+            "isVisible": true
+          },
+          {
+            "type": "SMA",
+            "parameters": {"period": 20},
+            "isVisible": true
+          }
+        ],
+        "annotations": [
+          "RSI 70 üzerinde olan bölgeleri aşırı alım olarak değerlendirin",
+          "RSI 30 altında olan bölgeleri aşırı satım olarak değerlendirin",
+          "RSI ve fiyat arasındaki divergence'lara dikkat edin",
+          "Trendli piyasalarda RSI tek başına yeterli olmayabilir"
+        ]
+      }
+    ],
+    "quiz": null
+  },
+  {
+    "id": "tech_4",
+    "title": "MACD: Trend ve Momentum Birleşimi",
+    "description": "Moving Average Convergence Divergence (MACD) ile trend yönünü ve momentum değişimlerini analiz etmeyi öğrenin.",
+    "type": "interactive",
+    "estimatedTime": "22 dk",
+    "order": 4,
+    "isCompleted": false,
+    "isLocked": false,
+    "prerequisites": ["tech_3"],
+    "content": [
+      {
+        "id": "tech_4_content_1",
+        "type": "textContent",
+        "title": "MACD Göstergesinin Yapısı",
+        "content": "MACD (Moving Average Convergence Divergence), Gerald Appel tarafından geliştirilen ve hem trend hem de momentum analizini birleştiren güçlü bir teknik göstergedir.\n\nMACD üç bileşenden oluşur: MACD çizgisi (12-periyot EMA ile 26-periyot EMA arasındaki fark), Sinyal çizgisi (MACD'nin 9-periyot EMA'sı) ve Histogram (MACD ile Sinyal çizgisi arasındaki fark).",
+        "bulletPoints": [
+          "MACD Çizgisi = 12-EMA - 26-EMA",
+          "Sinyal Çizgisi = MACD'nin 9-periyot EMA'sı",
+          "Histogram = MACD - Sinyal Çizgisi",
+          "Sıfır çizgisinin üstü yükseliş, altı düşüş trendini gösterir"
+        ],
+        "definitions": {
+          "Convergence": "İki hareketli ortalamanın birbirine yaklaşması durumudur.",
+          "Divergence": "İki hareketli ortalamanın birbirinden uzaklaşması durumudur.",
+          "Crossover": "MACD çizgisinin sinyal çizgisini kesmesi, alım/satım sinyali oluşturur."
+        }
+      },
+      {
+        "id": "tech_4_macd_interactive",
+        "type": "interactiveEducationChart",
+        "title": "MACD Göstergesi Etkileşimli Eğitim",
+        "description": "MACD göstergesinin bileşenlerini ve sinyallerini interaktif olarak keşfedin.",
+        "indicatorType": "macd",
+        "learningPoints": [
+          "MACD çizgisinin sinyal çizgisini yukarı kesmesi alım sinyali oluşturur",
+          "MACD çizgisinin sinyal çizgisini aşağı kesmesi satım sinyali oluşturur",
+          "Histogram pozitif olduğunda momentum yükseliş yönündedir",
+          "Sıfır çizgisi geçişleri trend değişimini gösterebilir",
+          "MACD parametrelerini değiştirerek hassasiyeti ayarlayın"
+        ]
+      }
+    ],
+    "quiz": null
+  },
+  {
+    "id": "tech_quiz_1",
+    "title": "Teknik Analiz Temel Bilgi Sınavı",
+    "description": "Teknik analiz prensipleri ve göstergeler hakkındaki bilginizi test edin.",
+    "type": "quiz",
+    "estimatedTime": "15 dk",
+    "order": 5,
+    "isCompleted": false,
+    "isLocked": false,
+    "prerequisites": ["tech_1", "tech_2", "tech_3", "tech_4"],
+    "content": [],
+    "quiz": {
+      "id": "quiz_technical_basics",
+      "title": "Teknik Analiz Temel Bilgi Değerlendirmesi",
+      "passingScore": 70,
+      "timeLimit": 15,
+      "questions": [
+        {
+          "id": "qt_1",
+          "type": "multipleChoice",
+          "question": "Teknik analizin temel varsayımlarından hangisi yanlıştır?",
+          "options": [
+            "Piyasa her şeyi fiyatlar",
+            "Fiyatlar trendler halinde hareket eder",
+            "Şirketin finansal tablolarını incelemek gereklidir",
+            "Tarih tekerrür eder"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "Şirketin finansal tablolarını incelemek temel analizin konusudur. Teknik analiz sadece fiyat ve hacim verilerine odaklanır."
+        },
+        {
+          "id": "qt_2",
+          "type": "trueFalse",
+          "question": "Mum grafikte yeşil (veya beyaz) mumlar, o periyotta kapanış fiyatının açılış fiyatından yüksek olduğunu gösterir.",
+          "correctAnswer": true,
+          "explanation": "Doğru. Yeşil (bullish) mumlar kapanışın açılıştan yüksek olduğu dönemleri, kırmızı (bearish) mumlar ise kapanışın açılıştan düşük olduğu dönemleri gösterir."
+        },
+        {
+          "id": "qt_3",
+          "type": "multipleChoice",
+          "question": "RSI göstergesi hangi değer aralığında hareket eder ve aşırı alım seviyesi olarak hangi değer kabul edilir?",
+          "options": [
+            "0-50 aralığı, aşırı alım 40",
+            "0-100 aralığı, aşırı alım 70",
+            "-100 ile +100 aralığı, aşırı alım 80",
+            "0-200 aralığı, aşırı alım 150"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "RSI 0-100 aralığında hareket eder. Genellikle 70 ve üzeri aşırı alım, 30 ve altı aşırı satım olarak kabul edilir."
+        },
+        {
+          "id": "qt_4",
+          "type": "dragDrop",
+          "question": "MACD göstergesinin bileşenlerini doğru açıklamalarıyla eşleştirin:",
+          "items": ["MACD Çizgisi", "Sinyal Çizgisi", "Histogram"],
+          "targets": ["12-EMA ve 26-EMA farkı", "MACD'nin 9-EMA'sı", "MACD ve Sinyal farkı"],
+          "correctMatches": {
+            "MACD Çizgisi": "12-EMA ve 26-EMA farkı",
+            "Sinyal Çizgisi": "MACD'nin 9-EMA'sı",
+            "Histogram": "MACD ve Sinyal farkı"
+          },
+          "explanation": "MACD üç ana bileşenden oluşur: Ana MACD çizgisi (hızlı ve yavaş EMA farkı), Sinyal çizgisi (MACD'nin yumuşatılmış hali) ve Histogram (ikisi arasındaki fark)."
+        },
+        {
+          "id": "qt_5",
+          "type": "trueFalse",
+          "question": "Teknik analizde 'divergence' terimi, fiyat hareketi ile gösterge arasındaki uyumsuzluğu ifade eder ve güçlü bir trend değişimi sinyali olabilir.",
+          "correctAnswer": true,
+          "explanation": "Doğru. Divergence, fiyat yeni bir tepe/dip yaparken göstergenin aynı hareketi yapmaması durumudur ve trend zayıflaması/değişimi işareti olabilir."
+        }
+      ]
     }
-  ]
+  }
+]

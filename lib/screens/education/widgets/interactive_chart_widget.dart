@@ -1,11 +1,15 @@
 // screens/education/widgets/interactive_chart_widget.dart
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import '../../../theme/app_theme.dart'; // AppTheme dosyanız
-import '../../../widgets/common_widgets.dart'; // Assuming AdaptiveCard is defined here
-import '../../../models/candle_data.dart'; // Assuming CandleData is defined here
-import '../models/education_models.dart'; // Assuming InteractiveChartContent and ChartType are defined here
-import 'dart:math' as Math; // For Math.max/min
+import 'package:intl/intl.dart';
+import 'dart:math' as math;
+import '../../../theme/app_theme.dart';
+import '../../../widgets/common_widgets.dart';
+
+// education_models.dart içindeki CandleData’yı gizliyoruz. 
+// Böylece tek “CandleData” tanımımız '../../../models/candle_data.dart' içinden gelecek.
+import '../models/education_models.dart' hide CandleData;
+import '../../../models/candle_data.dart';
 
 class InteractiveChartWidget extends StatefulWidget {
   final InteractiveChartContent content;
@@ -21,690 +25,1036 @@ class InteractiveChartWidget extends StatefulWidget {
   State<InteractiveChartWidget> createState() => _InteractiveChartWidgetState();
 }
 
-class _InteractiveChartWidgetState extends State<InteractiveChartWidget> {
-  List<CandleData> _chartData = [];
+class _InteractiveChartWidgetState extends State<InteractiveChartWidget>
+    with TickerProviderStateMixin {
+  List<CandleData> _priceData = [];
+  List<IndicatorDataPoint> _indicatorData = [];
   bool _isLoading = true;
-  String _selectedDataPoint = '';
-  late ZoomPanBehavior _zoomPanBehavior;
-  late TrackballBehavior _trackballBehavior;
-  Set<String> _enabledIndicators = {};
+  bool _showVolume = false;
+  bool _showGrid = true;
+  late AnimationController _animationController;
 
-  // Bu statik const renkler artık kullanılmayacak, tema eklentisinden alınacak.
-  // static const Color _chartGridLinesColor = AppTheme.textSecondary;
-  // static const Color _chartAxisLabelColor = AppTheme.textSecondary;
-  // static const Color _chartTooltipBackgroundColor = AppTheme.cardColor;
-  // static const Color _chartTooltipTextColor = AppTheme.textPrimary;
+  // Chart interaction tracking
+  int _totalInteractions = 0;
+  bool _hasZoomed = false;
+  bool _hasPanned = false;
+  bool _hasUsedTrackball = false;
+
+  /// The ZoomPanBehavior instance used by the chart.
+  late ZoomPanBehavior _zoomPanBehavior;
 
   @override
   void initState() {
     super.initState();
-    // _initializeChart behaviors now depend on context, so move to didChangeDependencies or build
-    _loadChartData();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Initialize behaviors here as they might depend on Theme
-    _initializeChartBehaviors();
-    _initializeEnabledIndicators();
-  }
-
-  void _initializeChartBehaviors() {
-    final themeExtension = Theme.of(context).extension<AppThemeExtension>();
-    final tooltipBackgroundColor =
-        themeExtension?.cardColor ?? AppTheme.cardColor;
-    final tooltipTextColor =
-        themeExtension?.textPrimary ?? AppTheme.textPrimary;
-
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
     _zoomPanBehavior = ZoomPanBehavior(
       enablePinching: true,
       enablePanning: true,
       enableDoubleTapZooming: true,
       enableMouseWheelZooming: true,
-      enableSelectionZooming: true,
     );
-
-    _trackballBehavior = TrackballBehavior(
-      enable: true,
-      activationMode: ActivationMode.singleTap,
-      tooltipDisplayMode: TrackballDisplayMode.groupAllPoints,
-      lineType: TrackballLineType.vertical,
-      tooltipSettings: InteractiveTooltip(
-        // const kaldırıldı
-        enable: true,
-        color: tooltipBackgroundColor,
-        textStyle: TextStyle(color: tooltipTextColor),
-      ),
-    );
+    _loadChartData();
   }
 
-  void _initializeEnabledIndicators() {
-    _enabledIndicators.clear(); // Clear before re-initializing
-    for (var indicator in widget.content.indicators) {
-      if (indicator.isVisible) {
-        _enabledIndicators.add(indicator.type);
-      }
-    }
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadChartData() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      // Simulating a network call or data generation
-      await Future.delayed(const Duration(milliseconds: 300));
-      final data = await _generateEducationalData();
-      if (!mounted) return;
-      setState(() {
-        _chartData = data;
-        _isLoading = false;
-      });
-      widget.onInteraction({
-        'action': 'data_loaded',
-        'symbol': widget.content.symbol,
-        'dataPoints': data.length,
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-      // print("Error loading chart data: $e");
-    }
+    setState(() => _isLoading = true);
+
+    // Simulate API call delay
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    _priceData = _generateRealisticPriceData();
+    _indicatorData = _calculateIndicators();
+
+    setState(() => _isLoading = false);
+
+    // Start animation
+    _animationController.forward();
+
+    // Report data load interaction
+    _reportInteraction('data_loaded');
   }
 
-  Future<List<CandleData>> _generateEducationalData() async {
+  List<CandleData> _generateRealisticPriceData() {
     final List<CandleData> data = [];
     final now = DateTime.now();
-    final random = Math.Random(DateTime.now().millisecondsSinceEpoch);
+    final random = math.Random(42); // Fixed seed for consistent data
 
-    double basePrice =
-        100.0 + random.nextDouble() * 50; // Add some randomness to base price
+    // Determine base price based on symbol
+    double basePrice = _getBasePriceForSymbol(widget.content.symbol);
 
-    for (int i = 0; i < 60; i++) {
-      // Generate more data points for better zooming/panning
-      final date = now.subtract(Duration(days: 60 - i));
-      double trend = 0.0;
+    // Generate data points based on timeframe
+    final dataPoints = _getDataPointsForTimeframe(widget.content.timeframe);
+    final timeInterval = _getTimeInterval(widget.content.timeframe);
 
-      // Apply pattern for "EDUCATIONAL_PATTERN"
-      if (widget.content.symbol.toUpperCase() == 'EDUCATIONAL_PATTERN') {
-        // Simple Head and Shoulders like pattern
-        if (i < 10)
-          trend =
-              i * 0.1 * (random.nextDouble() * 0.4 + 0.8); // Left shoulder up
-        else if (i < 20)
-          trend = (1 - (i - 10) * 0.05) *
-              (random.nextDouble() * 0.4 + 0.8); // Left shoulder down
-        else if (i < 30)
-          trend = (0.5 + (i - 20) * 0.15) *
-              (random.nextDouble() * 0.4 + 0.8); // Head up
-        else if (i < 40)
-          trend = (2 - (i - 30) * 0.1) *
-              (random.nextDouble() * 0.4 + 0.8); // Head down
-        else if (i < 50)
-          trend = (1 + (i - 40) * 0.08) *
-              (random.nextDouble() * 0.4 + 0.8); // Right shoulder up
-        else
-          trend = (1.8 - (i - 50) * 0.07) *
-              (random.nextDouble() * 0.4 + 0.8); // Right shoulder down
-      } else if (widget.content.chartType == ChartType.line ||
-          widget.content.chartType == ChartType.area) {
-        trend =
-            Math.sin(i * 0.2) * 5 + i * 0.1; // Sinusoidal trend for line/area
-      } else {
-        trend = (random.nextDouble() - 0.45) *
-            2; // General random walk for candlestick
+    double currentPrice = basePrice;
+    double momentum = 0.0;
+    List<double> recentChanges = [];
+
+    for (int i = 0; i < dataPoints; i++) {
+      final date = now.subtract(Duration(
+        milliseconds: (dataPoints - i) * timeInterval,
+      ));
+
+      // Create realistic price movements
+      final marketHour = date.hour;
+      double volatilityMultiplier = _getVolatilityForHour(marketHour);
+
+      // Calculate momentum from recent changes
+      if (recentChanges.length >= 3) {
+        momentum = recentChanges.take(3).reduce((a, b) => a + b) / 3;
+        momentum *= 0.7; // Momentum decay
       }
 
-      final noise = (random.nextDouble() - 0.5) * 2; // More volatile noise
-      double open, close, high, low;
+      // Generate price change
+      double baseVolatility = currentPrice * 0.002; // 0.2% base volatility
+      double priceChange = _generateGaussianNoise(random) *
+          baseVolatility *
+          volatilityMultiplier;
 
-      if (i > 0 && _chartData.isNotEmpty && i <= _chartData.length) {
-        // Ensure _chartData[i-1] is safe
-        open = _chartData[i - 1].close + (random.nextDouble() - 0.5) * 0.5;
+      // Add momentum and mean reversion
+      priceChange += momentum * 0.3;
+      priceChange += (basePrice - currentPrice) * 0.001; // Mean reversion
+
+      // Create OHLC values
+      final open = currentPrice;
+      final close = math.max(
+          open + priceChange, basePrice * 0.5); // Prevent negative prices
+
+      final bodySize = (close - open).abs();
+      final minBodySize = currentPrice * 0.001;
+      final effectiveBodySize = math.max(bodySize, minBodySize);
+
+      // Calculate high and low with realistic wicks
+      final wickSize = effectiveBodySize * (0.5 + random.nextDouble() * 1.5);
+
+      double high, low;
+      if (close >= open) {
+        // Bullish candle
+        high = close + wickSize * (0.3 + random.nextDouble() * 0.4);
+        low = open - wickSize * (0.2 + random.nextDouble() * 0.3);
       } else {
-        open = basePrice + trend + noise * 0.5;
+        // Bearish candle
+        high = open + wickSize * (0.2 + random.nextDouble() * 0.3);
+        low = close - wickSize * (0.3 + random.nextDouble() * 0.4);
       }
 
-      close = open +
-          trend +
-          noise * 0.8 +
-          (random.nextDouble() - 0.5) * 1.5; // More movement in close
+      // Ensure logical constraints
+      low = math.max(low, basePrice * 0.3);
+      high = math.max(high, math.max(open, close));
 
-      high = Math.max(open, close) + random.nextDouble() * 2;
-      low = Math.min(open, close) - random.nextDouble() * 2;
-
-      // Ensure OHLC logic
-      if (low > open) low = open - random.nextDouble();
-      if (low > close) low = close - random.nextDouble();
-      if (high < open) high = open + random.nextDouble();
-      if (high < close) high = close + random.nextDouble();
-      if (open < low)
-        open = low + random.nextDouble() * 0.1; // ensure open > low
-      if (close < low)
-        close = low + random.nextDouble() * 0.1; // ensure close > low
-
-      basePrice = close; // Next candle starts relative to current close
+      // Generate volume
+      final volumeBase = _getVolumeBase(widget.content.symbol);
+      final volumeMultiplier = 0.7 + random.nextDouble() * 0.6;
+      final priceImpact = effectiveBodySize / currentPrice * 5;
+      final volume =
+          (volumeBase * volumeMultiplier * (1 + priceImpact)).round();
 
       data.add(CandleData(
-          date: date,
-          open: open,
-          high: high,
-          low: low,
-          close: close,
-          volume: 1000000 + random.nextInt(500000) + (i * 10000)));
+        date: date,
+        open: double.parse(open.toStringAsFixed(2)),
+        high: double.parse(high.toStringAsFixed(2)),
+        low: double.parse(low.toStringAsFixed(2)),
+        close: double.parse(close.toStringAsFixed(2)),
+        volume: volume,
+      ));
+
+      // Update for next iteration
+      recentChanges.insert(0, priceChange);
+      if (recentChanges.length > 10) recentChanges.removeLast();
+      currentPrice = close;
     }
-    _chartData = data; // Update _chartData for RSI calculation
+
     return data;
+  }
+
+  List<IndicatorDataPoint> _calculateIndicators() {
+    final List<IndicatorDataPoint> indicators = [];
+
+    // Process enabled indicators from content
+    for (final indicatorConfig in widget.content.indicators) {
+      if (indicatorConfig.isVisible) {
+        switch (indicatorConfig.type.toUpperCase()) {
+          case 'SMA':
+            indicators.addAll(_calculateSMA(indicatorConfig.parameters));
+            break;
+          case 'EMA':
+            indicators.addAll(_calculateEMA(indicatorConfig.parameters));
+            break;
+          case 'RSI':
+            indicators.addAll(_calculateRSI(indicatorConfig.parameters));
+            break;
+          case 'MACD':
+            indicators.addAll(_calculateMACD(indicatorConfig.parameters));
+            break;
+          default:
+            // Belirtilen tip tanınmıyorsa atla
+            break;
+        }
+      }
+    }
+
+    return indicators;
+  }
+
+  List<IndicatorDataPoint> _calculateSMA(Map<String, dynamic> params) {
+    final period = params['period'] as int? ?? 20;
+    final List<IndicatorDataPoint> smaData = [];
+
+    if (_priceData.length < period) return smaData;
+
+    for (int i = period - 1; i < _priceData.length; i++) {
+      double sum = 0;
+      for (int j = i - period + 1; j <= i; j++) {
+        sum += _priceData[j].close;
+      }
+      final sma = sum / period;
+
+      smaData.add(IndicatorDataPoint(
+        date: _priceData[i].date,
+        value: sma,
+        type: 'SMA',
+        additionalValues: {'period': period.toDouble()},
+      ));
+    }
+
+    return smaData;
+  }
+
+  List<IndicatorDataPoint> _calculateEMA(Map<String, dynamic> params) {
+    final period = params['period'] as int? ?? 20;
+    final List<IndicatorDataPoint> emaData = [];
+
+    if (_priceData.length < period) return emaData;
+
+    // Calculate initial SMA for first EMA value
+    double sum = 0;
+    for (int i = 0; i < period; i++) {
+      sum += _priceData[i].close;
+    }
+    double ema = sum / period;
+
+    emaData.add(IndicatorDataPoint(
+      date: _priceData[period - 1].date,
+      value: ema,
+      type: 'EMA',
+      additionalValues: {'period': period.toDouble()},
+    ));
+
+    // Calculate EMA for remaining data
+    final multiplier = 2.0 / (period + 1);
+    for (int i = period; i < _priceData.length; i++) {
+      ema = (_priceData[i].close * multiplier) + (ema * (1 - multiplier));
+
+      emaData.add(IndicatorDataPoint(
+        date: _priceData[i].date,
+        value: ema,
+        type: 'EMA',
+        additionalValues: {'period': period.toDouble()},
+      ));
+    }
+
+    return emaData;
+  }
+
+  List<IndicatorDataPoint> _calculateRSI(Map<String, dynamic> params) {
+    final period = params['period'] as int? ?? 14;
+    final List<IndicatorDataPoint> rsiData = [];
+
+    if (_priceData.length < period + 1) return rsiData;
+
+    // Calculate initial average gain and loss
+    double avgGain = 0;
+    double avgLoss = 0;
+
+    for (int i = 1; i <= period; i++) {
+      final change = _priceData[i].close - _priceData[i - 1].close;
+      if (change > 0) {
+        avgGain += change;
+      } else {
+        avgLoss += change.abs();
+      }
+    }
+
+    avgGain /= period;
+    avgLoss /= period;
+
+    // Calculate RSI
+    for (int i = period; i < _priceData.length; i++) {
+      if (i > period) {
+        final change = _priceData[i].close - _priceData[i - 1].close;
+        final smoothingFactor = 1.0 / period;
+
+        if (change > 0) {
+          avgGain = avgGain * (1 - smoothingFactor) + change * smoothingFactor;
+          avgLoss = avgLoss * (1 - smoothingFactor);
+        } else {
+          avgGain = avgGain * (1 - smoothingFactor);
+          avgLoss =
+              avgLoss * (1 - smoothingFactor) + change.abs() * smoothingFactor;
+        }
+      }
+
+      final rs =
+          avgLoss == 0 ? 100 : avgGain / avgLoss; // Avoid division by zero
+      final rsi = 100 - (100 / (1 + rs));
+
+      rsiData.add(IndicatorDataPoint(
+        date: _priceData[i].date,
+        value: rsi.clamp(0.0, 100.0),
+        type: 'RSI',
+        additionalValues: {'period': period.toDouble()},
+      ));
+    }
+
+    return rsiData;
+  }
+
+  List<IndicatorDataPoint> _calculateMACD(Map<String, dynamic> params) {
+    final fastPeriod = params['fast'] as int? ?? 12;
+    final slowPeriod = params['slow'] as int? ?? 26;
+
+    final fastEMA = _calculateEMA({'period': fastPeriod});
+    final slowEMA = _calculateEMA({'period': slowPeriod});
+
+    if (fastEMA.isEmpty || slowEMA.isEmpty) return [];
+
+    final List<IndicatorDataPoint> macdData = [];
+
+    for (int i = 0; i < slowEMA.length; i++) {
+      final fastIndex = i + (slowPeriod - fastPeriod);
+      if (fastIndex >= 0 && fastIndex < fastEMA.length) {
+        final macdValue = fastEMA[fastIndex].value - slowEMA[i].value;
+
+        macdData.add(IndicatorDataPoint(
+          date: slowEMA[i].date,
+          value: macdValue,
+          type: 'MACD',
+          additionalValues: {
+            'fast': fastPeriod.toDouble(),
+            'slow': slowPeriod.toDouble(),
+          },
+        ));
+      }
+    }
+
+    return macdData;
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeExtension = Theme.of(context).extension<AppThemeExtension>()!;
-    // _initializeChartBehaviors(); // Called in didChangeDependencies
-
     return Column(
       children: [
-        _buildChartControls(themeExtension),
+        _buildChartControls(),
         const SizedBox(height: 12),
-        AdaptiveCard(
-          child: SizedBox(
-            height: 300,
-            child: _isLoading
-                ? _buildLoadingChart(themeExtension)
-                : _buildChart(themeExtension),
-          ),
-        ),
+        _buildMainChart(),
+        if (_indicatorData.any((i) => i.type == 'RSI' || i.type == 'MACD'))
+          ...[
+            const SizedBox(height: 12),
+            _buildIndicatorChart(),
+          ],
         const SizedBox(height: 12),
-        if (widget.content.indicators.isNotEmpty)
-          _buildIndicatorControls(themeExtension),
-        if (_selectedDataPoint.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _buildSelectedDataInfo(themeExtension),
-        ],
+        _buildInteractionStats(),
       ],
     );
   }
 
-  Widget _buildChartControls(AppThemeExtension themeExtension) {
+  Widget _buildChartControls() {
     return AdaptiveCard(
       padding: const EdgeInsets.all(12),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: Text(
-              '${widget.content.symbol} - ${widget.content.timeframe}',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: themeExtension.textPrimary,
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.content.symbol,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${widget.content.timeframe} • ${widget.content.chartType.name.toUpperCase()}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              if (_isLoading)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: _refreshData,
+                      icon: const Icon(Icons.refresh),
+                      tooltip: 'Veriyi Yenile',
+                    ),
+                    IconButton(
+                      onPressed: _resetZoom,
+                      icon: const Icon(Icons.zoom_out_map),
+                      tooltip: 'Yakınlaştırmayı Sıfırla',
+                    ),
+                  ],
+                ),
+            ],
           ),
-          _buildChartTypeButton(
-              ChartType.candlestick, Icons.candlestick_chart, themeExtension),
-          const SizedBox(width: 8),
-          _buildChartTypeButton(
-              ChartType.line, Icons.show_chart, themeExtension),
-          const SizedBox(width: 8),
-          _buildChartTypeButton(
-              ChartType.area, Icons.area_chart, themeExtension),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildToggleButton(
+                'Hacim',
+                _showVolume,
+                Icons.bar_chart,
+                (value) => setState(() => _showVolume = value),
+              ),
+              const SizedBox(width: 8),
+              _buildToggleButton(
+                'Izgara',
+                _showGrid,
+                Icons.grid_on,
+                (value) => setState(() => _showGrid = value),
+              ),
+              const Spacer(),
+              Text(
+                '${_priceData.length} veri noktası',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildChartTypeButton(
-      ChartType type, IconData icon, AppThemeExtension themeExtension) {
-    final isSelected = widget.content.chartType == type;
-
+  Widget _buildToggleButton(
+    String label,
+    bool value,
+    IconData icon,
+    Function(bool) onChanged,
+  ) {
     return GestureDetector(
       onTap: () {
-        if (!isSelected) {
-          widget.onInteraction(
-              {'action': 'chart_type_changed', 'new_type': type.name});
-          // Note: The parent widget (LessonDetailScreen) should handle the state change
-          // for widget.content.chartType for this button to reflect the change.
-          // This widget itself does not directly modify widget.content.
-        }
+        onChanged(!value);
+        _reportInteraction(
+            'toggle_${label.toLowerCase().replaceAll('ı', 'i')}');
       },
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected
-              ? themeExtension.accentColor.withOpacity(0.2)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          color: value
+              ? AppTheme.accentColor.withOpacity(0.2)
+              : AppTheme.cardColorLight,
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: isSelected
-                ? themeExtension.accentColor
-                : themeExtension.textSecondary.withOpacity(0.3),
+            color: value ? AppTheme.accentColor : Colors.transparent,
             width: 1,
           ),
         ),
-        child: Icon(icon,
-            color: isSelected
-                ? themeExtension.accentColor
-                : themeExtension.textSecondary,
-            size: 20),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: value ? AppTheme.accentColor : AppTheme.textSecondary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: value ? AppTheme.accentColor : AppTheme.textSecondary,
+                fontWeight: value ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildLoadingChart(AppThemeExtension themeExtension) {
-    return Center(
+  Widget _buildMainChart() {
+    if (_isLoading) {
+      return AdaptiveCard(
+        child: SizedBox(
+          height: 300,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Grafik verileri yükleniyor...',
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return AdaptiveCard(
+      child: SizedBox(
+        height: 300,
+        child: AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            return SfCartesianChart(
+              plotAreaBorderWidth: 0,
+              primaryXAxis: DateTimeAxis(
+                majorGridLines: MajorGridLines(
+                  width: _showGrid ? 0.5 : 0,
+                  color: AppTheme.textSecondary.withOpacity(0.3),
+                ),
+                axisLine: const AxisLine(width: 0),
+                labelStyle: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 10,
+                ),
+              ),
+              primaryYAxis: NumericAxis(
+                opposedPosition: true,
+                majorGridLines: MajorGridLines(
+                  width: _showGrid ? 0.5 : 0,
+                  color: AppTheme.textSecondary.withOpacity(0.3),
+                ),
+                axisLine: const AxisLine(width: 0),
+                labelStyle: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 10,
+                ),
+                numberFormat: _getNumberFormat(),
+              ),
+              zoomPanBehavior: _zoomPanBehavior,
+
+              /// Called whenever zooming or panning is in progress.
+              onZooming: (ZoomPanArgs args) {
+                final prevFactor = args.previousZoomFactor;
+                final currFactor = args.currentZoomFactor;
+
+                // Detect zooming if both factors are non-null and changed.
+                if (prevFactor != null &&
+                    currFactor != null &&
+                    (prevFactor - currFactor).abs() > 1e-6) {
+                  if (!_hasZoomed) {
+                    _hasZoomed = true;
+                    _reportInteraction('chart_zoomed');
+                  }
+                }
+                // If factors are equal or null, check for panning via position.
+                else {
+                  final prevPos = args.previousZoomPosition;
+                  final currPos = args.currentZoomPosition;
+                  if (prevPos != null &&
+                      currPos != null &&
+                      prevPos != currPos) {
+                    if (!_hasPanned) {
+                      _hasPanned = true;
+                      _reportInteraction('chart_panned');
+                    }
+                  }
+                }
+              },
+
+              /// Called when zoom/pan is reset programmatically veya grafiğin kendi reset butonuyla.
+              onZoomReset: (ZoomPanArgs args) {
+                _reportInteraction('zoom_reset');
+              },
+              trackballBehavior: TrackballBehavior(
+                enable: true,
+                activationMode: ActivationMode.singleTap,
+                tooltipSettings: const InteractiveTooltip(
+                  enable: true,
+                  color: AppTheme.cardColor,
+                  textStyle: TextStyle(color: AppTheme.textPrimary),
+                ),
+              ),
+              onTrackballPositionChanging: (TrackballArgs args) {
+                if (!_hasUsedTrackball) {
+                  _hasUsedTrackball = true;
+                  _reportInteraction('trackball_used');
+                }
+              },
+              series: _buildChartSeries(),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  NumericAxis _buildIndicatorYAxis() {
+    final rsiData = _indicatorData.where((i) => i.type == 'RSI').toList();
+
+    if (rsiData.isNotEmpty) {
+      return NumericAxis(
+        opposedPosition: true,
+        minimum: 0,
+        maximum: 100,
+        majorGridLines: MajorGridLines(
+          width: _showGrid ? 0.5 : 0,
+          color: AppTheme.textSecondary.withOpacity(0.3),
+        ),
+        axisLine: const AxisLine(width: 0),
+        labelStyle: const TextStyle(
+          color: AppTheme.textSecondary,
+          fontSize: 10,
+        ),
+        plotBands: <PlotBand>[
+          PlotBand(
+            start: 70,
+            end: 100,
+            color: AppTheme.negativeColor.withOpacity(0.1),
+          ),
+          PlotBand(
+            start: 0,
+            end: 30,
+            color: AppTheme.positiveColor.withOpacity(0.1),
+          ),
+        ],
+      );
+    }
+
+    return NumericAxis(
+      opposedPosition: true,
+      majorGridLines: MajorGridLines(
+        width: _showGrid ? 0.5 : 0,
+        color: AppTheme.textSecondary.withOpacity(0.3),
+      ),
+      axisLine: const AxisLine(width: 0),
+      labelStyle: const TextStyle(
+        color: AppTheme.textSecondary,
+        fontSize: 10,
+      ),
+    );
+  }
+
+  Widget _buildIndicatorChart() {
+    final rsiData = _indicatorData.where((i) => i.type == 'RSI').toList();
+    final macdData = _indicatorData.where((i) => i.type == 'MACD').toList();
+
+    if (rsiData.isEmpty && macdData.isEmpty) return const SizedBox.shrink();
+
+    return AdaptiveCard(
+      child: SizedBox(
+        height: 150,
+        child: SfCartesianChart(
+          plotAreaBorderWidth: 0,
+          primaryXAxis: DateTimeAxis(
+            majorGridLines: MajorGridLines(
+              width: _showGrid ? 0.5 : 0,
+              color: AppTheme.textSecondary.withOpacity(0.3),
+            ),
+            axisLine: const AxisLine(width: 0),
+            labelStyle: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 10,
+            ),
+          ),
+          primaryYAxis: _buildIndicatorYAxis(),
+          series: _buildIndicatorSeries(),
+          trackballBehavior: TrackballBehavior(
+            enable: true,
+            activationMode: ActivationMode.singleTap,
+            tooltipSettings: const InteractiveTooltip(
+              enable: true,
+              color: AppTheme.cardColor,
+              textStyle: TextStyle(color: AppTheme.textPrimary),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInteractionStats() {
+    return AdaptiveCard(
+      padding: const EdgeInsets.all(12),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircularProgressIndicator(color: themeExtension.accentColor),
-          const SizedBox(height: 12),
-          Text('Grafik yükleniyor...',
-              style:
-                  TextStyle(color: themeExtension.textSecondary, fontSize: 12)),
+          Row(
+            children: [
+              const Icon(
+                Icons.analytics,
+                size: 16,
+                color: AppTheme.accentColor,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Etkileşim İstatistikleri',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildStatChip('Toplam Etkileşim', _totalInteractions.toString()),
+              _buildStatChip('Yakınlaştırma', _hasZoomed ? '✓' : '✗'),
+              _buildStatChip('Kaydırma', _hasPanned ? '✓' : '✗'),
+              _buildStatChip('Trackball', _hasUsedTrackball ? '✓' : '✗'),
+            ],
+          ),
+          if (_totalInteractions >= 5) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.positiveColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    size: 16,
+                    color: AppTheme.positiveColor,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Harika! Grafikle yeterince etkileşim kurdunuz.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.positiveColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildChart(AppThemeExtension themeExtension) {
-    switch (widget.content.chartType) {
-      case ChartType.candlestick:
-        return _buildCandlestickChart(themeExtension);
-      case ChartType.line:
-        return _buildLineChart(themeExtension);
-      case ChartType.area:
-        return _buildAreaChart(themeExtension);
-      case ChartType.indicator:
-        return _buildIndicatorChart(themeExtension);
-      default:
-        return _buildCandlestickChart(themeExtension);
-    }
+  Widget _buildStatChip(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColorLight,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.accentColor,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  DateTimeAxis _primaryXAxis(AppThemeExtension themeExtension) => DateTimeAxis(
-        majorGridLines: MajorGridLines(
-            width: 0.5, color: themeExtension.textSecondary.withOpacity(0.5)),
-        axisLine: const AxisLine(width: 0),
-        labelStyle:
-            TextStyle(color: themeExtension.textSecondary, fontSize: 10),
-      );
+  List<CartesianSeries> _buildChartSeries() {
+    final List<CartesianSeries> series = [];
 
-  NumericAxis _primaryYAxis(AppThemeExtension themeExtension,
-          {String labelFormat = '\${value}'}) =>
-      NumericAxis(
-        opposedPosition: true,
-        labelFormat: labelFormat,
-        majorGridLines: MajorGridLines(
-            width: 0.5, color: themeExtension.textSecondary.withOpacity(0.5)),
-        axisLine: const AxisLine(width: 0),
-        labelStyle:
-            TextStyle(color: themeExtension.textSecondary, fontSize: 10),
-      );
-
-  Widget _buildCandlestickChart(AppThemeExtension themeExtension) {
-    return SfCartesianChart(
-      plotAreaBorderWidth: 0,
-      primaryXAxis: _primaryXAxis(themeExtension),
-      primaryYAxis: _primaryYAxis(themeExtension),
-      zoomPanBehavior: _zoomPanBehavior,
-      trackballBehavior: _trackballBehavior,
-      series: <CartesianSeries<CandleData, DateTime>>[
-        CandleSeries<CandleData, DateTime>(
-          dataSource: _chartData,
+    switch (widget.content.chartType) {
+      case ChartType.candlestick:
+        series.add(CandleSeries<CandleData, DateTime>(
+          dataSource: _priceData,
           xValueMapper: (CandleData data, _) => data.date,
           lowValueMapper: (CandleData data, _) => data.low,
           highValueMapper: (CandleData data, _) => data.high,
           openValueMapper: (CandleData data, _) => data.open,
           closeValueMapper: (CandleData data, _) => data.close,
-          bullColor: themeExtension.positiveColor,
-          bearColor: themeExtension.negativeColor,
+          bullColor: AppTheme.positiveColor,
+          bearColor: AppTheme.negativeColor,
           enableSolidCandles: true,
-          onPointTap: _onDataPointTapped,
-          name: 'Candlestick',
-        ),
-      ],
-      indicators:
-          _buildTechnicalIndicators(themeExtension, seriesName: 'Candlestick'),
-    );
-  }
-
-  Widget _buildLineChart(AppThemeExtension themeExtension) {
-    return SfCartesianChart(
-      plotAreaBorderWidth: 0,
-      primaryXAxis: _primaryXAxis(themeExtension),
-      primaryYAxis: _primaryYAxis(themeExtension),
-      zoomPanBehavior: _zoomPanBehavior,
-      trackballBehavior: _trackballBehavior,
-      series: <CartesianSeries<CandleData, DateTime>>[
-        LineSeries<CandleData, DateTime>(
-          dataSource: _chartData,
+          name: 'Fiyat',
+          animationDuration: _animationController.isAnimating ? 1500 : 0,
+        ));
+        break;
+      case ChartType.line:
+        series.add(LineSeries<CandleData, DateTime>(
+          dataSource: _priceData,
           xValueMapper: (CandleData data, _) => data.date,
           yValueMapper: (CandleData data, _) => data.close,
-          color: themeExtension.accentColor,
+          color: AppTheme.accentColor,
           width: 2,
-          onPointTap: _onDataPointTapped,
-          name: 'Line',
-        ),
-      ],
-      indicators: _buildTechnicalIndicators(themeExtension, seriesName: 'Line'),
-    );
-  }
-
-  Widget _buildAreaChart(AppThemeExtension themeExtension) {
-    return SfCartesianChart(
-      plotAreaBorderWidth: 0,
-      primaryXAxis: _primaryXAxis(themeExtension),
-      primaryYAxis: _primaryYAxis(themeExtension),
-      zoomPanBehavior: _zoomPanBehavior,
-      trackballBehavior: _trackballBehavior,
-      series: <CartesianSeries<CandleData, DateTime>>[
-        AreaSeries<CandleData, DateTime>(
-          dataSource: _chartData,
+          name: 'Kapanış',
+          animationDuration: _animationController.isAnimating ? 1500 : 0,
+        ));
+        break;
+      case ChartType.area:
+        series.add(AreaSeries<CandleData, DateTime>(
+          dataSource: _priceData,
           xValueMapper: (CandleData data, _) => data.date,
           yValueMapper: (CandleData data, _) => data.close,
-          color: themeExtension.accentColor.withOpacity(0.3),
-          borderColor: themeExtension.accentColor,
+          color: AppTheme.accentColor.withOpacity(0.3),
+          borderColor: AppTheme.accentColor,
           borderWidth: 2,
-          onPointTap: _onDataPointTapped,
-          name: 'Area',
-        ),
-      ],
-      indicators: _buildTechnicalIndicators(themeExtension, seriesName: 'Area'),
-    );
-  }
-
-  Widget _buildIndicatorChart(AppThemeExtension themeExtension) {
-    final chartAxisLabelColor = themeExtension.textSecondary;
-
-    return SfCartesianChart(
-      plotAreaBorderWidth: 0,
-      primaryXAxis: _primaryXAxis(themeExtension),
-      primaryYAxis: NumericAxis(
-        opposedPosition: true,
-        labelFormat: '{value}',
-        majorGridLines: MajorGridLines(
-            width: 0.5, color: themeExtension.textSecondary.withOpacity(0.5)),
-        axisLine: const AxisLine(width: 0),
-        labelStyle: TextStyle(color: chartAxisLabelColor, fontSize: 10),
-        minimum: 0,
-        maximum: 100,
-        plotBands: [
-          PlotBand(
-            start: 70,
-            end: 100,
-            color: themeExtension.negativeColor.withOpacity(0.1),
-            text: 'Aşırı Alım',
-            textStyle: TextStyle(color: chartAxisLabelColor, fontSize: 10),
-          ),
-          PlotBand(
-            start: 0,
-            end: 30,
-            color: themeExtension.positiveColor.withOpacity(0.1),
-            text: 'Aşırı Satım',
-            textStyle: TextStyle(color: chartAxisLabelColor, fontSize: 10),
-          ),
-        ],
-      ),
-      zoomPanBehavior: _zoomPanBehavior,
-      trackballBehavior: _trackballBehavior,
-      series: <CartesianSeries<CandleData, DateTime>>[
-        LineSeries<CandleData, DateTime>(
-          dataSource: _chartData,
-          xValueMapper: (CandleData data, _) => data.date,
-          yValueMapper: (CandleData data, _) =>
-              _calculateRSI(data), // Use the local _chartData for calculation
-          color: themeExtension.warningColor,
-          width: 2,
-          name: 'RSI', // This is the seriesName for this specific chart
-          onPointTap: _onDataPointTapped,
-        ),
-      ],
-      // For IndicatorChart, technical indicators might be less common, or you might want to add
-      // other series that are indicators themselves (e.g. MACD lines directly)
-      // indicators: _buildTechnicalIndicators(themeExtension, seriesName: 'RSI'),
-    );
-  }
-
-  List<TechnicalIndicator<dynamic, dynamic>> _buildTechnicalIndicators(
-      AppThemeExtension themeExtension,
-      {required String seriesName}) {
-    final List<TechnicalIndicator<dynamic, dynamic>> indicators = [];
-
-    // Only add indicators if the chart type itself is not 'indicator'
-    // and the seriesName matches the primary series of that chart type.
-    bool canAddIndicators = widget.content.chartType != ChartType.indicator;
-
-    if (!canAddIndicators) return indicators;
-
-    // Ensure indicators are added only to the relevant series type
-    if (widget.content.chartType == ChartType.candlestick &&
-        seriesName != 'Candlestick') return indicators;
-    if (widget.content.chartType == ChartType.line && seriesName != 'Line')
-      return indicators;
-    if (widget.content.chartType == ChartType.area && seriesName != 'Area')
-      return indicators;
-
-    for (var indicatorConfig in widget.content.indicators) {
-      if (!_enabledIndicators.contains(indicatorConfig.type)) continue;
-
-      final period =
-          (indicatorConfig.parameters['period'] as num?)?.toInt() ?? 20;
-      final color = _parseColor(indicatorConfig.parameters['color']) ??
-          themeExtension.accentColor;
-
-      switch (indicatorConfig.type) {
-        case 'SMA':
-          indicators.add(SmaIndicator<CandleData, DateTime>(
-            seriesName: seriesName,
-            // For SMA, we need to specify the data source and mappings
-            dataSource: _chartData,
-            xValueMapper: (CandleData data, _) => data.date,
-            // SMA uses the close value by default
-            period: period,
-            signalLineWidth: 2,
-            signalLineColor: color,
-          ));
-          break;
-        case 'EMA':
-          indicators.add(EmaIndicator<CandleData, DateTime>(
-            seriesName: seriesName,
-            dataSource: _chartData,
-            xValueMapper: (CandleData data, _) => data.date,
-            period: period,
-            signalLineWidth: 2,
-            signalLineColor: color,
-          ));
-          break;
-        case 'BOLLINGER':
-          // Convert double to int for standardDeviation
-          final stdDev =
-              (indicatorConfig.parameters['standardDeviation'] as num?)
-                      ?.toInt() ??
-                  2;
-
-          indicators.add(BollingerBandIndicator<CandleData, DateTime>(
-            seriesName: seriesName,
-            dataSource: _chartData,
-            xValueMapper: (CandleData data, _) => data.date,
-            period: period,
-            standardDeviation: stdDev, // Now it's an int
-            upperLineColor: themeExtension.negativeColor.withOpacity(0.7),
-            lowerLineColor: themeExtension.positiveColor.withOpacity(0.7),
-            bandColor: themeExtension.accentColor.withOpacity(0.1),
-            upperLineWidth: 1.5,
-            lowerLineWidth: 1.5,
-          ));
-          break;
-      }
-    }
-    return indicators;
-  }
-
-  Color? _parseColor(dynamic colorValue) {
-    if (colorValue is String) {
-      switch (colorValue.toLowerCase()) {
-        case 'blue':
-          return Colors.blue;
-        case 'orange':
-          return Colors.orange;
-        case 'red':
-          return Colors.red;
-        case 'green':
-          return Colors.green;
-        case 'purple':
-          return Colors.purple;
-        case 'yellow':
-          return Colors.yellow;
-        // Add more named colors if needed
-      }
-    }
-    // Potentially handle hex colors like '#FF0000' later if needed
-    return null;
-  }
-
-  double _calculateRSI(CandleData currentDataPoint) {
-    // Ensure _chartData is not empty and contains the currentDataPoint
-    if (_chartData.isEmpty) return 50.0;
-
-    final index = _chartData.indexWhere((d) => d.date == currentDataPoint.date);
-    if (index == -1) return 50.0; // Data point not found
-
-    const int period = 14;
-    if (index < period)
-      return 50.0; // Not enough data for full period calculation for earlier points
-
-    double gains = 0.0;
-    double losses = 0.0;
-    int actualPeriodsForAvg = 0;
-
-    // Calculate initial average gain and loss for the first period
-    for (int i = index - period + 1; i <= index; i++) {
-      if (i <= 0) continue; // Skip if previous data point doesn't exist
-      final change = _chartData[i].close - _chartData[i - 1].close;
-      if (change > 0) {
-        gains += change;
-      } else {
-        losses += change.abs();
-      }
-      actualPeriodsForAvg++;
+          name: 'Kapanış',
+          animationDuration: _animationController.isAnimating ? 1500 : 0,
+        ));
+        break;
+      case ChartType.indicator:
+        // Bu durumda sadece indikatör serileri çizilecek, fiyat serisi eklenmiyor.
+        break;
     }
 
-    if (actualPeriodsForAvg == 0)
-      return 50.0; // Should not happen if index >= period
+    final smaData = _indicatorData.where((i) => i.type == 'SMA').toList();
+    final emaData = _indicatorData.where((i) => i.type == 'EMA').toList();
 
-    double avgGain = gains / actualPeriodsForAvg;
-    double avgLoss = losses / actualPeriodsForAvg;
+    if (smaData.isNotEmpty) {
+      series.add(LineSeries<IndicatorDataPoint, DateTime>(
+        dataSource: smaData,
+        xValueMapper: (IndicatorDataPoint data, _) => data.date,
+        yValueMapper: (IndicatorDataPoint data, _) => data.value,
+        color: Colors.blue,
+        width: 2,
+        name: 'SMA(${smaData.first.additionalValues['period']?.toInt()})',
+        dashArray: const [5, 5],
+        animationDuration: _animationController.isAnimating ? 1500 : 0,
+      ));
+    }
 
-    // For subsequent points, use Wilder's smoothing method (optional, simple average is also common)
-    // This example uses a simple moving average for gains/losses over the period for each point.
+    if (emaData.isNotEmpty) {
+      series.add(LineSeries<IndicatorDataPoint, DateTime>(
+        dataSource: emaData,
+        xValueMapper: (IndicatorDataPoint data, _) => data.date,
+        yValueMapper: (IndicatorDataPoint data, _) => data.value,
+        color: Colors.orange,
+        width: 2,
+        name: 'EMA(${emaData.first.additionalValues['period']?.toInt()})',
+        animationDuration: _animationController.isAnimating ? 1500 : 0,
+      ));
+    }
 
-    if (avgLoss == 0) return 100.0; // Avoid division by zero; max RSI
+    if (_showVolume && widget.content.chartType == ChartType.candlestick) {
+      series.add(ColumnSeries<CandleData, DateTime>(
+        dataSource: _priceData,
+        xValueMapper: (CandleData data, _) => data.date,
+        yValueMapper: (CandleData data, _) => data.volume.toDouble(),
+        name: 'Hacim',
+        color: AppTheme.textSecondary.withOpacity(0.4),
+        width: 0.8,
+        animationDuration: _animationController.isAnimating ? 1500 : 0,
+      ));
+    }
 
-    final rs = avgGain / avgLoss;
-    return (100 - (100 / (1 + rs))).clamp(0.0, 100.0);
+    return series;
   }
 
-  Widget _buildIndicatorControls(AppThemeExtension themeExtension) {
-    return AdaptiveCard(
-      padding: const EdgeInsets.all(12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Teknik Göstergeler',
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: themeExtension.textPrimary)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: widget.content.indicators.map((indicator) {
-              final isEnabled = _enabledIndicators.contains(indicator.type);
-              return FilterChip(
-                label: Text(indicator.type),
-                selected: isEnabled,
-                onSelected: (selected) {
-                  setState(() {
-                    if (selected) {
-                      _enabledIndicators.add(indicator.type);
-                    } else {
-                      _enabledIndicators.remove(indicator.type);
-                    }
-                  });
-                  widget.onInteraction({
-                    'action': 'indicator_toggled',
-                    'indicator': indicator.type,
-                    'enabled': selected
-                  });
-                },
-                backgroundColor: themeExtension.cardColorLight,
-                selectedColor: themeExtension.accentColor.withOpacity(0.2),
-                checkmarkColor: themeExtension.accentColor,
-                labelStyle: TextStyle(
-                    color: isEnabled
-                        ? themeExtension.accentColor
-                        : themeExtension.textPrimary,
-                    fontSize: 12),
-                shape: StadiumBorder(
-                    side: BorderSide(
-                        color: isEnabled
-                            ? themeExtension.accentColor
-                            : themeExtension.textSecondary.withOpacity(0.3))),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
+  List<CartesianSeries> _buildIndicatorSeries() {
+    final List<CartesianSeries> series = [];
+
+    final rsiData = _indicatorData.where((i) => i.type == 'RSI').toList();
+    final macdData = _indicatorData.where((i) => i.type == 'MACD').toList();
+
+    if (rsiData.isNotEmpty) {
+      series.add(LineSeries<IndicatorDataPoint, DateTime>(
+        dataSource: rsiData,
+        xValueMapper: (IndicatorDataPoint data, _) => data.date,
+        yValueMapper: (IndicatorDataPoint data, _) => data.value,
+        color: AppTheme.warningColor,
+        width: 2,
+        name: 'RSI(${rsiData.first.additionalValues['period']?.toInt()})',
+        animationDuration: _animationController.isAnimating ? 1500 : 0,
+      ));
+    }
+
+    if (macdData.isNotEmpty) {
+      series.add(LineSeries<IndicatorDataPoint, DateTime>(
+        dataSource: macdData,
+        xValueMapper: (IndicatorDataPoint data, _) => data.date,
+        yValueMapper: (IndicatorDataPoint data, _) => data.value,
+        color: AppTheme.accentColor,
+        width: 2,
+        name: 'MACD',
+        animationDuration: _animationController.isAnimating ? 1500 : 0,
+      ));
+    }
+
+    return series;
   }
 
-  Widget _buildSelectedDataInfo(AppThemeExtension themeExtension) {
-    return AdaptiveCard(
-      padding: const EdgeInsets.all(12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Seçili Veri Noktası',
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: themeExtension.textPrimary)),
-          const SizedBox(height: 8),
-          Text(_selectedDataPoint,
-              style:
-                  TextStyle(fontSize: 12, color: themeExtension.textSecondary)),
-        ],
-      ),
-    );
+  void _refreshData() {
+    _animationController.reset();
+    _loadChartData();
+    _reportInteraction('data_refresh');
   }
 
-  void _onDataPointTapped(ChartPointDetails details) {
-    if (details.pointIndex != null &&
-        _chartData.isNotEmpty &&
-        details.pointIndex! < _chartData.length) {
-      final data = _chartData[details.pointIndex!];
-      setState(() {
-        _selectedDataPoint =
-            'Tarih: ${data.date.day}/${data.date.month}/${data.date.year}\n'
-            'Açılış: \$${data.open.toStringAsFixed(2)}\n'
-            'Kapanış: \$${data.close.toStringAsFixed(2)}\n'
-            'Yüksek: \$${data.high.toStringAsFixed(2)}\n'
-            'Düşük: \$${data.low.toStringAsFixed(2)}';
-      });
-      widget.onInteraction({
-        'action': 'data_point_selected',
-        'data': {
-          'date': data.date.toIso8601String(),
-          'open': data.open,
-          'close': data.close,
-          'high': data.high,
-          'low': data.low
-        },
-      });
+  void _resetZoom() {
+    _zoomPanBehavior.reset(); // Reset zoom/pan on the chart
+    _reportInteraction('zoom_reset_manual');
+  }
+
+  void _reportInteraction(String type) {
+    _totalInteractions++;
+    widget.onInteraction({
+      'action': type,
+      'total_interactions': _totalInteractions,
+      'has_zoomed': _hasZoomed,
+      'has_panned': _hasPanned,
+      'has_used_trackball': _hasUsedTrackball,
+      'chart_type': widget.content.chartType.name,
+      'symbol': widget.content.symbol,
+    });
+    if (mounted) setState(() {});
+  }
+
+  // Helper methods
+  double _getBasePriceForSymbol(String symbol) {
+    switch (symbol.toUpperCase()) {
+      case 'BTC/USD':
+      case 'BTCUSD':
+        return 45000;
+      case 'ETH/USD':
+      case 'ETHUSD':
+        return 3000;
+      case 'AAPL':
+        return 180;
+      case 'TSLA':
+        return 250;
+      default:
+        return 100;
     }
   }
+
+  int _getVolumeBase(String symbol) {
+    switch (symbol.toUpperCase()) {
+      case 'BTC/USD':
+      case 'BTCUSD':
+        return 1000000;
+      case 'ETH/USD':
+      case 'ETHUSD':
+        return 5000000;
+      default:
+        return 2000000;
+    }
+  }
+
+  int _getDataPointsForTimeframe(String timeframe) {
+    switch (timeframe.toLowerCase()) {
+      case 'dakikalık':
+      case '1m':
+        return 200;
+      case 'saatlik':
+      case '1h':
+        return 168; // 1 week
+      case 'günlük':
+      case '1d':
+        return 100; // ~3 months
+      case 'haftalık':
+      case '1w':
+        return 52; // 1 year
+      default:
+        return 100;
+    }
+  }
+
+  int _getTimeInterval(String timeframe) {
+    switch (timeframe.toLowerCase()) {
+      case 'dakikalık':
+      case '1m':
+        return 60 * 1000; // 1 minute in milliseconds
+      case 'saatlik':
+      case '1h':
+        return 60 * 60 * 1000; // 1 hour
+      case 'günlük':
+      case '1d':
+        return 24 * 60 * 60 * 1000; // 1 day
+      case 'haftalık':
+      case '1w':
+        return 7 * 24 * 60 * 60 * 1000; // 1 week
+      default:
+        return 24 * 60 * 60 * 1000;
+    }
+  }
+
+  double _getVolatilityForHour(int hour) {
+    if (hour >= 9 && hour <= 16) {
+      return 1.2;
+    } else if (hour >= 17 && hour <= 20) {
+      return 0.8;
+    } else {
+      return 0.4;
+    }
+  }
+
+  double _generateGaussianNoise(math.Random random) {
+    double u1 = random.nextDouble();
+    while (u1 == 0) {
+      u1 = random.nextDouble();
+    }
+    final u2 = random.nextDouble();
+    return math.sqrt(-2.0 * math.log(u1)) * math.cos(2.0 * math.pi * u2);
+  }
+
+  NumberFormat _getNumberFormat() {
+    final basePrice = _getBasePriceForSymbol(widget.content.symbol);
+    if (basePrice > 1000) {
+      return NumberFormat('#,##0');
+    } else if (basePrice > 1) {
+      return NumberFormat('#,##0.00');
+    } else {
+      return NumberFormat('#,##0.0000');
+    }
+  }
+}
+
+class IndicatorDataPoint {
+  final DateTime date;
+  final double value;
+  final String type;
+  final Map<String, double> additionalValues;
+
+  IndicatorDataPoint({
+    required this.date,
+    required this.value,
+    required this.type,
+    this.additionalValues = const {},
+  });
 }

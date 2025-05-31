@@ -1,0 +1,255 @@
+[
+    {
+      "id": "strategies_1",
+      "title": "Yatırım Stratejilerine Giriş: Yol Haritanız",
+      "description": "Farklı yatırım stratejilerini anlamak neden önemlidir? Kendi yatırım felsefenizi nasıl oluşturursunuz?",
+      "type": "theory",
+      "estimatedTime": "12 dk",
+      "order": 1,
+      "isCompleted": false,
+      "isLocked": false,
+      "prerequisites": [],
+      "content": [
+        {
+          "id": "strategies_1_content_1",
+          "type": "textContent",
+          "title": "Yatırım Stratejisi Nedir?",
+          "content": "Bir yatırım stratejisi, yatırımcının finansal hedeflerine ulaşmak için belirlediği uzun vadeli bir plan ve kurallar bütünüdür. Bu strateji, hangi tür varlıklara yatırım yapılacağını, ne zaman alınıp satılacağını, ne kadar risk alınacağını ve portföyün nasıl yönetileceğini içerir.\n\nİyi tanımlanmış bir yatırım stratejisi, duygusal kararlar vermekten kaçınmaya, disiplinli kalmaya ve piyasa dalgalanmaları sırasında sakin kalmaya yardımcı olur. Her yatırımcının stratejisi, kendi risk toleransı, yatırım ufku, finansal bilgisi ve hedefleri doğrultusunda farklılık gösterebilir.",
+          "bulletPoints": [
+            "Uzun vadeli bir plandır.",
+            "Yatırım kararları için bir çerçeve sunar.",
+            "Disiplinli olmayı ve duygusal kararlardan kaçınmayı sağlar.",
+            "Kişiye özel olmalıdır."
+          ],
+          "definitions": {
+            "Yatırım Ufku (Investment Horizon)": "Bir yatırımcının parasını yatırımlarda tutmayı planladığı süredir (kısa, orta veya uzun vadeli).",
+            "Yatırım Felsefesi": "Bir yatırımcının piyasalar, risk ve değer hakkındaki temel inançları ve yaklaşımlarıdır."
+          }
+        }
+      ],
+      "quiz": null
+    },
+    {
+      "id": "strategies_2",
+      "title": "Değer Yatırımı: Ucuzu Bulma Sanatı",
+      "description": "Benjamin Graham ve Warren Buffett gibi efsanelerin popülerleştirdiği değer yatırımı stratejisinin temellerini öğrenin.",
+      "type": "interactive",
+      "estimatedTime": "25 dk",
+      "order": 2,
+      "isCompleted": false,
+      "isLocked": true,
+      "prerequisites": ["strategies_1", "fundamental_1"],
+      "content": [
+        {
+          "id": "strategies_2_content_1",
+          "type": "textContent",
+          "title": "Değer Yatırımı (Value Investing) Nedir?",
+          "content": "Değer yatırımı, piyasada içsel değerinden daha düşük bir fiyata işlem gördüğüne inanılan hisse senetlerini bulup satın alma stratejisidir. Değer yatırımcıları, piyasanın bazen verimsiz olabileceğine ve bazı şirketlerin değerinin yanlış fiyatlanabileceğine inanır.\n\nBu stratejiyi kullanan yatırımcılar, düşük F/K oranı, düşük PD/DD oranı, yüksek temettü verimi gibi göstergelere sahip, güçlü bilançosu olan ve istikrarlı kâr üreten şirketleri ararlar. Amaç, piyasa bu şirketlerin gerçek değerini fark edene kadar sabırla beklemek ve uzun vadede kazanç sağlamaktır.",
+          "bulletPoints": [
+            "İçsel değerinin altında işlem gören şirketleri hedefler.",
+            "Güvenlik marjı (margin of safety) kavramı önemlidir.",
+            "Uzun vadeli bir yaklaşımdır, sabır gerektirir.",
+            "Düşük F/K, düşük PD/DD gibi rasyolara bakılır."
+          ],
+          "definitions": {
+            "Güvenlik Marjı (Margin of Safety)": "Bir hisse senedinin içsel değeri ile piyasa fiyatı arasındaki farktır. Değer yatırımcıları, potansiyel riskleri azaltmak için önemli bir güvenlik marjı olan hisseleri tercih eder.",
+            "Kontrarian Yatırımcı (Contrarian Investor)": "Piyasanın genel eğiliminin tersine hareket eden, popüler olmayan veya gözden düşmüş varlıklara yatırım yapan kişidir. Değer yatırımcıları genellikle kontrarian bir bakış açısına sahiptir."
+          }
+        },
+        {
+          "id": "strategies_2_interactive_1",
+          "type": "interactiveChartContent",
+          "title": "Örnek Değer Yatırımı Senaryosu",
+          "explanation": "Bu grafik, temel göstergeleri güçlü ancak piyasa tarafından bir dönem göz ardı edilmiş (düşük F/K, PD/DD) bir şirketin hisse senedi fiyatının zamanla nasıl 'değerini bulduğunu' simüle etmektedir. (Veriler temsilidir).",
+          "symbol": "DEĞERLİ A.Ş.",
+          "timeframe": "Aylık",
+          "chartType": "candlestick",
+          "indicators": [
+            {
+              "type": "SMA",
+              "parameters": {"period": 50},
+              "isVisible": true
+            }
+          ],
+          "annotations": [
+            "Başlangıçta düşük fiyatlanan hissenin zamanla yükselişini gözlemleyin.",
+            "Değer yatırımı sabır gerektirir; piyasanın 'doğru fiyatı' bulması zaman alabilir.",
+            "Temel analiz, bu tür şirketleri bulmada kritik rol oynar."
+          ]
+        }
+      ],
+      "quiz": null
+    },
+    {
+      "id": "strategies_3",
+      "title": "Büyüme Yatırımı: Geleceğin Yıldızlarını Keşfetmek",
+      "description": "Hızlı büyüyen şirketlere yatırım yaparak yüksek getiri elde etmeyi hedefleyen büyüme yatırımı stratejisini anlayın.",
+      "type": "theory",
+      "estimatedTime": "20 dk",
+      "order": 3,
+      "isCompleted": false,
+      "isLocked": true,
+      "prerequisites": ["strategies_1", "fundamental_1"],
+      "content": [
+        {
+          "id": "strategies_3_content_1",
+          "type": "textContent",
+          "title": "Büyüme Yatırımı (Growth Investing) Nedir?",
+          "content": "Büyüme yatırımı, ortalamanın üzerinde gelir ve kâr artışı göstermesi beklenen şirketlere odaklanan bir yatırım stratejisidir. Büyüme yatırımcıları, şirketin mevcut kârlılığından ziyade gelecekteki büyüme potansiyeline daha fazla önem verirler.\n\nBu tür şirketler genellikle teknoloji, sağlık veya gelişmekte olan pazarlar gibi yenilikçi ve hızla genişleyen sektörlerde bulunur. Büyüme hisseleri genellikle yüksek F/K oranlarına sahip olabilir ve temettü ödemeyebilirler, çünkü kârlarını tekrar işlerini büyütmek için kullanırlar. Bu strateji, değer yatırımına göre daha yüksek risk içerebilir ancak daha yüksek getiri potansiyeli de sunar.",
+          "bulletPoints": [
+            "Hızlı kâr ve gelir artışı potansiyeli olan şirketlere odaklanır.",
+            "Gelecekteki büyüme, mevcut değerlemeden daha önemlidir.",
+            "Genellikle yüksek F/K oranlarına sahiptirler.",
+            "Daha yüksek risk, daha yüksek getiri potansiyeli içerir."
+          ],
+          "definitions": {
+            "PEG Oranı (Price/Earnings to Growth)": "F/K oranının beklenen yıllık kâr büyüme oranına bölünmesiyle hesaplanır. Büyüme hisselerini değerlendirmede F/K'dan daha anlamlı olabilir (PEG < 1 genellikle iyi kabul edilir).",
+            "Yenilikçi Sektörler (Innovative Sectors)": "Teknoloji, biyoteknoloji gibi sürekli yeni ürünler, hizmetler veya iş modelleri geliştiren sektörlerdir."
+          }
+        }
+      ],
+      "quiz": null
+    },
+    {
+      "id": "strategies_4",
+      "title": "Temettü Yatırımı: Düzenli Gelir Akışı Oluşturmak",
+      "description": "Düzenli olarak temettü ödeyen şirketlere yatırım yaparak pasif gelir elde etme ve uzun vadeli servet birikimi stratejisi.",
+      "type": "interactive",
+      "estimatedTime": "22 dk",
+      "order": 4,
+      "isCompleted": false,
+      "isLocked": true,
+      "prerequisites": ["strategies_1", "fundamental_1"],
+      "content": [
+        {
+          "id": "strategies_4_content_1",
+          "type": "textContent",
+          "title": "Temettü Yatırımı (Dividend Investing) Nedir?",
+          "content": "Temettü yatırımı, düzenli olarak kâr payı (temettü) dağıtan istikrarlı şirketlere yatırım yapma stratejisidir. Bu stratejinin temel amacı, düzenli bir pasif gelir akışı oluşturmak ve zamanla bu geliri artırmaktır.\n\nTemettü yatırımcıları genellikle olgun, kârlı ve güçlü nakit akışına sahip şirketleri tercih ederler. Temettü verimi (yıllık temettünün hisse fiyatına oranı) ve temettü artış geçmişi önemli değerlendirme kriterleridir. Alınan temettüler tekrar yatırılarak bileşik getirinin gücünden faydalanılabilir.",
+          "bulletPoints": [
+            "Düzenli kâr payı ödeyen şirketlere odaklanır.",
+            "Pasif gelir oluşturmayı hedefler.",
+            "Temettü verimi ve temettü büyüme oranı önemlidir.",
+            "Genellikle daha az riskli, istikrarlı şirketler tercih edilir."
+          ],
+          "definitions": {
+            "Temettü (Dividend)": "Bir şirketin elde ettiği kârdan ortaklarına dağıttığı paydır.",
+            "Temettü Verimi (Dividend Yield)": "(Yıllık Hisse Başına Temettü / Hisse Başına Piyasa Fiyatı) * 100. Yatırımın temettü olarak ne kadar geri dönüş sağladığını gösterir.",
+            "Temettü Ödeme Oranı (Dividend Payout Ratio)": "(Hisse Başına Temettü / Hisse Başına Kâr) * 100. Şirketin kârının ne kadarını temettü olarak dağıttığını gösterir."
+          }
+        },
+        {
+          "id": "strategies_4_interactive_1",
+          "type": "interactiveEducationChart",
+          "title": "Temettü Büyümesinin Gücü Simülasyonu",
+          "description": "Bu interaktif grafik, düzenli olarak temettü ödeyen ve temettülerini artıran bir şirkete yapılan yatırımın, alınan temettülerin yeniden yatırılmasıyla (bileşik etki) zaman içinde nasıl büyüdüğünü göstermektedir. (Veriler temsilidir).",
+          "indicatorType": "bollingerBands",
+          "learningPoints": [
+            "Temettülerin yeniden yatırılması bileşik getiriyi hızlandırır.",
+            "Uzun vadede temettü büyümesi toplam getiriyi önemli ölçüde artırabilir.",
+            "İstikrarlı temettü ödeyen şirketler genellikle piyasa düşüşlerinde daha dirençli olabilir."
+          ]
+        }
+      ],
+      "quiz": {
+        "id": "quiz_strategies_main",
+        "title": "Yatırım Stratejileri Temel Testi",
+        "passingScore": 70,
+        "timeLimit": 15,
+        "questions": [
+          {
+            "id": "qs_1",
+            "type": "multipleChoice",
+            "question": "Hangi yatırım stratejisi, piyasada içsel değerinin altında işlem gördüğüne inanılan hisseleri bulmaya odaklanır?",
+            "options": ["Büyüme Yatırımı", "Değer Yatırımı", "Temettü Yatırımı", "Momentum Yatırımı"],
+            "correctAnswerIndex": 1,
+            "explanation": "Değer yatırımı, 'ucuz' olduğuna inanılan hisseleri bulma stratejisidir."
+          },
+          {
+            "id": "qs_2",
+            "type": "trueFalse",
+            "question": "Büyüme yatırımcıları genellikle düşük F/K oranına sahip şirketleri tercih ederler.",
+            "correctAnswer": false,
+            "explanation": "Büyüme yatırımcıları gelecekteki yüksek büyüme potansiyeline odaklandıkları için genellikle yüksek F/K oranlı şirketlere yatırım yaparlar."
+          },
+          {
+            "id": "qs_3",
+            "type": "multipleChoice",
+            "question": "Temettü yatırımının temel amacı nedir?",
+            "options": [
+              "Kısa vadede hızlı sermaye kazancı elde etmek",
+              "En riskli hisselere yatırım yapmak",
+              "Düzenli bir pasif gelir akışı oluşturmak",
+              "Sadece teknoloji hisselerine yatırım yapmak"
+            ],
+            "correctAnswerIndex": 2,
+            "explanation": "Temettü yatırımı, şirketlerin dağıttığı kâr payları aracılığıyla düzenli gelir elde etmeyi amaçlar."
+          }
+        ]
+      }
+    },
+    {
+      "id": "strategies_5",
+      "title": "Yatırım Stratejileri Değerlendirme",
+      "description": "Farklı yatırım stratejileri hakkındaki bilginizi kapsamlı bir test ile sınayın.",
+      "type": "quiz",
+      "estimatedTime": "15 dk",
+      "order": 5,
+      "isCompleted": false,
+      "isLocked": true,
+      "prerequisites": ["strategies_1", "strategies_2", "strategies_3", "strategies_4"],
+      "content": [],
+      "quiz": {
+        "id": "quiz_strategies_final",
+        "title": "Yatırım Stratejileri Kapsamlı Test",
+        "passingScore": 75,
+        "timeLimit": 20,
+        "questions": [
+          {
+            "id": "qsf_1",
+            "type": "dragDrop",
+            "question": "Aşağıdaki yatırım stratejilerini temel özellikleriyle eşleştirin:",
+            "items": ["Değer Yatırımı", "Büyüme Yatırımı", "Temettü Yatırımı"],
+            "targets": [
+              "Gelecekteki yüksek kâr artışına odaklanır, F/K yüksek olabilir.",
+              "Düzenli kâr payı dağıtan istikrarlı şirketleri hedefler.",
+              "İçsel değerinin altında fiyatlanan 'ucuz' hisseleri arar."
+            ],
+            "correctMatches": {
+              "Değer Yatırımı": "İçsel değerinin altında fiyatlanan 'ucuz' hisseleri arar.",
+              "Büyüme Yatırımı": "Gelecekteki yüksek kâr artışına odaklanır, F/K yüksek olabilir.",
+              "Temettü Yatırımı": "Düzenli kâr payı dağıtan istikrarlı şirketleri hedefler."
+            }
+          },
+          {
+            "id": "qsf_2",
+            "type": "multipleChoice",
+            "question": "'Güvenlik Marjı' (Margin of Safety) kavramı en çok hangi yatırım stratejisiyle ilişkilidir?",
+            "options": ["Momentum Ticareti", "Günlük Ticaret (Day Trading)", "Değer Yatırımı", "Arbitraj"],
+            "correctAnswerIndex": 2,
+            "explanation": "Güvenlik marjı, bir hissenin içsel değeri ile piyasa fiyatı arasındaki fark olup, değer yatırımcıları için önemli bir risk yönetimi aracıdır."
+          },
+          {
+            "id": "qsf_3",
+            "type": "trueFalse",
+            "question": "Bir yatırım stratejisine sahip olmak, piyasa dalgalanmaları sırasında duygusal kararlar verme olasılığını artırır.",
+            "correctAnswer": false,
+            "explanation": "Tam tersine, iyi tanımlanmış bir yatırım stratejisi disiplinli kalmaya ve duygusal kararlardan kaçınmaya yardımcı olur."
+          },
+          {
+            "id": "qsf_4",
+            "type": "multipleChoice",
+            "question": "PEG oranı, hangi tür hisseleri değerlendirirken F/K oranına göre daha anlamlı bir gösterge olabilir?",
+            "options": [
+              "Yüksek temettü ödeyen şirketler",
+              "Düşük borçlu, istikrarlı şirketler",
+              "Hızlı büyüyen şirketler",
+              "Varlık yoğun sektörlerdeki şirketler"
+            ],
+            "correctAnswerIndex": 2,
+            "explanation": "PEG oranı (F/K / Büyüme Oranı), F/K oranını şirketin büyüme beklentisiyle ilişkilendirdiği için büyüme hisselerini değerlendirmede faydalıdır."
+          }
+        ]
+      }
+    }
+  ]

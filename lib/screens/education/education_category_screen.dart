@@ -30,7 +30,6 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
   static const String _completionStatusKeyPrefix = 'lesson_completion_';
   static const String _bookmarkKeyPrefix = 'category_bookmark_';
 
-
   @override
   void initState() {
     super.initState();
@@ -78,32 +77,38 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
     );
   }
 
-  Future<Map<String, bool>> _loadLessonCompletionStatusForCategory(String categoryId) async {
+  Future<Map<String, bool>> _loadLessonCompletionStatusForCategory(
+      String categoryId) async {
     final prefs = await SharedPreferences.getInstance();
     final key = '$_completionStatusKeyPrefix$categoryId';
     final String? jsonString = prefs.getString(key);
     if (jsonString != null && jsonString.isNotEmpty) {
       try {
         final Map<String, dynamic> decodedMap = jsonDecode(jsonString);
-        return decodedMap.map((lessonId, completed) => MapEntry(lessonId, completed as bool));
+        return decodedMap.map(
+            (lessonId, completed) => MapEntry(lessonId, completed as bool));
       } catch (e) {
-        print("Kategori $categoryId için tamamlama durumu parse edilirken HATA: $e");
+        print(
+            "Kategori $categoryId için tamamlama durumu parse edilirken HATA: $e");
         return {}; // Hata durumunda boş map
       }
     }
     return {}; // Kayıt yoksa boş map
   }
 
-  Future<void> _saveLessonCompletionStatus(String categoryId, String lessonId, bool isCompleted) async {
+  Future<void> _saveLessonCompletionStatus(
+      String categoryId, String lessonId, bool isCompleted) async {
     final prefs = await SharedPreferences.getInstance();
     final key = '$_completionStatusKeyPrefix$categoryId';
-    
-    Map<String, bool> categoryCompletion = await _loadLessonCompletionStatusForCategory(categoryId);
+
+    Map<String, bool> categoryCompletion =
+        await _loadLessonCompletionStatusForCategory(categoryId);
     categoryCompletion[lessonId] = isCompleted;
-    
+
     final String jsonString = jsonEncode(categoryCompletion);
     await prefs.setString(key, jsonString);
-    print("'$lessonId' dersi ($categoryId) için durum kaydedildi: $isCompleted");
+    print(
+        "'$lessonId' dersi ($categoryId) için durum kaydedildi: $isCompleted");
   }
 
   // --- Ders Yükleme ve Kilit Mantığı ---
@@ -119,14 +124,18 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
 
   Future<void> _loadLessons() async {
     if (!mounted) return;
-    setState(() { _isLoading = true; });
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       // Dersleri JSON'dan yükle
-      List<Lesson> loadedLessons = await _fetchLessonsFromJson(widget.category.id);
-      
+      List<Lesson> loadedLessons =
+          await _fetchLessonsFromJson(widget.category.id);
+
       // SharedPreferences'ten tamamlanma durumlarını al
-      Map<String, bool> completionStatus = await _loadLessonCompletionStatusForCategory(widget.category.id);
+      Map<String, bool> completionStatus =
+          await _loadLessonCompletionStatusForCategory(widget.category.id);
 
       // Derslerin tamamlanma durumlarını ve kilitlerini güncelle
       _applyCompletionAndLockLogic(loadedLessons, completionStatus);
@@ -138,7 +147,8 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
         });
       }
     } catch (e) {
-      print("${widget.category.id} kategorisi için dersler yüklenirken HATA: $e");
+      print(
+          "${widget.category.id} kategorisi için dersler yüklenirken HATA: $e");
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -151,13 +161,26 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
   Future<List<Lesson>> _fetchLessonsFromJson(String categoryId) async {
     String assetPath;
     switch (categoryId.toLowerCase()) {
-      case 'basics': assetPath = 'assets/data/basics_lessons.json'; break;
-      case 'technical': assetPath = 'assets/data/technical_lessons.json'; break;
-      case 'indicators': assetPath = 'assets/data/indicators_lessons.json'; break;
-      case 'fundamental': assetPath = 'assets/data/fundamental_lessons.json'; break;
-      case 'portfolio': assetPath = 'assets/data/portfolio_lessons.json'; break;
-      case 'strategies': assetPath = 'assets/data/strategies_lessons.json'; break;
-      default: return [];
+      case 'basics':
+        assetPath = 'assets/data/basics_lessons.json';
+        break;
+      case 'technical':
+        assetPath = 'assets/data/technical_lessons.json';
+        break;
+      case 'indicators':
+        assetPath = 'assets/data/indicators_lessons.json';
+        break;
+      case 'fundamental':
+        assetPath = 'assets/data/fundamental_lessons.json';
+        break;
+      case 'portfolio':
+        assetPath = 'assets/data/portfolio_lessons.json';
+        break;
+      case 'strategies':
+        assetPath = 'assets/data/strategies_lessons.json';
+        break;
+      default:
+        return [];
     }
 
     final jsonString = await _loadJsonAsset(assetPath);
@@ -170,10 +193,12 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
         .toList();
   }
 
-  void _applyCompletionAndLockLogic(List<Lesson> lessons, Map<String, bool> completionStatus) {
+  void _applyCompletionAndLockLogic(
+      List<Lesson> lessons, Map<String, bool> completionStatus) {
     // Tamamlanma durumlarını uygula
     for (var lesson in lessons) {
-      lesson.isCompleted = completionStatus[lesson.id] ?? lesson.isCompleted; // JSON'daki isCompleted varsayılan olur
+      lesson.isCompleted = completionStatus[lesson.id] ??
+          lesson.isCompleted; // JSON'daki isCompleted varsayılan olur
     }
 
     lessons.sort((a, b) => a.order.compareTo(b.order));
@@ -187,13 +212,14 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
         lessons[i].isLocked = !(lessons[i - 1].isCompleted && canAccessNext);
       }
       if (!lessons[i].isCompleted || lessons[i].isLocked) {
-        if (!lessons[i].isCompleted) { // Sadece gerçekten tamamlanmadıysa bir sonrakine erişimi engelle
-            canAccessNext = false;
+        if (!lessons[i].isCompleted) {
+          // Sadece gerçekten tamamlanmadıysa bir sonrakine erişimi engelle
+          canAccessNext = true;
         }
       }
     }
   }
-  
+
   void _navigateToLesson(Lesson lesson) {
     Navigator.push(
       context,
@@ -204,13 +230,16 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
         ),
       ),
     ).then((lessonWasCompletedByDetailScreen) async {
-      if (lessonWasCompletedByDetailScreen != null && lessonWasCompletedByDetailScreen is bool) {
+      if (lessonWasCompletedByDetailScreen != null &&
+          lessonWasCompletedByDetailScreen is bool) {
         // SharedPreferences'e kaydet
-        await _saveLessonCompletionStatus(widget.category.id, lesson.id, lessonWasCompletedByDetailScreen);
-        
+        await _saveLessonCompletionStatus(
+            widget.category.id, lesson.id, lessonWasCompletedByDetailScreen);
+
         // UI'ı güncellemek için dersleri yeniden yükle (SharedPreferences'ten okuyarak)
-        await _loadLessons(); 
-        print("Ders '${lesson.title}' (${widget.category.id}) durumu: ${lessonWasCompletedByDetailScreen ? "Tamamlandı" : "Tamamlanmadı"}. Kilitler güncellendi.");
+        await _loadLessons();
+        print(
+            "Ders '${lesson.title}' (${widget.category.id}) durumu: ${lessonWasCompletedByDetailScreen ? "Tamamlandı" : "Tamamlanmadı"}. Kilitler güncellendi.");
       } else {
         // Eğer bir şey dönmediyse veya yanlış türde döndüyse, yine de UI'ı yenileyebiliriz.
         await _loadLessons();
@@ -218,7 +247,6 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
       }
     });
   }
-
 
   // --- UI Widget'ları ---
   @override
@@ -283,7 +311,8 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
                           ? Icons.bookmark
                           : Icons.bookmark_border_outlined,
                       color: themeExtension.accentColor),
-                  onPressed: () => _toggleBookmarkAndSave(themeExtension), // Kaydetme eklendi
+                  onPressed: () => _toggleBookmarkAndSave(
+                      themeExtension), // Kaydetme eklendi
                 ),
               ),
               const SizedBox(width: 8),
@@ -444,10 +473,14 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
 
   String _getDifficultyText(Difficulty difficulty) {
     switch (difficulty) {
-      case Difficulty.beginner: return 'Başlangıç';
-      case Difficulty.intermediate: return 'Orta';
-      case Difficulty.advanced: return 'İleri';
-      case Difficulty.expert: return 'Uzman';
+      case Difficulty.beginner:
+        return 'Başlangıç';
+      case Difficulty.intermediate:
+        return 'Orta';
+      case Difficulty.advanced:
+        return 'İleri';
+      case Difficulty.expert:
+        return 'Uzman';
     }
   }
 
@@ -708,10 +741,18 @@ class _EducationCategoryScreenState extends State<EducationCategoryScreen> {
     }
 
     switch (type) {
-      case LessonType.theory: text = 'Teori'; break;
-      case LessonType.interactive: text = 'İnteraktif'; break;
-      case LessonType.practice: text = 'Pratik'; break;
-      case LessonType.quiz: text = 'Test'; break;
+      case LessonType.theory:
+        text = 'Teori';
+        break;
+      case LessonType.interactive:
+        text = 'İnteraktif';
+        break;
+      case LessonType.practice:
+        text = 'Pratik';
+        break;
+      case LessonType.quiz:
+        text = 'Test';
+        break;
     }
 
     return Container(

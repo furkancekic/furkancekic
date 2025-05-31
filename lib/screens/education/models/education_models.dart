@@ -18,7 +18,6 @@ enum LessonType {
     );
   }
 
-  // !!! DÜZELTME: icon ve color getter'ları buraya eklendi !!!
   IconData get icon {
     switch (this) {
       case LessonType.theory:
@@ -33,8 +32,6 @@ enum LessonType {
   }
 
   Color get color {
-    // Tema renkleriyle uyumlu olması için AppTheme'den renkler alınabilir
-    // veya burada sabit renkler tanımlanabilir. Şimdilik sabit renkler:
     switch (this) {
       case LessonType.theory:
         return Colors.blue.shade600;
@@ -52,7 +49,7 @@ enum ChartType {
   candlestick,
   line,
   area,
-  indicator;
+  indicator; // Bu genel amaçlı kalabilir, ama spesifikler daha iyi olabilir
 
   static ChartType fromString(String? type) {
     if (type == null) return ChartType.candlestick;
@@ -117,11 +114,9 @@ class Lesson {
     this.quiz,
   });
 
-  // Getter'lar LessonType içinden çağrılacak
   IconData get typeIcon => type.icon;
   Color get typeColor => type.color;
 
-  // !!! DÜZELTME: fromJson fabrika kurucusu burada olmalı !!!
   factory Lesson.fromJson(Map<String, dynamic> json) {
     return Lesson(
       id: json['id'] as String,
@@ -152,24 +147,41 @@ abstract class LessonContent {
   final String id;
   final String type;
   final String title;
+  final String explanation; // Ortak açıklama alanı
 
-  LessonContent({required this.id, required this.type, required this.title});
+  LessonContent({
+    required this.id,
+    required this.type,
+    required this.title,
+    this.explanation = '', // Varsayılan boş
+  });
 
-  factory LessonContent.fromJson(Map<String, dynamic> json) {
+  static LessonContent fromJson(Map<String, dynamic> json) {
     final type = json['type'] as String?;
+    // final explanation = json['explanation'] as String? ?? ''; // Bu artık constructor'da
+
     switch (type) {
       case 'textContent':
         return TextContent.fromJson(json);
-      case 'interactiveChartContent':
+      case 'interactiveChartContent': // Bu, genel teknik analiz grafiği için kalabilir
         return InteractiveChartContent.fromJson(json);
-      case 'videoContent': // Eğer eklediyseniz
+      case 'interactiveEducationChart': // Bu, indikatör eğitimleri için
+        return InteractiveEducationChartContent.fromJson(json);
+      case 'videoContent':
         return VideoContent.fromJson(json);
-      case 'codeExampleContent': // Eğer eklediyseniz
+      case 'codeExampleContent':
         return CodeExampleContent.fromJson(json);
+      case 'portfolioComparisonChart': // YENİ
+        return PortfolioComparisonChartContent.fromJson(json);
+      case 'fundamentalRatioComparisonChart': // YENİ
+        return FundamentalRatioComparisonChartContent.fromJson(json);
+      // case 'fundamentalRatioTimeSeriesChart': // YENİ (Eğer oluşturulursa)
+      //   return FundamentalRatioTimeSeriesChartContent.fromJson(json);
       default:
         return TextContent(
             id: json['id'] ?? 'unknown_content_id',
             title: json['title'] ?? 'Unknown Title',
+            explanation: json['explanation'] ?? 'Unknown Explanation',
             content: 'Content type "$type" not recognized or missing.');
     }
   }
@@ -183,15 +195,21 @@ class TextContent extends LessonContent {
   TextContent({
     required String id,
     required String title,
+    required String explanation,
     required this.content,
     this.bulletPoints = const [],
     this.definitions = const {},
-  }) : super(id: id, type: 'textContent', title: title);
+  }) : super(
+            id: id,
+            type: 'textContent',
+            title: title,
+            explanation: explanation);
 
   factory TextContent.fromJson(Map<String, dynamic> json) {
     return TextContent(
       id: json['id'] as String,
       title: json['title'] as String,
+      explanation: json['explanation'] as String? ?? '',
       content: json['content'] as String? ?? '',
       bulletPoints: (json['bulletPoints'] as List<dynamic>?)
               ?.map((e) => e as String)
@@ -206,7 +224,7 @@ class TextContent extends LessonContent {
 }
 
 class InteractiveChartContent extends LessonContent {
-  final String explanation;
+  // Bu sınıf genel teknik analiz grafiği için kullanılacak
   final String symbol;
   final String timeframe;
   final ChartType chartType;
@@ -216,19 +234,25 @@ class InteractiveChartContent extends LessonContent {
   InteractiveChartContent({
     required String id,
     required String title,
-    required this.explanation,
+    required String explanation,
     required this.symbol,
     required this.timeframe,
     required this.chartType,
     this.indicators = const [],
     this.annotations = const [],
-  }) : super(id: id, type: 'interactiveChartContent', title: title);
+  }) : super(
+            id: id,
+            type: 'interactiveChartContent',
+            title: title,
+            explanation: explanation);
 
   factory InteractiveChartContent.fromJson(Map<String, dynamic> json) {
     return InteractiveChartContent(
       id: json['id'] as String,
       title: json['title'] as String,
-      explanation: json['explanation'] as String? ?? '',
+      explanation: json['explanation'] as String? ??
+          json['description'] as String? ??
+          '', // eski 'description' ile uyumluluk
       symbol: json['symbol'] as String? ?? 'N/A',
       timeframe: json['timeframe'] as String? ?? 'N/A',
       chartType: ChartType.fromString(json['chartType'] as String?),
@@ -238,6 +262,157 @@ class InteractiveChartContent extends LessonContent {
               .toList() ??
           const [],
       annotations: (json['annotations'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+    );
+  }
+}
+
+class InteractiveEducationChartContent extends LessonContent {
+  // Bu sınıf indikatör eğitimleri için (RSI, MACD vb.)
+  final String indicatorType; // 'rsi', 'macd', 'stochastic', 'bollingerBands'
+  final List<String> learningPoints;
+
+  InteractiveEducationChartContent({
+    required String id,
+    required String title,
+    required String explanation,
+    required this.indicatorType,
+    required this.learningPoints,
+  }) : super(
+            id: id,
+            type: 'interactiveEducationChart',
+            title: title,
+            explanation: explanation);
+
+  factory InteractiveEducationChartContent.fromJson(Map<String, dynamic> json) {
+    return InteractiveEducationChartContent(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      explanation: json['explanation'] as String? ??
+          json['description'] as String? ??
+          '', // eski 'description' ile uyumluluk
+      indicatorType: json['indicatorType'] as String? ?? 'rsi',
+      learningPoints: (json['learningPoints'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+    );
+  }
+}
+
+// YENİ İÇERİK TÜRLERİ
+class PortfolioScenario {
+  final String name;
+  final String colorHex; // Renk için HEX string (örn: "#FF5733")
+  final double initialValue;
+  final double averageReturn;
+  final double volatility;
+
+  PortfolioScenario({
+    required this.name,
+    required this.colorHex,
+    required this.initialValue,
+    required this.averageReturn,
+    required this.volatility,
+  });
+
+  factory PortfolioScenario.fromJson(Map<String, dynamic> json) {
+    return PortfolioScenario(
+      name: json['name'] as String,
+      colorHex: json['colorHex'] as String? ?? '#CCCCCC',
+      initialValue: (json['initialValue'] as num?)?.toDouble() ?? 10000.0,
+      averageReturn: (json['averageReturn'] as num?)?.toDouble() ?? 0.0,
+      volatility: (json['volatility'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+class PortfolioComparisonChartContent extends LessonContent {
+  final List<PortfolioScenario> portfolios;
+  final int durationYears;
+  final List<String> annotations;
+
+  PortfolioComparisonChartContent({
+    required String id,
+    required String title,
+    required String explanation,
+    required this.portfolios,
+    required this.durationYears,
+    this.annotations = const [],
+  }) : super(
+            id: id,
+            type: 'portfolioComparisonChart',
+            title: title,
+            explanation: explanation);
+
+  factory PortfolioComparisonChartContent.fromJson(Map<String, dynamic> json) {
+    return PortfolioComparisonChartContent(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      explanation: json['explanation'] as String? ?? '',
+      portfolios: (json['portfolios'] as List<dynamic>?)
+              ?.map(
+                  (e) => PortfolioScenario.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      durationYears: json['durationYears'] as int? ?? 10,
+      annotations: (json['annotations'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+    );
+  }
+}
+
+class CompanyRatioData {
+  final String name;
+  final double value;
+
+  CompanyRatioData({required this.name, required this.value});
+
+  factory CompanyRatioData.fromJson(Map<String, dynamic> json) {
+    return CompanyRatioData(
+      name: json['name'] as String,
+      value: (json['value'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+class FundamentalRatioComparisonChartContent extends LessonContent {
+  final String ratioType; // "FK", "PDD" etc.
+  final List<CompanyRatioData> companies;
+  final double? averageRatio; // Opsiyonel sektör ortalaması
+  final List<String> learningPoints;
+
+  FundamentalRatioComparisonChartContent({
+    required String id,
+    required String title,
+    required String explanation,
+    required this.ratioType,
+    required this.companies,
+    this.averageRatio,
+    this.learningPoints = const [],
+  }) : super(
+            id: id,
+            type: 'fundamentalRatioComparisonChart',
+            title: title,
+            explanation: explanation);
+
+  factory FundamentalRatioComparisonChartContent.fromJson(
+      Map<String, dynamic> json) {
+    return FundamentalRatioComparisonChartContent(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      explanation: json['explanation'] as String? ?? '',
+      ratioType: json['ratioType'] as String? ?? 'N/A',
+      companies: (json['companies'] as List<dynamic>?)
+              ?.map((e) => CompanyRatioData.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      averageRatio: (json['averageRatio'] as num?)?.toDouble(),
+      learningPoints: (json['learningPoints'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
@@ -273,15 +448,21 @@ class VideoContent extends LessonContent {
   VideoContent({
     required String id,
     required String title,
+    required String explanation,
     required this.videoUrl,
     required this.duration,
     this.thumbnail = '',
-  }) : super(id: id, type: 'videoContent', title: title);
+  }) : super(
+            id: id,
+            type: 'videoContent',
+            title: title,
+            explanation: explanation);
 
   factory VideoContent.fromJson(Map<String, dynamic> json) {
     return VideoContent(
       id: json['id'] as String,
       title: json['title'] as String,
+      explanation: json['explanation'] as String? ?? '',
       videoUrl: json['videoUrl'] as String? ?? '',
       duration: json['duration'] as String? ?? '0:00',
       thumbnail: json['thumbnail'] as String? ?? '',
@@ -292,33 +473,34 @@ class VideoContent extends LessonContent {
 class CodeExampleContent extends LessonContent {
   final String language;
   final String code;
-  final String explanation;
+  // final String explanation; // Bu artık LessonContent'tan geliyor
   final bool isExecutable;
 
   CodeExampleContent({
     required String id,
     required String title,
+    required String explanation,
     required this.language,
     required this.code,
-    required this.explanation,
     this.isExecutable = false,
-  }) : super(id: id, type: 'codeExampleContent', title: title);
+  }) : super(
+            id: id,
+            type: 'codeExampleContent',
+            title: title,
+            explanation: explanation);
 
   factory CodeExampleContent.fromJson(Map<String, dynamic> json) {
     return CodeExampleContent(
       id: json['id'] as String,
       title: json['title'] as String,
+      explanation: json['explanation'] as String? ?? '',
       language: json['language'] as String? ?? 'plaintext',
       code: json['code'] as String? ?? '',
-      explanation: json['explanation'] as String? ?? '',
       isExecutable: json['isExecutable'] as bool? ?? false,
     );
   }
 }
 
-// --- QUIZ MODELS ---
-// ... (Quiz, Question, MultipleChoiceQuestion, TrueFalseQuestion, DragDropQuestion modelleri önceki gibi kalacak) ...
-// ... (Quiz ve alt sınıflarının fromJson metodlarının doğru olduğundan emin olun) ...
 class Quiz {
   final String id;
   final String title;
@@ -339,7 +521,7 @@ class Quiz {
       id: json['id'] as String,
       title: json['title'] as String,
       passingScore: json['passingScore'] as int? ?? 70,
-      timeLimit: json['timeLimit'] as int? ?? 0, // 0 limitsiz demek olabilir
+      timeLimit: json['timeLimit'] as int? ?? 0,
       questions: (json['questions'] as List<dynamic>?)
               ?.map((qJson) => Question.fromJson(qJson as Map<String, dynamic>))
               .toList() ??
@@ -350,7 +532,7 @@ class Quiz {
 
 abstract class Question {
   final String id;
-  final String type; // 'multipleChoice', 'trueFalse', 'dragDrop'
+  final String type;
   final String question;
   final String? explanation;
 
@@ -361,7 +543,7 @@ abstract class Question {
     this.explanation,
   });
 
-  factory Question.fromJson(Map<String, dynamic> json) {
+  static Question fromJson(Map<String, dynamic> json) {
     final type = json['type'] as String?;
     switch (type) {
       case 'multipleChoice':
@@ -374,7 +556,7 @@ abstract class Question {
         return MultipleChoiceQuestion(
             id: json['id'] ?? 'unknown_q_id',
             question: json['question'] ?? 'Unknown Question',
-            options: [],
+            options: const [],
             correctAnswerIndex: 0,
             explanation: 'Question type "$type" not recognized.');
     }
@@ -489,4 +671,33 @@ class Achievement {
     this.isUnlocked = false,
     this.progress = 0.0,
   });
+}
+
+class CandleData {
+  final DateTime date;
+  final double open;
+  final double high;
+  final double low;
+  final double close;
+  final int volume;
+
+  CandleData({
+    required this.date,
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.close,
+    required this.volume,
+  });
+
+  factory CandleData.fromJson(Map<String, dynamic> json) {
+    return CandleData(
+      date: DateTime.parse(json['Date']),
+      open: json['Open'].toDouble(),
+      high: json['High'].toDouble(),
+      low: json['Low'].toDouble(),
+      close: json['Close'].toDouble(),
+      volume: json['Volume'] is int ? json['Volume'] : json['Volume'].toInt(),
+    );
+  }
 }
