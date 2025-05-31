@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/portfolio.dart';
+import '../models/performance_point.dart'; // Import the common PerformancePoint
 import '../src/config.dart';
 
 /// Service for handling benchmark comparisons for portfolios
@@ -469,7 +470,7 @@ class BenchmarkData {
   final String name;
   final String symbol;
   final String timeframe;
-  final List<PerformancePoint> data;
+  final List<PerformancePoint> data; // Uses the common PerformancePoint
   final double returnPercent;
 
   BenchmarkData({
@@ -488,30 +489,14 @@ class BenchmarkData {
       symbol: json['symbol'] ?? '',
       timeframe: json['timeframe'] ?? '',
       data: (json['data'] as List<dynamic>)
-          .map((pointJson) => PerformancePoint.fromJson(pointJson))
+          .map((pointJson) => PerformancePoint.fromJson(pointJson)) // Uses common PerformancePoint.fromJson
           .toList(),
       returnPercent: json['return_percent']?.toDouble() ?? 0.0,
     );
   }
 }
 
-/// Class to store a point in the performance chart
-class PerformancePoint {
-  final DateTime date;
-  final double value;
-
-  PerformancePoint({
-    required this.date,
-    required this.value,
-  });
-
-  factory PerformancePoint.fromJson(Map<String, dynamic> json) {
-    return PerformancePoint(
-      date: DateTime.parse(json['date']),
-      value: json['value'].toDouble(),
-    );
-  }
-}
+// Removed the local PerformancePoint definition, as it's now imported
 
 /// Class to store benchmark information
 class BenchmarkInfo {

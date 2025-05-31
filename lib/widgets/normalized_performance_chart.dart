@@ -294,15 +294,43 @@ class _NormalizedPerformanceChartState extends State<NormalizedPerformanceChart>
             spots: spots,
             isCurved: true,
             color: lineColor,
-            barWidth: 2,
+            barWidth: 3, // Changed from 2 to 3
             isStrokeCapRound: true,
             dotData: FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: lineColor.withOpacity(0.1),
+              // color: lineColor.withOpacity(0.1), // Old
+              gradient: LinearGradient( // New gradient approach
+                colors: [
+                  lineColor.withOpacity(0.3),
+                  lineColor.withOpacity(0.0),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
             ),
           ),
         ],
+        lineTouchData: LineTouchData( // Added for tooltips
+          touchTooltipData: LineTouchTooltipData(
+            tooltipBgColor: AppTheme.cardColor.withOpacity(0.8),
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                final index = spot.x.toInt();
+                if (index < 0 || index >= _performanceData.length) {
+                  return null;
+                }
+                final dataPoint = _performanceData[index];
+                // Format date similar to PortfolioScreen's _formatDate if available, or use a simple one
+                final String formattedDate = '${dataPoint.date.day}/${dataPoint.date.month}/${dataPoint.date.year}';
+                return LineTooltipItem(
+                  '$formattedDate\n${dataPoint.value.toStringAsFixed(1)}%',
+                  const TextStyle(color: AppTheme.textPrimary, fontSize: 11), // Use AppTheme.textPrimary
+                );
+              }).toList();
+            },
+          ),
+        ),
         extraLinesData: ExtraLinesData(
           horizontalLines: [
             // Add baseline at 100%
