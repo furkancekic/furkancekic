@@ -9,6 +9,9 @@ import 'widgets/interactive_education_chart_widget.dart';
 import 'widgets/quiz_widget.dart';
 import 'widgets/portfolio_comparison_chart_widget.dart'; // YENİ IMPORT
 import 'widgets/fundamental_ratio_chart_widget.dart'; // YENİ IMPORT
+import '../../models/portfolio.dart'; // Added for BalanceSheetPieChart
+import '../../models/position.dart'; // Added for BalanceSheetPieChart
+import '../../widgets/interactive_pie_chart.dart'; // Added for BalanceSheetPieChart
 
 class LessonDetailScreen extends StatefulWidget {
   final Lesson lesson;
@@ -348,6 +351,12 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
           themeExtension,
         );
         break;
+      case BalanceSheetPieChartContent: // New case
+        specificContent = _buildBalanceSheetPieChartWidget(
+          content as BalanceSheetPieChartContent,
+          themeExtension,
+        );
+        break;
       default:
         specificContent =
             _buildPlaceholderContentWidget(content, themeExtension);
@@ -369,6 +378,113 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
   }
 
   // --- Specific Content Widget Builders ---
+
+  Portfolio _createPortfolioFromData(
+      Map<String, double> data, String portfolioId) {
+    final positions = data.entries.map((entry) {
+      return Position(
+        ticker: entry.key,
+        companyName: entry.key, // Using ticker as companyName for simplicity
+        quantity: 1, // Dummy value
+        averagePrice: entry.value, // Using value as averagePrice for simplicity
+        currentValue: entry.value,
+        purchaseDate: DateTime.now(), // Dummy value
+      );
+    }).toList();
+
+    return Portfolio(
+      id: portfolioId,
+      name: portfolioId,
+      positions: positions,
+      createdAt: DateTime.now(), // Added missing required argument
+      updatedAt: DateTime.now(), // Added missing required argument
+      // totalValue, lastUpdated, etc., will be calculated by Portfolio model if needed
+    );
+  }
+
+  Widget _buildBalanceSheetPieChartWidget(
+      BalanceSheetPieChartContent content, AppThemeExtension themeExtension) {
+    final assetsPortfolio =
+        _createPortfolioFromData(content.assetData, 'Assets');
+    final liabilitiesEquityPortfolio = _createPortfolioFromData(
+        content.liabilityEquityData, 'Liabilities & Equity');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Title and Explanation are handled by the common headerSection in _buildContentWidget
+        // So, no need to add them here again unless a different styling is required.
+
+        if (content.assetData.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: InteractivePieChart(
+              portfolio: assetsPortfolio,
+              chartTitle: 'Varlık Dağılımı', // Asset Distribution
+              size: 250, // Adjust size as needed
+            ),
+          ),
+        if (content.liabilityEquityData.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: InteractivePieChart(
+              portfolio: liabilitiesEquityPortfolio,
+              chartTitle:
+                  'Kaynak Dağılımı', // Liability & Equity Distribution
+              size: 250, // Adjust size as needed
+            ),
+          ),
+        if (content.annotations.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          AdaptiveCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Notlar:', // Annotations Title
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: themeExtension.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...content.annotations.map(
+                  (annotation) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.only(top: 6, right: 8),
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: widget.lesson.typeColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            annotation,
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.4,
+                              color: themeExtension.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 
   Widget _buildTextContentWidget(
       TextContent content, AppThemeExtension themeExtension) {

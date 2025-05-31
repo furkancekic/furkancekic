@@ -10,6 +10,7 @@ class InteractivePieChart extends StatefulWidget {
   final double size;
   final bool showPercentage;
   final bool showLabels;
+  final String? chartTitle;
 
   const InteractivePieChart({
     Key? key,
@@ -17,6 +18,7 @@ class InteractivePieChart extends StatefulWidget {
     this.size = 200,
     this.showPercentage = true,
     this.showLabels = true,
+    this.chartTitle,
   }) : super(key: key);
 
   @override
@@ -158,7 +160,7 @@ class _InteractivePieChartState extends State<InteractivePieChart>
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Asset Allocation',
+              widget.chartTitle ?? 'Asset Allocation',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
