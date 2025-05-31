@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/portfolio.dart';
 import '../models/position.dart';
 import '../models/transaction.dart';
+import '../models/performance_point.dart'; // Import the common PerformancePoint
 import '../src/config.dart';
 
 class PortfolioService {
@@ -877,7 +878,7 @@ class PortfolioService {
 /// Class to store performance data
 class PerformanceData {
   final String timeframe;
-  final List<PerformancePoint> data;
+  final List<PerformancePoint> data; // Uses the common PerformancePoint
 
   PerformanceData({
     required this.timeframe,
@@ -888,36 +889,20 @@ class PerformanceData {
     return PerformanceData(
       timeframe: json['timeframe'] ?? '',
       data: (json['data'] as List<dynamic>)
-          .map((pointJson) => PerformancePoint.fromJson(pointJson))
+          .map((pointJson) => PerformancePoint.fromJson(pointJson)) // Uses common PerformancePoint.fromJson
           .toList(),
     );
   }
 }
 
-/// Class to store a point in the performance chart
-class PerformancePoint {
-  final DateTime date;
-  final double value;
-
-  PerformancePoint({
-    required this.date,
-    required this.value,
-  });
-
-  factory PerformancePoint.fromJson(Map<String, dynamic> json) {
-    return PerformancePoint(
-      date: DateTime.parse(json['date']),
-      value: json['value'].toDouble(),
-    );
-  }
-}
+// Removed the local PerformancePoint definition, as it's now imported
 
 /// Class to store benchmark performance data
 class BenchmarkPerformanceData {
   final String ticker;
   final String name;
   final String timeframe;
-  final List<PerformancePoint> data;
+  final List<PerformancePoint> data; // Uses the common PerformancePoint
   final double startValue;
   final double endValue;
   final double percentChange;
@@ -938,7 +923,7 @@ class BenchmarkPerformanceData {
       name: json['name'] ?? '',
       timeframe: json['timeframe'] ?? '',
       data: (json['data'] as List<dynamic>)
-          .map((pointJson) => PerformancePoint.fromJson(pointJson))
+          .map((pointJson) => PerformancePoint.fromJson(pointJson)) // Uses common PerformancePoint.fromJson
           .toList(),
       startValue: (json['start_value'] ?? 0.0).toDouble(),
       endValue: (json['end_value'] ?? 0.0).toDouble(),

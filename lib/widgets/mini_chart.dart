@@ -37,9 +37,8 @@ class MiniChart extends StatelessWidget {
           ? BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  lineColor.withOpacity(0.2),
-                  lineColor.withOpacity(0.1),
-                  Colors.transparent,
+                  lineColor.withOpacity(0.25), // Adjusted opacity
+                  lineColor.withOpacity(0.0),   // Fade to transparent
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -85,7 +84,7 @@ class ChartPainter extends CustomPainter {
     final Paint linePaint = Paint()
       ..color = lineColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
+      ..strokeWidth = 2.5 // Changed from 2.0 to 2.5
       ..strokeCap = StrokeCap.round;
 
     final path = Path();
