@@ -79,18 +79,26 @@
       },
       {
         "id": "fundamental_2_interactive_1",
-        "type": "interactiveChartContent", 
+        "type": "balanceSheetPieChartContent",
         "title": "Örnek Şirket Bilanço Dağılımı (Pasta Grafik)",
-        "explanation": "Bir perakende şirketinin basitleştirilmiş bilanço varlık ve kaynak dağılımını pasta grafiklerle inceleyin. Her bir ana kalemin toplam içindeki payını gözlemleyin. (Bu grafik temsili verilerle oluşturulmuştur ve gerçek bir şirketi yansıtmaz).",
-        "symbol": "PERAKENDE A.Ş. - BİLANÇO",
-        "timeframe": "Yıl Sonu 2023",
-        "chartType": "area",
-        "indicators": [], 
+        "explanation": "Bir perakende şirketinin basitleştirilmiş bilanço varlık ve kaynak dağılımını pasta grafiklerle inceleyin. Her bir ana kalemin toplam içindeki payını gözlemleyebilirsiniz. (Bu grafik temsili verilerle oluşturulmuştur ve gerçek bir şirketi yansıtmaz).",
+        "assetData": {
+          "Nakit ve Nakit Benzerleri": 10.0,
+          "Ticari Alacaklar": 20.0,
+          "Stoklar": 25.0,
+          "Maddi Duran Varlıklar": 35.0,
+          "Diğer Dönen Varlıklar": 10.0
+        },
+        "liabilityEquityData": {
+          "Ticari Borçlar": 15.0,
+          "Kısa Vadeli Finansal Borçlar": 20.0,
+          "Uzun Vadeli Finansal Borçlar": 30.0,
+          "Özkaynaklar": 35.0
+        },
         "annotations": [
-          "Varlıklar: Dönen varlıklar (nakit, alacaklar, stoklar) ve duran varlıklar (mağazalar, ekipmanlar) olarak ayrılır.",
-          "Kaynaklar: Kısa vadeli borçlar, uzun vadeli borçlar ve özkaynaklar (şirket sahiplerinin payı) olarak ayrılır.",
-          "Sağlıklı bir bilançoda varlıkların kaynaklarla dengeli olması, özkaynakların güçlü olması ve likiditenin yeterli olması beklenir.",
-          "Not: Bu grafik türü (area), bilanço kalemlerinin oransal dağılımını göstermek için ideal değildir. Pasta veya yığılmış çubuk grafikler daha uygun olurdu."
+          "Varlıklar: Şirketin sahip olduğu değerleri gösterir. Genellikle dönen varlıklar (nakit, alacaklar, stoklar) ve duran varlıklar (binalar, ekipmanlar) olarak ayrılır.",
+          "Kaynaklar: Şirketin varlıklarını nasıl finanse ettiğini gösterir. Kısa ve uzun vadeli borçlar ile şirket sahiplerinin payı olan özkaynaklardan oluşur.",
+          "Sağlıklı bir bilançoda varlıkların kaynaklarla dengeli olması (Varlıklar = Borçlar + Özkaynaklar), özkaynakların güçlü olması ve şirketin yükümlülüklerini karşılayabilir durumda olması beklenir."
         ]
       }
     ],

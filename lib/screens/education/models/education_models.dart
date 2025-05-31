@@ -177,6 +177,8 @@ abstract class LessonContent {
         return FundamentalRatioComparisonChartContent.fromJson(json);
       // case 'fundamentalRatioTimeSeriesChart': // YENİ (Eğer oluşturulursa)
       //   return FundamentalRatioTimeSeriesChartContent.fromJson(json);
+      case 'balanceSheetPieChartContent': // NEW
+        return BalanceSheetPieChartContent.fromJson(json);
       default:
         return TextContent(
             id: json['id'] ?? 'unknown_content_id',
@@ -184,6 +186,47 @@ abstract class LessonContent {
             explanation: json['explanation'] ?? 'Unknown Explanation',
             content: 'Content type "$type" not recognized or missing.');
     }
+  }
+}
+
+// NEW CLASS for Balance Sheet Pie Chart
+class BalanceSheetPieChartContent extends LessonContent {
+  final Map<String, double> assetData;
+  final Map<String, double> liabilityEquityData;
+  final List<String> annotations;
+
+  BalanceSheetPieChartContent({
+    required String id,
+    required String title,
+    required String explanation,
+    required this.assetData,
+    required this.liabilityEquityData,
+    this.annotations = const [],
+  }) : super(
+            id: id,
+            type: 'balanceSheetPieChartContent',
+            title: title,
+            explanation: explanation);
+
+  factory BalanceSheetPieChartContent.fromJson(Map<String, dynamic> json) {
+    return BalanceSheetPieChartContent(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      explanation: json['explanation'] as String? ?? '',
+      assetData: (json['assetData'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, (e as num).toDouble()),
+          ) ??
+          const {},
+      liabilityEquityData:
+          (json['liabilityEquityData'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, (e as num).toDouble()),
+          ) ??
+              const {},
+      annotations: (json['annotations'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+    );
   }
 }
 
