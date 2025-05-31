@@ -139,7 +139,7 @@ class AppTheme {
         background: _darkBackgroundColor,
         surface: _darkCardColor,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: _darkCardColor,
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -269,7 +269,7 @@ class AppTheme {
         background: _lightBackgroundColor,
         surface: _lightCardColor,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: _lightCardColor,
         elevation: 1,
         shadowColor: Colors.black.withOpacity(0.05),
@@ -406,7 +406,7 @@ class AppTheme {
         background: _glassDarkBackgroundColor,
         surface: _glassDarkCardColor,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: _glassDarkCardColor,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -540,7 +540,7 @@ class AppTheme {
         background: _glassLightBackgroundColor,
         surface: _glassLightCardColor,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: _glassLightCardColor,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

@@ -1,5 +1,8 @@
 // screens/education/lesson_detail_screen.dart
+import 'dart:convert'; // Added for jsonDecode
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Added for rootBundle
+import 'package:shared_preferences/shared_preferences.dart'; // Added for SharedPreferences
 // import 'package:syncfusion_flutter_charts/charts.dart'; // Bu dosyada doğrudan artık gerek yok
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
@@ -29,6 +32,8 @@ class LessonDetailScreen extends StatefulWidget {
 
 class _LessonDetailScreenState extends State<LessonDetailScreen>
     with TickerProviderStateMixin {
+  static const String _completionStatusKeyPrefix =
+      'lesson_completion_status_'; // Added constant
   late PageController _pageController;
   late AnimationController _progressAnimationController;
   late Animation<double> _progressAnimation;
@@ -183,7 +188,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
                 backgroundColor: themeExtension.cardColor,
                 child: IconButton(
                   icon: Icon(
-                    _isLessonCompleted ? Icons.bookmark : Icons.bookmark_border,
+                    widget.lesson.isBookmarked ? Icons.bookmark : Icons.bookmark_border, // Use widget.lesson.isBookmarked
                     color: themeExtension.accentColor,
                   ),
                   onPressed: _toggleBookmark,
@@ -357,6 +362,15 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
           themeExtension,
         );
         break;
+      // FUTURE_GRAPHICS_PLACEHOLDER:
+      // To add a new interactive graphic/content widget:
+      // 1. Ensure you've defined a new content type and model in education_models.dart.
+      // 2. Create your new widget (e.g., MyNewGraphicWidget).
+      // 3. Add a case for your new content model type here:
+      //    case MyNewGraphicContent:
+      //      specificContent = _buildMyNewGraphicWidget(content as MyNewGraphicContent, themeExtension);
+      //      break;
+      // 4. Implement the _buildMyNewGraphicWidget method in this class.
       default:
         specificContent =
             _buildPlaceholderContentWidget(content, themeExtension);
@@ -1208,13 +1222,65 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              // Dismiss the dialog first
               Navigator.of(context).pop();
-              Navigator.of(context).pop(_isLessonCompleted);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text("Sonraki derse geçiş özelliği eklenecek.")),
-              );
+
+              List<Lesson> lessons =
+                  await _fetchLessonsForCategory(widget.category.id);
+              if (!mounted) return; // Check if the widget is still in the tree
+
+              if (lessons.isEmpty) {
+                // Should not happen if category ID is valid and JSON exists
+                Navigator.of(context).pop(_isLessonCompleted); // Go back to category
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text(
+                          "Dersler yüklenemedi. Kategoriye dönülüyor.")),
+                );
+                return;
+              }
+
+              int currentIndex =
+                  lessons.indexWhere((l) => l.id == widget.lesson.id);
+              Lesson? nextLesson;
+
+              if (currentIndex != -1 && currentIndex < lessons.length - 1) {
+                nextLesson = lessons[currentIndex + 1];
+              }
+
+              if (nextLesson != null && !nextLesson.isLocked) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LessonDetailScreen(
+                      lesson: nextLesson!,
+                      category: widget.category,
+                    ),
+                  ),
+                );
+              } else if (nextLesson != null && nextLesson.isLocked) {
+                // This case should ideally not be hit if lock logic is correct
+                // and lessons are completed sequentially.
+                Navigator.of(context).pop(_isLessonCompleted); // Go back to category
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text(
+                        "Sonraki ders henüz kilitli. Önceki dersleri tamamlayın."),
+                    backgroundColor: themeExtension.warningColor,
+                  ),
+                );
+              } else {
+                // No next lesson or current lesson not found (edge case)
+                Navigator.of(context).pop(_isLessonCompleted); // Go back to category
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        "Tebrikler! Bu kategorideki tüm dersleri tamamladınız."),
+                    backgroundColor: themeExtension.positiveColor,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: themeExtension.accentColor,
@@ -1229,11 +1295,75 @@ class _LessonDetailScreenState extends State<LessonDetailScreen>
   }
 
   void _toggleBookmark() {
+    final themeExtension = Theme.of(context).extension<AppThemeExtension>()!;
     setState(() {
-      // widget.lesson.isBookmarked = !widget.lesson.isBookmarked; // Modelde varsa
+      widget.lesson.isBookmarked = !widget.lesson.isBookmarked;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Yer imi özelliği eklenecek.")),
+      SnackBar(
+        content: Text(widget.lesson.isBookmarked ? "Ders yer imlerine eklendi." : "Ders yer imlerinden kaldırıldı."),
+        backgroundColor: themeExtension.accentColor,
+      ),
     );
+  }
+
+  // Helper methods for fetching lessons and handling completion status
+  Future<Map<String, bool>> _loadLessonCompletionStatusForCategory(
+      String categoryId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final Map<String, bool> completionStatus = {};
+    final categoryKeyPrefix = '$_completionStatusKeyPrefix${categoryId}_';
+
+    final keys = prefs.getKeys();
+    for (String key in keys) {
+      if (key.startsWith(categoryKeyPrefix)) {
+        final lessonId = key.substring(categoryKeyPrefix.length);
+        completionStatus[lessonId] = prefs.getBool(key) ?? false;
+      }
+    }
+    return completionStatus;
+  }
+
+  List<Lesson> _applyCompletionAndLockLogic(
+      List<Lesson> lessons, Map<String, bool> completionStatus) {
+    lessons.sort((a, b) => a.order.compareTo(b.order));
+
+    bool previousLessonCompleted = true;
+    List<Lesson> updatedLessons = [];
+
+    for (var lesson in lessons) {
+      final isCompleted = completionStatus[lesson.id] ?? false;
+      final isLocked = !previousLessonCompleted && !isCompleted;
+
+      Lesson updatedLesson = lesson.copyWith(
+        isCompleted: isCompleted,
+        isLocked: isLocked,
+      );
+      updatedLessons.add(updatedLesson);
+
+      // For the next lesson, this current lesson's completion status is critical
+      previousLessonCompleted = isCompleted;
+    }
+    return updatedLessons;
+  }
+
+  Future<List<Lesson>> _fetchLessonsForCategory(String categoryId) async {
+    try {
+      final String response =
+          await rootBundle.loadString('assets/data/education/lessons/$categoryId.json');
+      final data = await json.decode(response) as List;
+      List<Lesson> lessons =
+          data.map((json) => Lesson.fromJson(json)).toList();
+
+      final completionStatus =
+          await _loadLessonCompletionStatusForCategory(categoryId);
+      lessons = _applyCompletionAndLockLogic(lessons, completionStatus);
+
+      return lessons;
+    } catch (e) {
+      // Log error or handle appropriately
+      debugPrint('Error fetching lessons for category $categoryId: $e');
+      return []; // Return empty list on error
+    }
   }
 }

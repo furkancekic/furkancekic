@@ -96,6 +96,7 @@ class Lesson {
   final int order;
   bool isCompleted;
   bool isLocked;
+  bool isBookmarked; // Added field
   final List<String> prerequisites;
   final List<LessonContent> content;
   final Quiz? quiz;
@@ -109,10 +110,41 @@ class Lesson {
     required this.order,
     this.isCompleted = false,
     this.isLocked = false,
+    this.isBookmarked = false, // Added to constructor with default
     this.prerequisites = const [],
     this.content = const [],
     this.quiz,
   });
+
+  Lesson copyWith({
+    String? id,
+    String? title,
+    String? description,
+    LessonType? type,
+    String? estimatedTime,
+    int? order,
+    bool? isCompleted,
+    bool? isLocked,
+    bool? isBookmarked,
+    List<String>? prerequisites,
+    List<LessonContent>? content,
+    Quiz? quiz,
+  }) {
+    return Lesson(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      type: type ?? this.type,
+      estimatedTime: estimatedTime ?? this.estimatedTime,
+      order: order ?? this.order,
+      isCompleted: isCompleted ?? this.isCompleted,
+      isLocked: isLocked ?? this.isLocked,
+      isBookmarked: isBookmarked ?? this.isBookmarked,
+      prerequisites: prerequisites ?? this.prerequisites,
+      content: content ?? this.content,
+      quiz: quiz ?? this.quiz,
+    );
+  }
 
   IconData get typeIcon => type.icon;
   Color get typeColor => type.color;
@@ -127,6 +159,7 @@ class Lesson {
       order: json['order'] as int,
       isCompleted: json['isCompleted'] as bool? ?? false,
       isLocked: json['isLocked'] as bool? ?? false,
+      isBookmarked: json['isBookmarked'] as bool? ?? false, // Added to fromJson
       prerequisites: (json['prerequisites'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
@@ -179,6 +212,14 @@ abstract class LessonContent {
       //   return FundamentalRatioTimeSeriesChartContent.fromJson(json);
       case 'balanceSheetPieChartContent': // NEW
         return BalanceSheetPieChartContent.fromJson(json);
+      // FUTURE_GRAPHICS_PLACEHOLDER:
+      // To add a new interactive graphic/content type:
+      // 1. Define a new class that extends LessonContent (e.g., MyNewGraphicContent).
+      // 2. Add a case for its 'type' string here:
+      //    case 'myNewGraphicType':
+      //      return MyNewGraphicContent.fromJson(json);
+      // 3. Implement the .fromJson factory for your new class.
+      // 4. See LessonDetailScreen._buildContentWidget to add the corresponding widget.
       default:
         return TextContent(
             id: json['id'] ?? 'unknown_content_id',
