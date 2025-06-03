@@ -1,13 +1,13 @@
 // screens/portfolio_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../theme/app_theme.dart';
-import '../widgets/common_widgets.dart';
-import '../widgets/mini_chart.dart';
-import '../widgets/switchable_performance_chart.dart'; // Add this import
-import '../models/portfolio.dart';
-import '../models/position.dart';
-import '../services/portfolio_service.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/common_widgets.dart';
+import '../../widgets/mini_chart.dart';
+import '../../widgets/switchable_performance_chart.dart'; // Add this import
+import '../../models/portfolio.dart';
+import '../../models/position.dart';
+import '../../services/portfolio_service.dart';
 import 'add_position_screen.dart';
 import 'position_detail_screen.dart';
 

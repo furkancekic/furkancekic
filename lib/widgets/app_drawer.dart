@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../screens/theme_settings_screen.dart';
-import '../screens/portfolio_screen.dart';
+import '../screens/portfolio/portfolio_screen.dart';
 import '../screens/fund_screens/fund_main_screen.dart';
 import '../screens/fund_screens/fund_market_overview_screen.dart';
 

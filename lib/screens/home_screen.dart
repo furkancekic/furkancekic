@@ -4,7 +4,7 @@ import '../widgets/alternative_navigation_with_switch.dart';
 import '../widgets/optimized_navigation_bars.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'portfolio_screen.dart';
+import 'portfolio/portfolio_screen.dart';
 import '../theme/app_theme.dart';
 import '../theme/theme_styles.dart';
 import '../widgets/common_widgets.dart';

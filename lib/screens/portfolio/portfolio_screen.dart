@@ -1,15 +1,15 @@
 // portfolio_screen.dart - Grafik hatası düzeltilmiş versiyon
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme/app_theme.dart';
-import '../widgets/common_widgets.dart';
-import '../models/portfolio.dart';
-import '../services/portfolio_service.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/common_widgets.dart';
+import '../../models/portfolio.dart';
+import '../../services/portfolio_service.dart';
 import 'portfolio_detail_screen.dart';
 import 'add_portfolio_screen.dart';
-import '../widgets/mini_chart.dart';
+import '../../widgets/mini_chart.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../utils/logger.dart';
+import '../../utils/logger.dart';
 import 'benchmark_comparison_screen.dart';
 
 class PortfolioScreen extends StatefulWidget {

@@ -10,7 +10,7 @@ import 'screens/chart_screen.dart';
 import 'screens/stock_reels_screen.dart';
 import 'screens/backtesting_screen.dart';
 import 'screens/theme_settings_screen.dart';
-import 'screens/benchmark_comparison_screen.dart';
+import 'screens/portfolio/benchmark_comparison_screen.dart';
 import 'screens/fund_screens/fund_main_screen.dart';
 import 'screens/fund_screens/fund_detail_screen.dart';
 import 'screens/fund_screens/fund_category_screen.dart';

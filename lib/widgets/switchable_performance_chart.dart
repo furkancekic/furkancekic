@@ -17,18 +17,20 @@ class SwitchablePerformanceChart extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<SwitchablePerformanceChart> createState() => _SwitchablePerformanceChartState();
+  State<SwitchablePerformanceChart> createState() =>
+      _SwitchablePerformanceChartState();
 }
 
-class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart> with TickerProviderStateMixin {
+class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
+    with TickerProviderStateMixin {
   bool _isNormalizedView = false; // false = dollar view, true = normalized view
   bool _isLoading = true;
-  
+
   // Data for both views
   List<PerformancePoint> _dollarPerformanceData = [];
   List<PerformancePoint> _normalizedPerformanceData = [];
   String _errorMessage = '';
-  
+
   // Animation controller for smooth transitions
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -56,7 +58,7 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
   @override
   void didUpdateWidget(SwitchablePerformanceChart oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.timeframe != widget.timeframe || 
+    if (oldWidget.timeframe != widget.timeframe ||
         oldWidget.portfolioId != widget.portfolioId) {
       _loadPerformanceData();
     }
@@ -92,7 +94,7 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
 
   Future<PerformanceData> _loadDollarPerformance() async {
     PerformanceData performanceData;
-    
+
     if (widget.portfolioId != null) {
       performanceData = await PortfolioService.getPortfolioPerformance(
         widget.portfolioId!,
@@ -103,25 +105,27 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
         widget.timeframe,
       );
     }
-    
+
     _dollarPerformanceData = performanceData.data;
     return performanceData;
   }
 
   Future<PerformanceData> _loadNormalizedPerformance() async {
     PerformanceData performanceData;
-    
+
     if (widget.portfolioId != null) {
-      performanceData = await PortfolioService.getNormalizedPortfolioPerformance(
+      performanceData =
+          await PortfolioService.getNormalizedPortfolioPerformance(
         widget.portfolioId!,
         widget.timeframe,
       );
     } else {
-      performanceData = await PortfolioService.getNormalizedTotalPortfoliosPerformance(
+      performanceData =
+          await PortfolioService.getNormalizedTotalPortfoliosPerformance(
         widget.timeframe,
       );
     }
-    
+
     _normalizedPerformanceData = performanceData.data;
     return performanceData;
   }
@@ -130,7 +134,7 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
     setState(() {
       _isNormalizedView = !_isNormalizedView;
     });
-    
+
     if (_isNormalizedView) {
       _animationController.forward();
     } else {
@@ -138,7 +142,7 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
     }
   }
 
-  List<PerformancePoint> get _currentData => 
+  List<PerformancePoint> get _currentData =>
       _isNormalizedView ? _normalizedPerformanceData : _dollarPerformanceData;
 
   @override
@@ -186,12 +190,12 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
           // Header with performance info and toggle
           _buildHeader(),
           const SizedBox(height: 16),
-          
+
           // Chart
           Expanded(child: _buildChart()),
-          
+
           const SizedBox(height: 8),
-          
+
           // Legend
           _buildLegend(),
         ],
@@ -202,7 +206,7 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
   Widget _buildHeader() {
     final currentData = _currentData;
     if (currentData.isEmpty) return const SizedBox.shrink();
-    
+
     return Row(
       children: [
         Expanded(
@@ -216,15 +220,16 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
   Widget _buildPerformanceInfo() {
     final currentData = _currentData;
     if (currentData.isEmpty) return const SizedBox.shrink();
-    
+
     final firstValue = currentData.first.value;
     final lastValue = currentData.last.value;
-    
+
     if (_isNormalizedView) {
       // Normalized view - show percentage (convert from 100 baseline to 0 baseline)
       final totalReturn = lastValue - 100; // Convert 117% to 17%
       final isPositive = totalReturn >= 0;
-      final color = isPositive ? AppTheme.positiveColor : AppTheme.negativeColor;
+      final color =
+          isPositive ? AppTheme.positiveColor : AppTheme.negativeColor;
       final sign = isPositive ? '+' : '';
 
       return Column(
@@ -272,7 +277,8 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
       // Dollar view - show dollar amounts
       final totalReturn = lastValue - firstValue;
       final isPositive = totalReturn >= 0;
-      final color = isPositive ? AppTheme.positiveColor : AppTheme.negativeColor;
+      final color =
+          isPositive ? AppTheme.positiveColor : AppTheme.negativeColor;
       final sign = isPositive ? '+' : '';
 
       return Column(
@@ -410,12 +416,12 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
     // Determine line color based on performance
     Color lineColor;
     if (_isNormalizedView) {
-      lineColor = spots.isNotEmpty && spots.last.y >= 100 
-          ? AppTheme.positiveColor 
+      lineColor = spots.isNotEmpty && spots.last.y >= 100
+          ? AppTheme.positiveColor
           : AppTheme.negativeColor;
     } else {
       lineColor = spots.length > 1 && spots.last.y >= spots.first.y
-          ? AppTheme.positiveColor 
+          ? AppTheme.positiveColor
           : AppTheme.negativeColor;
     }
 
@@ -437,7 +443,8 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
             ),
             titlesData: FlTitlesData(
               show: true,
-              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles:
+                  AxisTitles(sideTitles: SideTitles(showTitles: false)),
               topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
@@ -513,17 +520,19 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
                 ),
               ),
             ],
-            extraLinesData: _isNormalizedView ? ExtraLinesData(
-              horizontalLines: [
-                // Add baseline at 100% for normalized view
-                HorizontalLine(
-                  y: 100,
-                  color: AppTheme.textSecondary.withOpacity(0.3),
-                  strokeWidth: 1,
-                  dashArray: [5, 5],
-                ),
-              ],
-            ) : null,
+            extraLinesData: _isNormalizedView
+                ? ExtraLinesData(
+                    horizontalLines: [
+                      // Add baseline at 100% for normalized view
+                      HorizontalLine(
+                        y: 100,
+                        color: AppTheme.textSecondary.withOpacity(0.3),
+                        strokeWidth: 1,
+                        dashArray: [5, 5],
+                      ),
+                    ],
+                  )
+                : null,
           ),
         );
       },
@@ -578,7 +587,8 @@ class _SwitchablePerformanceChartState extends State<SwitchablePerformanceChart>
             width: 12,
             height: 2,
             decoration: BoxDecoration(
-              color: _currentData.length > 1 && _currentData.last.value >= _currentData.first.value
+              color: _currentData.length > 1 &&
+                      _currentData.last.value >= _currentData.first.value
                   ? AppTheme.positiveColor
                   : AppTheme.negativeColor,
             ),

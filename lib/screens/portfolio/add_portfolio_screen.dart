@@ -1,7 +1,7 @@
 // screens/add_portfolio_screen.dart
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
-import '../services/portfolio_service.dart';
+import '../../theme/app_theme.dart';
+import '../../services/portfolio_service.dart';
 
 class AddPortfolioScreen extends StatefulWidget {
   const AddPortfolioScreen({Key? key}) : super(key: key);
@@ -175,9 +175,9 @@ class _AddPortfolioScreenState extends State<AddPortfolioScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Create button
                 SizedBox(
                   width: double.infinity,
@@ -207,9 +207,9 @@ class _AddPortfolioScreenState extends State<AddPortfolioScreen> {
                           ),
                   ),
                 ),
-                
+
                 const Spacer(),
-                
+
                 // Portfolio tips
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -226,7 +226,8 @@ class _AddPortfolioScreenState extends State<AddPortfolioScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.lightbulb_outline, color: accent, size: 18),
+                          Icon(Icons.lightbulb_outline,
+                              color: accent, size: 18),
                           const SizedBox(width: 8),
                           Text(
                             'Portfolio Tips',

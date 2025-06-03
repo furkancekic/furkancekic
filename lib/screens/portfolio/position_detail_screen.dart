@@ -2,11 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../theme/app_theme.dart';
-import '../widgets/common_widgets.dart';
-import '../models/position.dart';
-import '../models/transaction.dart';
-import '../services/portfolio_service.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/common_widgets.dart';
+import '../../models/position.dart';
+import '../../models/transaction.dart';
+import '../../services/portfolio_service.dart';
 
 class PositionDetailScreen extends StatefulWidget {
   final Position position;
